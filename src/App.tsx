@@ -102,16 +102,24 @@ function PublicDisplayScreen({ token }: { token: string }) {
       await publicSupabase.rpc('heartbeat_display', { p_token: token })
     }
 
+    const channel = publicSupabase
+      .channel(`display:${token}`)
+      .on('broadcast', { event: 'display_invalidated' }, () => {
+        if (active) setInvalid(true)
+      })
+      .subscribe()
+
     void load()
     const heartbeat = window.setInterval(() => {
-      void publicSupabase.rpc('heartbeat_display', { p_token: token })
+      if (!invalid) void publicSupabase.rpc('heartbeat_display', { p_token: token })
     }, 30000)
 
     return () => {
       active = false
       window.clearInterval(heartbeat)
+      void publicSupabase.removeChannel(channel)
     }
-  }, [token])
+  }, [token, invalid])
 
   if (invalid) {
     return (
