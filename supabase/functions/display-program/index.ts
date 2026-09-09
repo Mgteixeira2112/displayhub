@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: display, error: displayError } = await db
       .from('displays')
-      .select('id,name,location,orientation,resolution_width,resolution_height')
+      .select('id,company_id,name,location,orientation,resolution_width,resolution_height')
       .eq('public_token', token)
       .eq('is_active', true)
       .is('revoked_at', null)
@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
       publications = data || []
     }
 
-    if (!publications.length) return json({ display, publications: [], group_mode: groupPublication?.mode ?? null })
+    if (!publications.length) return json({ display, publications: [], group_mode: groupPublication?.mode ?? null, group_id: groupPublication?.groupId ?? null, sync_session: null })
 
     const playlistIds = [...new Set(publications.map((row) => String(row.playlist_id)))]
     const [{ data: playlists, error: playlistError }, { data: items, error: itemError }] = await Promise.all([
@@ -102,11 +102,16 @@ Deno.serve(async (req: Request) => {
       })).filter((item) => item.content || item.structured),
     }]))
 
+    const syncSession = groupPublication?.mode === 'video_wall'
+      ? await getOrCreateSyncSession(db, display.company_id, groupPublication.groupId, String(groupPublication.publication.playlist_id))
+      : null
+
     return json({
       display,
       publications: publications.map((publication) => ({ ...publication, playlist: playlistMap.get(String(publication.playlist_id)) || null })).filter((publication) => publication.playlist),
       group_mode: groupPublication?.mode ?? null,
       group_id: groupPublication?.groupId ?? null,
+      sync_session: syncSession,
     })
   } catch (error) {
     console.error(error)
@@ -165,6 +170,50 @@ async function getGroupPublication(db: ReturnType<typeof createClient>, displayI
   }
 
   return null
+}
+
+async function getOrCreateSyncSession(db: ReturnType<typeof createClient>, companyId: string, groupId: string, playlistId: string) {
+  const { data: existing, error: existingError } = await db
+    .from('display_group_sessions')
+    .select('id,playlist_id,playback_state,started_at,paused_position_ms,sequence')
+    .eq('group_id', groupId)
+    .maybeSingle()
+
+  if (existingError) throw existingError
+
+  if (existing && existing.playlist_id === playlistId) return existing
+
+  if (existing) {
+    const { data, error } = await db
+      .from('display_group_sessions')
+      .update({ playlist_id: playlistId, playback_state: 'playing', started_at: new Date().toISOString(), paused_position_ms: 0, sequence: Number(existing.sequence) + 1 })
+      .eq('id', existing.id)
+      .select('id,playlist_id,playback_state,started_at,paused_position_ms,sequence')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  const { data, error } = await db
+    .from('display_group_sessions')
+    .insert({ company_id: companyId, group_id: groupId, playlist_id: playlistId, playback_state: 'playing' })
+    .select('id,playlist_id,playback_state,started_at,paused_position_ms,sequence')
+    .single()
+
+  if (error) {
+    if (error.code === '23505') {
+      const { data: raced, error: racedError } = await db
+        .from('display_group_sessions')
+        .select('id,playlist_id,playback_state,started_at,paused_position_ms,sequence')
+        .eq('group_id', groupId)
+        .single()
+      if (racedError) throw racedError
+      return raced
+    }
+    throw error
+  }
+
+  return data
 }
 
 function json(body: unknown, status = 200) {
