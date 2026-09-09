@@ -1,4 +1,5 @@
 import ContentLibraryCore from './ContentLibraryCore'
+import PlaylistManager from './PlaylistManager'
 import StructuredContent from './StructuredContent'
 
 type Props = {
@@ -11,6 +12,7 @@ export default function ContentLibrary(props: Props) {
     <>
       <ContentLibraryCore {...props} />
       <StructuredContent {...props} />
+      <PlaylistManager {...props} />
     </>
   )
 }
