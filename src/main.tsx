@@ -4,6 +4,7 @@ import App from './App'
 import './styles.css'
 import './structured.css'
 import './playlists.css'
+import './templates.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

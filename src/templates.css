@@ -1,0 +1,83 @@
+.template-form {
+  margin-top: 20px;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.template-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "type status"
+    "name action";
+  align-items: center;
+  gap: 8px 18px;
+  min-height: 118px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  background: rgba(255,255,255,.035);
+}
+
+.template-card > span {
+  grid-area: type;
+  color: #8e9ab8;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.template-card > strong {
+  grid-area: name;
+  min-width: 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.template-card > small {
+  grid-area: status;
+  justify-self: end;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(79, 207, 142, .12);
+  color: #8be6b5;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.template-card > .danger-button {
+  grid-area: action;
+  justify-self: end;
+  width: auto;
+  min-width: 132px;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .template-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .template-card {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "type"
+      "name"
+      "status"
+      "action";
+  }
+
+  .template-card > small,
+  .template-card > .danger-button {
+    justify-self: start;
+  }
+}
