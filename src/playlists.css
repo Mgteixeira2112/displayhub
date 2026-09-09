@@ -1,0 +1,24 @@
+.playlist-workspace { display: grid; gap: 20px; }
+.playlist-message { margin-top: 0; }
+.playlist-create-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.playlist-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.playlist-list { display: grid; gap: 14px; }
+.playlist-card, .publication-card { border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 18px; background: rgba(255,255,255,.035); }
+.playlist-card-head { display:flex; gap:16px; justify-content:space-between; align-items:flex-start; }
+.playlist-card-head p { margin:6px 0 0; color:#9ca8c4; }
+.playlist-items { display:grid; gap:8px; margin-top:14px; }
+.playlist-item { display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.04); }
+.playlist-item small { color:#8d98b3; }
+.playlist-item button { border:0; border-radius:10px; padding:7px 10px; background:rgba(255,255,255,.07); color:#eef2ff; }
+.publication-form { margin-top: 4px; }
+.publication-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.weekday-row { display:flex; flex-wrap:wrap; gap:8px; }
+.weekday-row label { display:flex; align-items:center; gap:6px; padding:8px 10px; border:1px solid rgba(255,255,255,.08); border-radius:10px; }
+.weekday-row input { width:auto; }
+.publication-list { display:grid; gap:10px; }
+.publication-list h3 { margin:0; }
+.publication-card { display:grid; gap:6px; }
+.publication-card span, .publication-card small { color:#8d98b3; }
+.publication-card .danger-button { justify-self:start; margin-top:6px; }
+@media (max-width: 900px) { .publication-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width: 720px) { .playlist-create-grid, .publication-grid { grid-template-columns:1fr; } .playlist-card-head { flex-direction:column; } .playlist-item { grid-template-columns:1fr auto; } .playlist-item button { grid-column:1 / -1; justify-self:start; } }
