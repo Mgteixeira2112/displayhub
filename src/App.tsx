@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { supabase } from './lib/supabase'
+import { publicSupabase, supabase } from './lib/supabase'
 
 type Mode = 'login' | 'signup'
 
@@ -92,19 +92,19 @@ function PublicDisplayScreen({ token }: { token: string }) {
     let active = true
 
     const load = async () => {
-      const { data, error } = await supabase.rpc('get_public_display', { p_token: token })
+      const { data, error } = await publicSupabase.rpc('get_public_display', { p_token: token })
       if (!active) return
       if (error || !data?.length) {
         setInvalid(true)
         return
       }
       setDisplay(data[0])
-      await supabase.rpc('heartbeat_display', { p_token: token })
+      await publicSupabase.rpc('heartbeat_display', { p_token: token })
     }
 
     void load()
     const heartbeat = window.setInterval(() => {
-      void supabase.rpc('heartbeat_display', { p_token: token })
+      void publicSupabase.rpc('heartbeat_display', { p_token: token })
     }, 30000)
 
     return () => {
