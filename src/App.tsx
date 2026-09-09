@@ -294,13 +294,7 @@ function App() {
     const roleLabel = account ? roleLabels[account.role] : '—'
 
     return (
-      <AppLayout
-        companyName={companyLabel}
-        userName={userLabel}
-        roleLabel={roleLabel}
-        busy={busy}
-        onSignOut={handleSignOut}
-      >
+      <AppLayout companyName={companyLabel} userName={userLabel} roleLabel={roleLabel} busy={busy} onSignOut={handleSignOut}>
         <section className="panel dashboard-panel software-dashboard-panel">
           <div className="account-grid">
             <article><span>Usuário</span><strong>{userLabel}</strong></article>
@@ -310,16 +304,18 @@ function App() {
 
           {canManage && (
             <section className="workspace-section">
-              <div className="section-heading"><div><p className="eyebrow">Fase 2</p><h2>Novo display</h2></div></div>
-              <form className="display-form" onSubmit={handleCreateDisplay}>
-                <label>Nome<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required minLength={2} placeholder="TV Entrada" /></label>
-                <label>Local<input value={displayLocation} onChange={(event) => setDisplayLocation(event.target.value)} placeholder="Entrada principal" /></label>
-                <label>Unidade<select value={displayUnit} onChange={(event) => setDisplayUnit(event.target.value)}><option value="">Sem unidade específica</option>{units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
-                <label>Orientação<select value={orientation} onChange={(event) => setOrientation(event.target.value as 'landscape' | 'portrait')}><option value="landscape">Horizontal</option><option value="portrait">Vertical</option></select></label>
-                <label>Largura<input type="number" min="320" max="16384" value={resolutionWidth} onChange={(event) => setResolutionWidth(Number(event.target.value))} required /></label>
-                <label>Altura<input type="number" min="320" max="16384" value={resolutionHeight} onChange={(event) => setResolutionHeight(Number(event.target.value))} required /></label>
-                <button className="primary-button" type="submit" disabled={busy}>Criar display</button>
-              </form>
+              <details className="create-panel create-panel-display">
+                <summary>+ Novo display</summary>
+                <form className="display-form" onSubmit={handleCreateDisplay}>
+                  <label>Nome<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required minLength={2} placeholder="TV Entrada" /></label>
+                  <label>Local<input value={displayLocation} onChange={(event) => setDisplayLocation(event.target.value)} placeholder="Entrada principal" /></label>
+                  <label>Unidade<select value={displayUnit} onChange={(event) => setDisplayUnit(event.target.value)}><option value="">Sem unidade específica</option>{units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>
+                  <label>Orientação<select value={orientation} onChange={(event) => setOrientation(event.target.value as 'landscape' | 'portrait')}><option value="landscape">Horizontal</option><option value="portrait">Vertical</option></select></label>
+                  <label>Largura<input type="number" min="320" max="16384" value={resolutionWidth} onChange={(event) => setResolutionWidth(Number(event.target.value))} required /></label>
+                  <label>Altura<input type="number" min="320" max="16384" value={resolutionHeight} onChange={(event) => setResolutionHeight(Number(event.target.value))} required /></label>
+                  <button className="primary-button" type="submit" disabled={busy}>Criar display</button>
+                </form>
+              </details>
             </section>
           )}
 

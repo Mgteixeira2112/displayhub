@@ -239,12 +239,13 @@ export default function StructuredContent({ companyId, role }: Props) {
   return (
     <section className="workspace-section">
       <div className="section-heading">
-        <div><p className="eyebrow">Fase 4</p><h2>Conteúdo comercial</h2></div>
+        <div><p className="eyebrow">Comercial</p><h2>Conteúdo comercial</h2></div>
         <button className="secondary-button compact" type="button" onClick={() => void load()} disabled={busy}>Atualizar</button>
       </div>
 
       {canManage && (
-        <>
+        <details className="create-panel structured-create-panel">
+          <summary>+ Novo conteúdo comercial</summary>
           <div className="structured-create-grid">
             <form className="content-form" onSubmit={addProduct}>
               <h3>Novo produto</h3>
@@ -287,7 +288,7 @@ export default function StructuredContent({ companyId, role }: Props) {
               <button className="primary-button" type="submit" disabled={busy || collections.length === 0}>Adicionar item</button>
             </form>
           </div>
-        </>
+        </details>
       )}
 
       {message && <p className="form-message content-message">{message}</p>}

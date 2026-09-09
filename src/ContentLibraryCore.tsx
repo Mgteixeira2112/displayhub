@@ -179,27 +179,33 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
   return (
     <section className="workspace-section">
       <div className="section-heading">
-        <div><p className="eyebrow">Fase 3</p><h2>Biblioteca de conteúdo</h2></div>
+        <div><p className="eyebrow">Mídia</p><h2>Biblioteca de conteúdo</h2></div>
         <button className="secondary-button compact" type="button" onClick={() => void loadItems()} disabled={busy}>Atualizar</button>
       </div>
 
       {canManage && (
-        <div className="content-create-grid">
-          <form className="content-form" onSubmit={uploadImage}>
-            <h3>Nova imagem</h3>
-            <label>Título<input value={imageTitle} onChange={(event) => setImageTitle(event.target.value)} required minLength={2} placeholder="Promoção de verão" /></label>
-            <label>Categoria<input value={imageCategory} onChange={(event) => setImageCategory(event.target.value)} placeholder="Promoções" /></label>
-            <label>Arquivo<input id="content-image-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImageFile(event.target.files?.[0] || null)} required /></label>
-            <button className="primary-button" type="submit" disabled={busy}>Enviar imagem</button>
-          </form>
+        <div className="create-actions-grid">
+          <details className="create-panel">
+            <summary>+ Nova imagem</summary>
+            <form className="content-form" onSubmit={uploadImage}>
+              <h3>Enviar imagem</h3>
+              <label>Título<input value={imageTitle} onChange={(event) => setImageTitle(event.target.value)} required minLength={2} placeholder="Promoção de verão" /></label>
+              <label>Categoria<input value={imageCategory} onChange={(event) => setImageCategory(event.target.value)} placeholder="Promoções" /></label>
+              <label>Arquivo<input id="content-image-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImageFile(event.target.files?.[0] || null)} required /></label>
+              <button className="primary-button" type="submit" disabled={busy}>Enviar imagem</button>
+            </form>
+          </details>
 
-          <form className="content-form" onSubmit={addYouTube}>
-            <h3>Novo vídeo do YouTube</h3>
-            <label>Título<input value={videoTitle} onChange={(event) => setVideoTitle(event.target.value)} required minLength={2} placeholder="Vídeo institucional" /></label>
-            <label>Categoria<input value={videoCategory} onChange={(event) => setVideoCategory(event.target.value)} placeholder="Institucional" /></label>
-            <label>Link do YouTube<input type="url" value={videoUrl} onChange={(event) => setVideoUrl(event.target.value)} required placeholder="https://www.youtube.com/watch?v=..." /></label>
-            <button className="primary-button" type="submit" disabled={busy}>Cadastrar vídeo</button>
-          </form>
+          <details className="create-panel">
+            <summary>+ Novo vídeo</summary>
+            <form className="content-form" onSubmit={addYouTube}>
+              <h3>Adicionar YouTube</h3>
+              <label>Título<input value={videoTitle} onChange={(event) => setVideoTitle(event.target.value)} required minLength={2} placeholder="Vídeo institucional" /></label>
+              <label>Categoria<input value={videoCategory} onChange={(event) => setVideoCategory(event.target.value)} placeholder="Institucional" /></label>
+              <label>Link do YouTube<input type="url" value={videoUrl} onChange={(event) => setVideoUrl(event.target.value)} required placeholder="https://www.youtube.com/watch?v=..." /></label>
+              <button className="primary-button" type="submit" disabled={busy}>Cadastrar vídeo</button>
+            </form>
+          </details>
         </div>
       )}
 

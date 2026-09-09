@@ -66,21 +66,24 @@ export default function TemplateManager({ companyId, role }: Props) {
   return (
     <section className="workspace-section template-workspace">
       <div className="section-heading">
-        <div><p className="eyebrow">Fase 6</p><h2>Templates</h2></div>
+        <div><p className="eyebrow">Apresentação</p><h2>Templates</h2></div>
         <button className="secondary-button compact" type="button" onClick={() => void loadTemplates()} disabled={busy}>Atualizar</button>
       </div>
-      <p className="empty-state">Modelos fechados de apresentação. O player público usará estes templates na Fase 7.</p>
+      <p className="empty-state">Modelos de apresentação disponíveis para os itens das playlists.</p>
       {message && <p className="form-message">{message}</p>}
 
       {canManage && (
-        <form className="content-form template-form" onSubmit={createTemplate}>
-          <h3>Novo template</h3>
-          <label>Nome<input value={name} onChange={(e) => setName(e.target.value)} required minLength={2} placeholder="Promoção principal" /></label>
-          <label>Modelo<select value={templateType} onChange={(e) => setTemplateType(e.target.value as TemplateType)}>
-            {Object.entries(templateLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select></label>
-          <button className="primary-button" disabled={busy}>Criar template</button>
-        </form>
+        <details className="create-panel">
+          <summary>+ Novo template</summary>
+          <form className="content-form template-form" onSubmit={createTemplate}>
+            <h3>Criar template</h3>
+            <label>Nome<input value={name} onChange={(e) => setName(e.target.value)} required minLength={2} placeholder="Promoção principal" /></label>
+            <label>Modelo<select value={templateType} onChange={(e) => setTemplateType(e.target.value as TemplateType)}>
+              {Object.entries(templateLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select></label>
+            <button className="primary-button" disabled={busy}>Criar template</button>
+          </form>
+        </details>
       )}
 
       <div className="template-grid">
