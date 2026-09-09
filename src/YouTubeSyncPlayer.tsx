@@ -76,6 +76,7 @@ type Props = {
 }
 
 export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKey, shouldPlay, startAt, onReady, onController, onBufferingChange }: Props) {
+  const wrapperRef = useRef<HTMLDivElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<YouTubeController | null>(null)
   const startTimerRef = useRef(0)
@@ -96,6 +97,29 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
   useEffect(() => {
     let disposed = false
 
+    const applyCoverSizing = () => {
+      const wrapper = wrapperRef.current
+      const iframe = wrapper?.querySelector<HTMLIFrameElement>('iframe')
+      if (!wrapper || !iframe) return
+
+      const { width, height } = wrapper.getBoundingClientRect()
+      if (!width || !height) return
+
+      const videoAspect = 16 / 9
+      const surfaceAspect = width / height
+      const targetWidth = surfaceAspect >= videoAspect ? width : height * videoAspect
+      const targetHeight = surfaceAspect >= videoAspect ? width / videoAspect : height
+
+      iframe.style.position = 'absolute'
+      iframe.style.left = '50%'
+      iframe.style.top = '50%'
+      iframe.style.width = `${Math.ceil(targetWidth)}px`
+      iframe.style.height = `${Math.ceil(targetHeight)}px`
+      iframe.style.maxWidth = 'none'
+      iframe.style.transform = 'translate(-50%, -50%)'
+      iframe.style.border = '0'
+    }
+
     const scheduleStart = (target: YouTubeController) => {
       window.clearTimeout(startTimerRef.current)
       if (!shouldPlayRef.current) {
@@ -113,6 +137,9 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
         if (!disposed) target.playVideo()
       }, delay)
     }
+
+    const resizeObserver = new ResizeObserver(() => applyCoverSizing())
+    if (wrapperRef.current) resizeObserver.observe(wrapperRef.current)
 
     void loadYouTubeIframeApi().then(() => {
       if (disposed || !hostRef.current || !window.YT?.Player) return
@@ -137,6 +164,7 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
             target.mute()
             target.seekTo(initialStartSeconds, true)
             target.pauseVideo()
+            applyCoverSizing()
             onControllerRef.current(target)
             onReadyRef.current()
             scheduleStart(target)
@@ -149,12 +177,14 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
         },
       })
       playerRef.current = player
+      window.requestAnimationFrame(applyCoverSizing)
     }).catch(() => {
       if (!disposed) onBufferingChangeRef.current(true)
     })
 
     return () => {
       disposed = true
+      resizeObserver.disconnect()
       window.clearTimeout(startTimerRef.current)
       startTimerRef.current = 0
       playerRef.current = null
@@ -184,5 +214,5 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
     return () => window.clearTimeout(startTimerRef.current)
   }, [shouldPlay, startAt])
 
-  return <div className="youtube-sync-player" role="img" aria-label={title} ref={hostRef} />
+  return <div className="youtube-sync-player" role="img" aria-label={title} ref={wrapperRef}><div className="youtube-sync-player-host" ref={hostRef} /></div>
 }
