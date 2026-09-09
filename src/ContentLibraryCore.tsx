@@ -3,7 +3,7 @@ import { supabase } from './lib/supabase'
 
 type ContentItem = {
   id: string
-  type: 'image' | 'youtube'
+  type: 'image' | 'youtube' | 'hls'
   title: string
   category: string | null
   storage_path: string | null
@@ -36,6 +36,15 @@ function extractYouTubeId(value: string) {
   }
 }
 
+function isValidHlsUrl(value: string) {
+  try {
+    const url = new URL(value.trim())
+    return url.protocol === 'https:' && url.pathname.toLowerCase().includes('.m3u8')
+  } catch {
+    return false
+  }
+}
+
 export default function ContentLibraryCore({ companyId, role }: Props) {
   const [items, setItems] = useState<ContentItem[]>([])
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({})
@@ -45,6 +54,9 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
   const [videoTitle, setVideoTitle] = useState('')
   const [videoCategory, setVideoCategory] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
+  const [hlsTitle, setHlsTitle] = useState('')
+  const [hlsCategory, setHlsCategory] = useState('')
+  const [hlsUrl, setHlsUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const canManage = role === 'admin' || role === 'manager'
@@ -156,6 +168,38 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
     }
   }
 
+  async function addHls(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!canManage) return
+    setMessage('')
+    if (!isValidHlsUrl(hlsUrl)) {
+      setMessage('Informe uma URL HTTPS válida de manifesto HLS (.m3u8).')
+      return
+    }
+
+    setBusy(true)
+    try {
+      const { error } = await supabase.from('content_items').insert({
+        company_id: companyId,
+        type: 'hls',
+        title: hlsTitle.trim(),
+        category: hlsCategory.trim() || null,
+        provider: 'hls',
+        external_url: hlsUrl.trim(),
+        external_id: null,
+      })
+      if (error) throw error
+      setHlsTitle('')
+      setHlsCategory('')
+      setHlsUrl('')
+      await loadItems()
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Não foi possível cadastrar o HLS.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function removeItem(item: ContentItem) {
     if (!canManage) return
     setBusy(true)
@@ -206,6 +250,18 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
               <button className="primary-button" type="submit" disabled={busy}>Cadastrar vídeo</button>
             </form>
           </details>
+
+          <details className="create-panel">
+            <summary>+ HLS / Video Wall</summary>
+            <form className="content-form" onSubmit={addHls}>
+              <h3>Adicionar vídeo HLS</h3>
+              <label>Título<input value={hlsTitle} onChange={(event) => setHlsTitle(event.target.value)} required minLength={2} placeholder="Campanha Video Wall" /></label>
+              <label>Categoria<input value={hlsCategory} onChange={(event) => setHlsCategory(event.target.value)} placeholder="Video Wall" /></label>
+              <label>Manifesto HLS<input type="url" value={hlsUrl} onChange={(event) => setHlsUrl(event.target.value)} required placeholder="https://cdn.exemplo.com/video/master.m3u8" /></label>
+              <small>Use um manifesto HTTPS controlado pelo cliente/CDN. Não use URLs internas extraídas do YouTube.</small>
+              <button className="primary-button" type="submit" disabled={busy}>Cadastrar HLS</button>
+            </form>
+          </details>
         </div>
       )}
 
@@ -217,15 +273,15 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
           <article className="content-card" key={item.id}>
             <div className="content-preview">
               {item.type === 'image' && previewUrls[item.id] && <img src={previewUrls[item.id]} alt={item.title} />}
-              {item.type === 'youtube' && item.external_id && (
-                <img src={`https://i.ytimg.com/vi/${item.external_id}/hqdefault.jpg`} alt={item.title} />
-              )}
+              {item.type === 'youtube' && item.external_id && <img src={`https://i.ytimg.com/vi/${item.external_id}/hqdefault.jpg`} alt={item.title} />}
+              {item.type === 'hls' && <div className="brand-mark">HLS</div>}
             </div>
             <div className="content-meta">
-              <span>{item.type === 'image' ? 'Imagem' : 'YouTube'}{item.category ? ` · ${item.category}` : ''}</span>
+              <span>{item.type === 'image' ? 'Imagem' : item.type === 'youtube' ? 'YouTube' : 'HLS'}{item.category ? ` · ${item.category}` : ''}</span>
               <strong>{item.title}</strong>
               {item.type === 'image' && item.file_size && <small>{(item.file_size / 1024 / 1024).toFixed(2)} MB</small>}
               {item.type === 'youtube' && item.external_url && <a href={item.external_url} target="_blank" rel="noreferrer">Abrir no YouTube</a>}
+              {item.type === 'hls' && item.external_url && <a href={item.external_url} target="_blank" rel="noreferrer">Abrir manifesto HLS</a>}
               {canManage && <button className="danger-button" type="button" onClick={() => void removeItem(item)} disabled={busy}>Excluir</button>}
             </div>
           </article>
