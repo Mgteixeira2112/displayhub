@@ -47,23 +47,16 @@ export default function PublicPlayer({ token }: { token: string }) {
     let active = true
     void loadProgram()
 
-    const heartbeat = () => {
-      if (active) void publicSupabase.rpc('heartbeat_display', { p_token: token })
-    }
-    heartbeat()
-
     const channel = publicSupabase
       .channel(`display:${token}`)
       .on('broadcast', { event: 'display_invalidated' }, () => { if (active) setInvalid(true) })
       .on('broadcast', { event: 'display_program_changed' }, () => { if (active) void loadProgram() })
       .subscribe()
 
-    const heartbeatTimer = window.setInterval(heartbeat, 30000)
     const scheduleRefresh = window.setInterval(() => { if (active) void loadProgram() }, 60000)
 
     return () => {
       active = false
-      window.clearInterval(heartbeatTimer)
       window.clearInterval(scheduleRefresh)
       void publicSupabase.removeChannel(channel)
     }
@@ -81,11 +74,18 @@ export default function PublicPlayer({ token }: { token: string }) {
 
   useEffect(() => {
     if (!program || invalid) return
-    void publicSupabase.rpc('report_display_state', {
-      p_token: token,
-      p_playlist_id: publication?.playlist.id ?? null,
-      p_item_id: item?.id ?? null,
-    })
+    const report = () => {
+      void publicSupabase.functions.invoke('display-state', {
+        body: {
+          token,
+          playlist_id: publication?.playlist.id ?? null,
+          item_id: item?.id ?? null,
+        },
+      })
+    }
+    report()
+    const timer = window.setInterval(report, 30000)
+    return () => window.clearInterval(timer)
   }, [token, program, invalid, publication?.playlist.id, item?.id])
 
   if (invalid) return <main className="public-display invalid-display"><div className="brand-mark">DH</div><h1>Display indisponível</h1><p>Este link foi revogado, desativado ou não existe.</p></main>
