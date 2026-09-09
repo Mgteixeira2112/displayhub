@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import type { MediaFit } from './YouTubeSyncPlayer'
 
 type HlsInstance = {
   loadSource: (url: string) => void
@@ -55,12 +56,13 @@ type Props = {
   syncKey: string
   shouldPlay: boolean
   startAt: string | null
+  fitMode?: MediaFit
   getExpectedSeconds: () => number | null
   onReady: () => void
   onSample: (sample: HlsMediaSample | null) => void
 }
 
-export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKey, shouldPlay, startAt, getExpectedSeconds, onReady, onSample }: Props) {
+export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKey, shouldPlay, startAt, fitMode = 'cover', getExpectedSeconds, onReady, onSample }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -140,5 +142,6 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
     }
   }, [manifestUrl, startSeconds, syncKey, shouldPlay, startAt, getExpectedSeconds, onReady, onSample])
 
-  return <video ref={videoRef} className="hls-sync-player" aria-label={title} muted playsInline preload="auto" />
+  const objectFit = fitMode === 'native' ? 'fill' : fitMode
+  return <video ref={videoRef} className={`hls-sync-player fit-${fitMode}`} style={{ objectFit }} aria-label={title} muted playsInline preload="auto" />
 }

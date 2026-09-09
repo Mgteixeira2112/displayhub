@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
     const groupIds = memberships.map((row) => row.group_id)
     const { data: groups, error: groupError } = await db
       .from('display_groups')
-      .select('id,name,rows,columns,virtual_width,virtual_height,updated_at')
+      .select('id,name,rows,columns,virtual_width,virtual_height,media_fit,updated_at')
       .in('id', groupIds)
       .eq('mode', 'video_wall')
       .eq('is_active', true)
@@ -61,6 +61,7 @@ Deno.serve(async (req: Request) => {
         columns: group.columns,
         virtual_width: group.virtual_width,
         virtual_height: group.virtual_height,
+        media_fit: group.media_fit || 'cover',
         row_index: membership.row_index,
         column_index: membership.column_index,
         crop_x: membership.crop_x,

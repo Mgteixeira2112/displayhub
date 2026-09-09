@@ -10,6 +10,8 @@ export type YouTubeController = {
   destroy: () => void
 }
 
+export type MediaFit = 'contain' | 'cover' | 'native'
+
 type YouTubeEvent = { target: YouTubeController }
 type YouTubeStateEvent = { data: number; target: YouTubeController }
 type YouTubeNamespace = {
@@ -70,12 +72,13 @@ type Props = {
   syncKey: string
   shouldPlay: boolean
   startAt: string | null
+  fitMode?: MediaFit
   onReady: () => void
   onController: (controller: YouTubeController | null) => void
   onBufferingChange: (buffering: boolean) => void
 }
 
-export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKey, shouldPlay, startAt, onReady, onController, onBufferingChange }: Props) {
+export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKey, shouldPlay, startAt, fitMode = 'cover', onReady, onController, onBufferingChange }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<YouTubeController | null>(null)
@@ -83,6 +86,7 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
   const startSecondsRef = useRef(startSeconds)
   const shouldPlayRef = useRef(shouldPlay)
   const startAtRef = useRef(startAt)
+  const fitModeRef = useRef<MediaFit>(fitMode)
   const onReadyRef = useRef(onReady)
   const onControllerRef = useRef(onController)
   const onBufferingChangeRef = useRef(onBufferingChange)
@@ -90,35 +94,51 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
   startSecondsRef.current = startSeconds
   shouldPlayRef.current = shouldPlay
   startAtRef.current = startAt
+  fitModeRef.current = fitMode
   onReadyRef.current = onReady
   onControllerRef.current = onController
   onBufferingChangeRef.current = onBufferingChange
 
+  const applySizing = () => {
+    const wrapper = wrapperRef.current
+    const iframe = wrapper?.querySelector<HTMLIFrameElement>('iframe')
+    if (!wrapper || !iframe) return
+
+    const { width, height } = wrapper.getBoundingClientRect()
+    if (!width || !height) return
+
+    iframe.style.position = 'absolute'
+    iframe.style.maxWidth = 'none'
+    iframe.style.border = '0'
+
+    if (fitModeRef.current === 'native') {
+      iframe.style.left = '0'
+      iframe.style.top = '0'
+      iframe.style.width = '100%'
+      iframe.style.height = '100%'
+      iframe.style.transform = 'none'
+      return
+    }
+
+    const videoAspect = 16 / 9
+    const surfaceAspect = width / height
+    const cover = fitModeRef.current === 'cover'
+    const targetWidth = cover
+      ? (surfaceAspect >= videoAspect ? width : height * videoAspect)
+      : (surfaceAspect >= videoAspect ? height * videoAspect : width)
+    const targetHeight = cover
+      ? (surfaceAspect >= videoAspect ? width / videoAspect : height)
+      : (surfaceAspect >= videoAspect ? height : width / videoAspect)
+
+    iframe.style.left = '50%'
+    iframe.style.top = '50%'
+    iframe.style.width = `${Math.ceil(targetWidth)}px`
+    iframe.style.height = `${Math.ceil(targetHeight)}px`
+    iframe.style.transform = 'translate(-50%, -50%)'
+  }
+
   useEffect(() => {
     let disposed = false
-
-    const applyCoverSizing = () => {
-      const wrapper = wrapperRef.current
-      const iframe = wrapper?.querySelector<HTMLIFrameElement>('iframe')
-      if (!wrapper || !iframe) return
-
-      const { width, height } = wrapper.getBoundingClientRect()
-      if (!width || !height) return
-
-      const videoAspect = 16 / 9
-      const surfaceAspect = width / height
-      const targetWidth = surfaceAspect >= videoAspect ? width : height * videoAspect
-      const targetHeight = surfaceAspect >= videoAspect ? width / videoAspect : height
-
-      iframe.style.position = 'absolute'
-      iframe.style.left = '50%'
-      iframe.style.top = '50%'
-      iframe.style.width = `${Math.ceil(targetWidth)}px`
-      iframe.style.height = `${Math.ceil(targetHeight)}px`
-      iframe.style.maxWidth = 'none'
-      iframe.style.transform = 'translate(-50%, -50%)'
-      iframe.style.border = '0'
-    }
 
     const scheduleStart = (target: YouTubeController) => {
       window.clearTimeout(startTimerRef.current)
@@ -138,7 +158,7 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
       }, delay)
     }
 
-    const resizeObserver = new ResizeObserver(() => applyCoverSizing())
+    const resizeObserver = new ResizeObserver(() => applySizing())
     if (wrapperRef.current) resizeObserver.observe(wrapperRef.current)
 
     void loadYouTubeIframeApi().then(() => {
@@ -164,7 +184,7 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
             target.mute()
             target.seekTo(initialStartSeconds, true)
             target.pauseVideo()
-            applyCoverSizing()
+            applySizing()
             onControllerRef.current(target)
             onReadyRef.current()
             scheduleStart(target)
@@ -177,7 +197,7 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
         },
       })
       playerRef.current = player
-      window.requestAnimationFrame(applyCoverSizing)
+      window.requestAnimationFrame(applySizing)
     }).catch(() => {
       if (!disposed) onBufferingChangeRef.current(true)
     })
@@ -192,6 +212,11 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
       onBufferingChangeRef.current(false)
     }
   }, [videoId, syncKey])
+
+  useEffect(() => {
+    fitModeRef.current = fitMode
+    applySizing()
+  }, [fitMode])
 
   useEffect(() => {
     const player = playerRef.current
@@ -215,5 +240,5 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
     return () => window.clearTimeout(startTimerRef.current)
   }, [shouldPlay, startAt])
 
-  return <div className="youtube-sync-player" role="img" aria-label={title} ref={wrapperRef}><div className="youtube-sync-player-host" ref={hostRef} /></div>
+  return <div className={`youtube-sync-player fit-${fitMode}`} role="img" aria-label={title} ref={wrapperRef}><div className="youtube-sync-player-host" ref={hostRef} /></div>
 }
