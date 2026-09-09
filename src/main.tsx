@@ -9,6 +9,7 @@ import './templates.css'
 import './monitoring.css'
 import './player.css'
 import './soft-theme.css'
+import './module-navigation.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')

@@ -1,0 +1,60 @@
+.software-dashboard-panel > .account-grid,
+.software-dashboard-panel > .workspace-section,
+.software-dashboard-panel > .software-module { display: none; }
+
+.view-overview .module-overview,
+.view-library .module-library,
+.view-playlists .module-playlists,
+.view-schedule .module-schedule,
+.view-templates .module-templates,
+.view-history .module-history { display: block; }
+
+.view-displays .software-dashboard-panel > .workspace-section { display: block; }
+.view-settings .software-dashboard-panel > .account-grid { display: grid; }
+
+.software-module > .workspace-section:first-child,
+.software-module > .operational-overview:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.module-playlists .publication-form,
+.module-playlists .publication-list { display: none; }
+
+.module-schedule .playlist-create-grid,
+.module-schedule .playlist-list { display: none; }
+
+.module-schedule .playlist-workspace > .section-heading > div::after {
+  content: 'Gerencie onde e quando cada playlist será exibida.';
+  display: block;
+  margin-top: 6px;
+  color: var(--dh-muted);
+  font-size: .84rem;
+}
+
+.module-history .overview-heading,
+.module-history .overview-stats,
+.module-history .overview-section-heading:not(.overview-history .overview-section-heading),
+.module-history .monitor-grid { display: none; }
+
+.module-history .overview-history {
+  padding-top: 0;
+}
+
+.module-history .overview-history .history-list article { padding-block: 16px; }
+
+.view-settings .account-grid::before {
+  content: 'Dados da conta';
+  grid-column: 1 / -1;
+  display: block;
+  margin-bottom: 4px;
+  color: var(--dh-text);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .software-nav-item:not(.active) { display: block; }
+  .software-nav { overflow-y: auto; }
+}

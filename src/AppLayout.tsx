@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+
+type View = 'overview' | 'displays' | 'library' | 'playlists' | 'schedule' | 'templates' | 'history' | 'settings'
 
 type Props = {
   companyName: string
@@ -9,53 +11,57 @@ type Props = {
   children: ReactNode
 }
 
+const labels: Record<View, string> = {
+  overview: 'Visão Geral',
+  displays: 'Displays',
+  library: 'Biblioteca',
+  playlists: 'Playlists',
+  schedule: 'Programação',
+  templates: 'Templates',
+  history: 'Histórico',
+  settings: 'Configurações',
+}
+
 export default function AppLayout({ companyName, userName, roleLabel, busy, onSignOut, children }: Props) {
+  const [view, setView] = useState<View>('overview')
+
+  const nav = (target: View, label: string) => (
+    <button type="button" className={`software-nav-item ${view === target ? 'active' : ''}`} onClick={() => setView(target)}>{label}</button>
+  )
+
   return (
     <div className="software-shell">
       <aside className="software-sidebar">
         <div className="software-brand">
           <div className="brand-mark" aria-hidden="true">DH</div>
-          <div>
-            <strong>DisplayHub</strong>
-            <span>{companyName}</span>
-          </div>
+          <div><strong>DisplayHub</strong><span>{companyName}</span></div>
         </div>
 
         <nav className="software-nav" aria-label="Navegação principal">
-          <button type="button" className="software-nav-item active">Visão Geral</button>
-
+          {nav('overview', 'Visão Geral')}
           <span className="software-nav-group">Exibição</span>
-          <button type="button" className="software-nav-item pending">Displays</button>
-
+          {nav('displays', 'Displays')}
           <span className="software-nav-group">Conteúdo</span>
-          <button type="button" className="software-nav-item pending">Biblioteca</button>
-          <button type="button" className="software-nav-item pending">Playlists</button>
-          <button type="button" className="software-nav-item pending">Programação</button>
-          <button type="button" className="software-nav-item pending">Templates</button>
-
+          {nav('library', 'Biblioteca')}
+          {nav('playlists', 'Playlists')}
+          {nav('schedule', 'Programação')}
+          {nav('templates', 'Templates')}
           <span className="software-nav-group">Administração</span>
-          <button type="button" className="software-nav-item pending">Histórico</button>
-          <button type="button" className="software-nav-item pending">Configurações</button>
+          {nav('history', 'Histórico')}
+          {nav('settings', 'Configurações')}
         </nav>
 
         <div className="software-sidebar-footer">
-          <div className="software-user">
-            <strong>{userName}</strong>
-            <span>{roleLabel}</span>
-          </div>
+          <div className="software-user"><strong>{userName}</strong><span>{roleLabel}</span></div>
           <button className="software-signout" type="button" onClick={onSignOut} disabled={busy}>Sair</button>
         </div>
       </aside>
 
-      <div className="software-main">
+      <div className={`software-main view-${view}`}>
         <header className="software-topbar">
-          <div>
-            <p>DisplayHub</p>
-            <strong>Visão Geral</strong>
-          </div>
+          <div><p>DisplayHub</p><strong>{labels[view]}</strong></div>
           <span>{companyName}</span>
         </header>
-
         <main className="software-content">{children}</main>
       </div>
     </div>

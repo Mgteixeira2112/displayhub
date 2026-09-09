@@ -12,11 +12,30 @@ type Props = {
 export default function ContentLibrary(props: Props) {
   return (
     <>
-      <ContentLibraryCore {...props} />
-      <StructuredContent {...props} />
-      <TemplateManager {...props} />
-      <PlaylistManager {...props} />
-      <MonitoringPanel companyId={props.companyId} />
+      <div className="software-module module-overview">
+        <MonitoringPanel companyId={props.companyId} />
+      </div>
+
+      <div className="software-module module-library">
+        <ContentLibraryCore {...props} />
+        <StructuredContent {...props} />
+      </div>
+
+      <div className="software-module module-playlists">
+        <PlaylistManager {...props} />
+      </div>
+
+      <div className="software-module module-schedule">
+        <PlaylistManager {...props} />
+      </div>
+
+      <div className="software-module module-templates">
+        <TemplateManager {...props} />
+      </div>
+
+      <div className="software-module module-history">
+        <MonitoringPanel companyId={props.companyId} />
+      </div>
     </>
   )
 }
