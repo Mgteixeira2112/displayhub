@@ -30,9 +30,6 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          VITE_SUPABASE_URL: https://meqeluddtwthqmrtbhbr.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_yjnvIPUmi8-Kt7yTFibw3w_DQlawViE
 
       - name: Upload generated lockfile
         uses: actions/upload-artifact@v4
