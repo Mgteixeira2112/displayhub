@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { publicSupabase } from './lib/supabase'
+import YouTubeSyncPlayer, { type YouTubeController } from './YouTubeSyncPlayer'
 
 type Display = { id: string; name: string; location: string | null; orientation: string; resolution_width: number; resolution_height: number }
 type Template = { name: string; template_type: string }
@@ -14,6 +15,7 @@ type Program = { display: Display; publications: Publication[]; group_mode?: str
 type WallContext = { group_id: string; group_name: string; rows: number; columns: number; virtual_width: number | null; virtual_height: number | null; row_index: number; column_index: number }
 type SyncCursor = { index: number; offsetSeconds: number; remainingMs: number; sequence: number }
 type PlaybackAnchor = { key: string; offsetMs: number; startedAt: number }
+type ProviderTelemetry = { expectedPositionMs: number; actualPositionMs: number; buffering: boolean; measurementKind: 'media'; sampledAt: number }
 
 function publicationMatches(publication: Publication, now = new Date()) {
   if (publication.repeat_mode === 'always') return true
@@ -63,6 +65,18 @@ export default function PublicPlayer({ token }: { token: string }) {
   const [syncCursor, setSyncCursor] = useState<SyncCursor | null>(null)
   const [loadError, setLoadError] = useState(false)
   const playbackAnchor = useRef<PlaybackAnchor | null>(null)
+  const youtubeController = useRef<YouTubeController | null>(null)
+  const youtubeBuffering = useRef(false)
+  const providerTelemetry = useRef<ProviderTelemetry | null>(null)
+
+  const handleYouTubeController = useCallback((controller: YouTubeController | null) => {
+    youtubeController.current = controller
+    if (!controller) providerTelemetry.current = null
+  }, [])
+
+  const handleYouTubeBuffering = useCallback((buffering: boolean) => {
+    youtubeBuffering.current = buffering
+  }, [])
 
   const loadProgram = useCallback(async () => {
     const [programRes, wallRes] = await Promise.all([
@@ -151,12 +165,55 @@ export default function PublicPlayer({ token }: { token: string }) {
   }, [item?.id, syncCursor?.sequence, syncCursor?.offsetSeconds, syncSession?.sequence])
 
   useEffect(() => {
+    if (!syncSession || !item || item.content?.type !== 'youtube' || !items.length) {
+      providerTelemetry.current = null
+      return
+    }
+
+    const sampleAndCorrect = () => {
+      const controller = youtubeController.current
+      const expected = resolveSyncCursor(items, syncSession)
+      if (!controller || !expected || expected.index !== effectiveIndex) return
+
+      const expectedPositionMs = Math.max(0, Math.round(expected.offsetSeconds * 1000))
+      const actualPositionMs = Math.max(0, Math.round(controller.getCurrentTime() * 1000))
+      const state = controller.getPlayerState()
+      const buffering = youtubeBuffering.current || state === 3
+      const driftMs = actualPositionMs - expectedPositionMs
+
+      providerTelemetry.current = {
+        expectedPositionMs,
+        actualPositionMs,
+        buffering,
+        measurementKind: 'media',
+        sampledAt: Date.now(),
+      }
+
+      if (syncSession.playback_state === 'playing' && state === 1 && !buffering && Math.abs(driftMs) > 750) {
+        controller.seekTo(expected.offsetSeconds, true)
+      }
+    }
+
+    sampleAndCorrect()
+    const timer = window.setInterval(sampleAndCorrect, 2000)
+    return () => window.clearInterval(timer)
+  }, [effectiveIndex, item?.id, item?.content?.type, items, syncSession])
+
+  useEffect(() => {
     if (!program || invalid) return
     const report = () => {
       let expectedPositionMs: number | null = null
       let actualPositionMs: number | null = null
+      let buffering = false
+      let measurementKind: 'clock' | 'media' = 'clock'
 
-      if (syncSession && item && items.length) {
+      const mediaSample = providerTelemetry.current
+      if (mediaSample && Date.now() - mediaSample.sampledAt <= 5000) {
+        expectedPositionMs = mediaSample.expectedPositionMs
+        actualPositionMs = mediaSample.actualPositionMs
+        buffering = mediaSample.buffering
+        measurementKind = mediaSample.measurementKind
+      } else if (syncSession && item && items.length) {
         const expected = resolveSyncCursor(items, syncSession)
         if (expected && expected.index === effectiveIndex) {
           expectedPositionMs = Math.max(0, Math.round(expected.offsetSeconds * 1000))
@@ -178,8 +235,8 @@ export default function PublicPlayer({ token }: { token: string }) {
           expected_position_ms: expectedPositionMs,
           actual_position_ms: actualPositionMs,
           sequence: syncSession?.sequence ?? 0,
-          buffering: false,
-          measurement_kind: 'clock',
+          buffering,
+          measurement_kind: measurementKind,
         },
       })
     }
@@ -194,7 +251,16 @@ export default function PublicPlayer({ token }: { token: string }) {
   if (!publication || !item) return <Idle display={program.display} />
 
   const offsetSeconds = syncCursor?.offsetSeconds || 0
-  const content = <ItemView item={item} display={program.display} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id} />
+  const content = (
+    <ItemView
+      item={item}
+      display={program.display}
+      startSeconds={offsetSeconds}
+      syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id}
+      onYouTubeController={handleYouTubeController}
+      onYouTubeBuffering={handleYouTubeBuffering}
+    />
+  )
   const progressDuration = syncCursor ? Math.max(0.05, syncCursor.remainingMs / 1000) : item.duration_seconds
 
   return (
@@ -224,7 +290,14 @@ function Idle({ display }: { display: Display }) {
   return <main className="public-display"><div className="display-idle-card"><div className="brand-mark">DH</div><p className="eyebrow">DisplayHub</p><h1>{display.name}</h1><p>{display.location || 'Local não informado'}</p><strong>Nenhuma programação ativa neste horário</strong></div></main>
 }
 
-function ItemView({ item, display, startSeconds, syncKey }: { item: Item; display: Display; startSeconds: number; syncKey: string }) {
+function ItemView({ item, display, startSeconds, syncKey, onYouTubeController, onYouTubeBuffering }: {
+  item: Item
+  display: Display
+  startSeconds: number
+  syncKey: string
+  onYouTubeController: (controller: YouTubeController | null) => void
+  onYouTubeBuffering: (buffering: boolean) => void
+}) {
   if (item.content?.type === 'image' && item.content.signed_url) {
     return item.template?.template_type === 'split_screen'
       ? <div className="split-layout"><div className="split-media"><img src={item.content.signed_url} alt={item.content.title} /></div><div className="split-copy"><p className="eyebrow">{display.name}</p><h1>{item.content.title}</h1><p>{display.location || 'DisplayHub'}</p></div></div>
@@ -232,8 +305,18 @@ function ItemView({ item, display, startSeconds, syncKey }: { item: Item; displa
   }
 
   if (item.content?.type === 'youtube' && item.content.external_id) {
-    const start = Math.max(0, Math.floor(startSeconds))
-    return <div className="fullscreen-media"><iframe key={syncKey} title={item.content.title} src={`https://www.youtube-nocookie.com/embed/${item.content.external_id}?autoplay=1&mute=1&controls=0&rel=0&playsinline=1&start=${start}`} allow="autoplay; encrypted-media" /></div>
+    return (
+      <div className="fullscreen-media">
+        <YouTubeSyncPlayer
+          videoId={item.content.external_id}
+          title={item.content.title}
+          startSeconds={startSeconds}
+          syncKey={syncKey}
+          onController={onYouTubeController}
+          onBufferingChange={onYouTubeBuffering}
+        />
+      </div>
+    )
   }
 
   const content = item.structured
