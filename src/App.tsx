@@ -1,5 +1,6 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
+import ContentLibrary from './ContentLibrary'
 import { publicSupabase, supabase } from './lib/supabase'
 
 type Mode = 'login' | 'signup'
@@ -345,6 +346,8 @@ function App() {
               })}
             </div>
           </section>
+
+          {account && <ContentLibrary companyId={account.companyId} role={account.role} />}
         </section>
       </main>
     )
