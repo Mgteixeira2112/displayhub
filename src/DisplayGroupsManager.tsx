@@ -30,7 +30,7 @@ export default function DisplayGroupsManager() {
   const [virtualWidth, setVirtualWidth] = useState('')
   const [virtualHeight, setVirtualHeight] = useState('')
   const [draftSlots, setDraftSlots] = useState<Record<string, string>>({})
-  const [mirrorPlaylistId, setMirrorPlaylistId] = useState('')
+  const [groupPlaylistId, setGroupPlaylistId] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -75,7 +75,7 @@ export default function DisplayGroupsManager() {
   useEffect(() => {
     if (!selectedGroup) {
       setDraftSlots({})
-      setMirrorPlaylistId('')
+      setGroupPlaylistId('')
       return
     }
     const next: Record<string, string> = {}
@@ -83,7 +83,7 @@ export default function DisplayGroupsManager() {
       next[`${member.row_index}:${member.column_index}`] = member.display_id
     })
     setDraftSlots(next)
-    setMirrorPlaylistId(groupPublications.find((publication) => publication.group_id === selectedGroup.id && publication.is_active)?.playlist_id || '')
+    setGroupPlaylistId(groupPublications.find((publication) => publication.group_id === selectedGroup.id && publication.is_active)?.playlist_id || '')
   }, [selectedGroup, members, groupPublications])
 
   const activeDisplays = useMemo(() => displays.filter((display) => display.is_active && !display.revoked_at), [displays])
@@ -152,28 +152,30 @@ export default function DisplayGroupsManager() {
     }
   }
 
-  async function saveMirrorPlaylist() {
-    if (!profile || !selectedGroup || selectedGroup.mode !== 'mirror' || !canManage) return
+  async function saveGroupPlaylist() {
+    if (!profile || !selectedGroup || !['mirror', 'video_wall'].includes(selectedGroup.mode) || !canManage) return
     setBusy(true)
     setMessage('')
     try {
       const { error: deleteError } = await supabase.from('display_group_publications').delete().eq('group_id', selectedGroup.id)
       if (deleteError) throw deleteError
 
-      if (mirrorPlaylistId) {
+      if (groupPlaylistId) {
         const { error: insertError } = await supabase.from('display_group_publications').insert({
           company_id: profile.company_id,
           group_id: selectedGroup.id,
-          playlist_id: mirrorPlaylistId,
+          playlist_id: groupPlaylistId,
           is_active: true,
         })
         if (insertError) throw insertError
       }
 
       await load()
-      setMessage(mirrorPlaylistId ? 'Playlist de espelhamento salva. Todos os membros do grupo usarão essa programação.' : 'Espelhamento sem playlist ativa.')
+      if (!groupPlaylistId) setMessage('Grupo sem playlist ativa.')
+      else if (selectedGroup.mode === 'video_wall') setMessage('Playlist do Video Wall salva. Todas as TVs usarão a mesma composição.')
+      else setMessage('Playlist de espelhamento salva. Todos os membros do grupo usarão essa programação.')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Não foi possível salvar a playlist de espelhamento.')
+      setMessage(error instanceof Error ? error.message : 'Não foi possível salvar a playlist do grupo.')
     } finally {
       setBusy(false)
     }
@@ -215,16 +217,20 @@ export default function DisplayGroupsManager() {
         <section className="display-group-editor">
           <div className="section-heading"><div><p className="eyebrow">Posicionamento</p><h3>{selectedGroup.name}</h3><p>{modeLabels[selectedGroup.mode]} · grade {selectedGroup.rows}×{selectedGroup.columns}</p></div>{canManage && <button className="primary-button compact" type="button" onClick={() => void saveLayout()} disabled={busy}>Salvar posições</button>}</div>
 
-          {selectedGroup.mode === 'mirror' && (
+          {(selectedGroup.mode === 'mirror' || selectedGroup.mode === 'video_wall') && (
             <div className="display-group-mirror-config">
-              <div><p className="eyebrow">Conteúdo espelhado</p><h4>Playlist do grupo</h4><p>Todos os displays deste grupo passam a carregar a mesma playlist enquanto o modo Espelhamento estiver ativo.</p></div>
+              <div>
+                <p className="eyebrow">{selectedGroup.mode === 'video_wall' ? 'Conteúdo do Video Wall' : 'Conteúdo espelhado'}</p>
+                <h4>Playlist do grupo</h4>
+                <p>{selectedGroup.mode === 'video_wall' ? 'Todos os displays carregam a mesma playlist; cada TV exibe apenas sua região da superfície virtual.' : 'Todos os displays deste grupo passam a carregar a mesma playlist enquanto o modo Espelhamento estiver ativo.'}</p>
+              </div>
               <label>Playlist
-                <select value={mirrorPlaylistId} onChange={(event) => setMirrorPlaylistId(event.target.value)} disabled={!canManage}>
+                <select value={groupPlaylistId} onChange={(event) => setGroupPlaylistId(event.target.value)} disabled={!canManage}>
                   <option value="">Nenhuma playlist</option>
                   {playlists.map((playlist) => <option key={playlist.id} value={playlist.id}>{playlist.name}</option>)}
                 </select>
               </label>
-              {canManage && <button className="primary-button compact" type="button" onClick={() => void saveMirrorPlaylist()} disabled={busy}>Salvar espelhamento</button>}
+              {canManage && <button className="primary-button compact" type="button" onClick={() => void saveGroupPlaylist()} disabled={busy}>Salvar playlist</button>}
             </div>
           )}
 
