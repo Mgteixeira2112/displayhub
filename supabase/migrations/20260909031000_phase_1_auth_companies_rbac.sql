@@ -1,6 +1,6 @@
 create schema if not exists private;
 revoke all on schema private from public;
-grant usage on schema private to authenticated;
+grant usage on schema private to authenticated, supabase_auth_admin;
 
 create table public.companies (
   id uuid primary key default gen_random_uuid(),
@@ -30,7 +30,7 @@ create table public.profiles (
   constraint profiles_unit_company_fk
     foreign key (unit_id, company_id)
     references public.units(id, company_id)
-    on delete set null
+    on delete set null (unit_id)
 );
 
 create or replace function private.set_updated_at()
@@ -46,6 +46,7 @@ end;
 $$;
 
 revoke all on function private.set_updated_at() from public;
+grant execute on function private.set_updated_at() to authenticated;
 
 create trigger companies_set_updated_at
 before update on public.companies
@@ -127,6 +128,7 @@ $$;
 revoke all on function private.handle_new_user() from public;
 revoke all on function private.handle_new_user() from anon;
 revoke all on function private.handle_new_user() from authenticated;
+grant execute on function private.handle_new_user() to supabase_auth_admin;
 
 create trigger on_auth_user_created
   after insert on auth.users
@@ -212,6 +214,14 @@ with check (
   and role in ('admin', 'manager', 'operator')
 );
 
-grant select, update on public.companies to authenticated;
-grant select, insert, update, delete on public.units to authenticated;
-grant select, update on public.profiles to authenticated;
+revoke all on public.companies, public.units, public.profiles from anon, authenticated;
+
+grant select on public.companies to authenticated;
+grant update (name) on public.companies to authenticated;
+
+grant select, delete on public.units to authenticated;
+grant insert (company_id, name) on public.units to authenticated;
+grant update (name) on public.units to authenticated;
+
+grant select on public.profiles to authenticated;
+grant update (role, unit_id, full_name) on public.profiles to authenticated;
