@@ -34,30 +34,39 @@ Deno.serve(async (req: Request) => {
     if (playlist_id != null || item_id != null) {
       if (typeof playlist_id !== 'string' || typeof item_id !== 'string') return json({ error: 'invalid_state' }, 400)
 
-      const { data: relation, error: relationError } = await db
+      const { data: item, error: itemError } = await db
+        .from('playlist_items')
+        .select('id,playlist_id,company_id')
+        .eq('id', item_id)
+        .eq('playlist_id', playlist_id)
+        .eq('company_id', display.company_id)
+        .maybeSingle()
+      if (itemError) throw itemError
+      if (!item) return json({ error: 'invalid_state' }, 400)
+
+      const { data: publication, error: publicationError } = await db
         .from('display_publications')
-        .select('playlist_id,playlists!inner(id,is_active,playlist_items!inner(id))')
+        .select('id')
         .eq('display_id', display.id)
         .eq('company_id', display.company_id)
         .eq('playlist_id', playlist_id)
         .eq('is_active', true)
-        .eq('playlists.is_active', true)
-        .eq('playlists.playlist_items.id', item_id)
         .maybeSingle()
+      if (publicationError) throw publicationError
+      if (!publication) return json({ error: 'invalid_state' }, 400)
 
-      if (relationError) throw relationError
-      if (!relation) return json({ error: 'invalid_state' }, 400)
       validPlaylistId = playlist_id
       validItemId = item_id
     }
 
+    const now = new Date().toISOString()
     const { error: updateError } = await db
       .from('displays')
       .update({
-        last_seen_at: new Date().toISOString(),
+        last_seen_at: now,
         active_playlist_id: validPlaylistId,
         active_item_id: validItemId,
-        active_state_at: new Date().toISOString(),
+        active_state_at: now,
       })
       .eq('id', display.id)
       .eq('company_id', display.company_id)
