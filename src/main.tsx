@@ -6,6 +6,7 @@ import './styles.css'
 import './structured.css'
 import './playlists.css'
 import './templates.css'
+import './monitoring.css'
 import './player.css'
 
 function getPublicToken() {
