@@ -25,7 +25,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Generate lockfile during bootstrap
         run: npm install --package-lock-only --ignore-scripts
@@ -35,9 +34,6 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          VITE_SUPABASE_URL: https://meqeluddtwthqmrtbhbr.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_yjnvIPUmi8-Kt7yTFibw3w_DQlawViE
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
