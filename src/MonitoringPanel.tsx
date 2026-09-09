@@ -112,7 +112,7 @@ export default function MonitoringPanel({ companyId }: Props) {
       </div>
 
       <div className="history-block">
-        <h3>Histórico recente</h3>
+        <h3>Histórico de alterações</h3>
         {events.length === 0 && <p className="empty-state">Nenhum evento registrado ainda. Novas alterações passam a aparecer aqui.</p>}
         <div className="history-list">
           {events.map((event) => <article key={event.id}><div><strong>{eventLabels[event.event_type] || event.event_type}</strong><span>{displayNames[event.display_id] || 'Display'}{event.playlist_id ? ` · ${playlistNames[event.playlist_id] || 'Playlist'}` : ''}</span></div><time>{new Date(event.created_at).toLocaleString('pt-BR')}</time></article>)}
