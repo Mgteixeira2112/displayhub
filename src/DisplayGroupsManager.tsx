@@ -31,6 +31,8 @@ export default function DisplayGroupsManager() {
   const [virtualHeight, setVirtualHeight] = useState('')
   const [draftSlots, setDraftSlots] = useState<Record<string, string>>({})
   const [groupPlaylistId, setGroupPlaylistId] = useState('')
+  const [draftDirty, setDraftDirty] = useState(false)
+  const [playlistDirty, setPlaylistDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -70,12 +72,25 @@ export default function DisplayGroupsManager() {
   }, [load])
 
   useEffect(() => {
-    if (!selectedGroup) { setDraftSlots({}); setGroupPlaylistId(''); return }
-    const next: Record<string, string> = {}
-    members.filter((member) => member.group_id === selectedGroup.id).forEach((member) => { next[`${member.row_index}:${member.column_index}`] = member.display_id })
-    setDraftSlots(next)
-    setGroupPlaylistId(groupPublications.find((publication) => publication.group_id === selectedGroup.id && publication.is_active)?.playlist_id || '')
-  }, [selectedGroup, members, groupPublications])
+    setDraftDirty(false)
+    setPlaylistDirty(false)
+  }, [selectedGroupId])
+
+  useEffect(() => {
+    if (!selectedGroup) {
+      if (!draftDirty) setDraftSlots({})
+      if (!playlistDirty) setGroupPlaylistId('')
+      return
+    }
+    if (!draftDirty) {
+      const next: Record<string, string> = {}
+      members.filter((member) => member.group_id === selectedGroup.id).forEach((member) => { next[`${member.row_index}:${member.column_index}`] = member.display_id })
+      setDraftSlots(next)
+    }
+    if (!playlistDirty) {
+      setGroupPlaylistId(groupPublications.find((publication) => publication.group_id === selectedGroup.id && publication.is_active)?.playlist_id || '')
+    }
+  }, [selectedGroup, members, groupPublications, draftDirty, playlistDirty])
 
   const activeDisplays = useMemo(() => displays.filter((display) => display.is_active && !display.revoked_at), [displays])
   const selectedLaunch = selectedGroup ? launches.find((launch) => launch.group_id === selectedGroup.id) || null : null
@@ -104,7 +119,7 @@ export default function DisplayGroupsManager() {
         const rowsToInsert = selected.map(([slot, displayId], index) => { const [rowIndex, columnIndex] = slot.split(':').map(Number); return { company_id: profile.company_id, group_id: selectedGroup.id, display_id: displayId, row_index: rowIndex, column_index: columnIndex, order_index: index } })
         const { error } = await supabase.from('display_group_members').insert(rowsToInsert); if (error) throw error
       }
-      await load(); setMessage('Posicionamento salvo com sucesso.')
+      await load(); setDraftDirty(false); setMessage('Posicionamento salvo com sucesso.')
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível salvar o posicionamento.') } finally { setBusy(false) }
   }
 
@@ -114,7 +129,7 @@ export default function DisplayGroupsManager() {
     try {
       const { error: deleteError } = await supabase.from('display_group_publications').delete().eq('group_id', selectedGroup.id); if (deleteError) throw deleteError
       if (groupPlaylistId) { const { error } = await supabase.from('display_group_publications').insert({ company_id: profile.company_id, group_id: selectedGroup.id, playlist_id: groupPlaylistId, is_active: true }); if (error) throw error }
-      await load(); setMessage(groupPlaylistId ? 'Playlist do grupo salva.' : 'Grupo sem playlist ativa.')
+      await load(); setPlaylistDirty(false); setMessage(groupPlaylistId ? 'Playlist do grupo salva.' : 'Grupo sem playlist ativa.')
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível salvar a playlist do grupo.') } finally { setBusy(false) }
   }
 
@@ -150,9 +165,9 @@ export default function DisplayGroupsManager() {
     <div className="display-group-list">{groups.length === 0 && <p className="empty-state">Nenhum grupo cadastrado.</p>}{groups.map((group) => { const count = members.filter((member) => member.group_id === group.id).length; return <button key={group.id} type="button" className={`display-group-card ${selectedGroupId === group.id ? 'selected' : ''}`} onClick={() => setSelectedGroupId(group.id)}><strong>{group.name}</strong><span>{modeLabels[group.mode]} · {group.rows}×{group.columns}</span><small>{count} TV{count === 1 ? '' : 's'} posicionada{count === 1 ? '' : 's'}</small></button> })}</div>
     {selectedGroup && <section className="display-group-editor">
       <div className="section-heading"><div><p className="eyebrow">Posicionamento</p><h3>{selectedGroup.name}</h3><p>{modeLabels[selectedGroup.mode]} · grade {selectedGroup.rows}×{selectedGroup.columns}</p></div>{canManage && <button className="primary-button compact" type="button" onClick={() => void saveLayout()} disabled={busy}>Salvar posições</button>}</div>
-      {(selectedGroup.mode === 'mirror' || selectedGroup.mode === 'video_wall') && <div className="display-group-mirror-config"><div><p className="eyebrow">{selectedGroup.mode === 'video_wall' ? 'Conteúdo do Video Wall' : 'Conteúdo espelhado'}</p><h4>Playlist do grupo</h4><p>Todos os displays carregam a mesma playlist; no Video Wall cada TV exibe sua região.</p></div><label>Playlist<select value={groupPlaylistId} onChange={(event) => setGroupPlaylistId(event.target.value)} disabled={!canManage}><option value="">Nenhuma playlist</option>{playlists.map((playlist) => <option key={playlist.id} value={playlist.id}>{playlist.name}</option>)}</select></label>{canManage && <button className="primary-button compact" type="button" onClick={() => void saveGroupPlaylist()} disabled={busy}>Salvar playlist</button>}</div>}
+      {(selectedGroup.mode === 'mirror' || selectedGroup.mode === 'video_wall') && <div className="display-group-mirror-config"><div><p className="eyebrow">{selectedGroup.mode === 'video_wall' ? 'Conteúdo do Video Wall' : 'Conteúdo espelhado'}</p><h4>Playlist do grupo</h4><p>Todos os displays carregam a mesma playlist; no Video Wall cada TV exibe sua região.</p></div><label>Playlist<select value={groupPlaylistId} onChange={(event) => { setGroupPlaylistId(event.target.value); setPlaylistDirty(true) }} disabled={!canManage}><option value="">Nenhuma playlist</option>{playlists.map((playlist) => <option key={playlist.id} value={playlist.id}>{playlist.name}</option>)}</select></label>{canManage && <button className="primary-button compact" type="button" onClick={() => void saveGroupPlaylist()} disabled={busy}>Salvar playlist</button>}</div>}
       {selectedGroup.mode === 'video_wall' && <div className="display-group-mirror-config"><div><p className="eyebrow">Teste sincronizado</p><h4>PRELOAD → READY → START</h4><p>Prontas: <strong>{selectedReady.length}/{selectedMemberIds.length}</strong>{selectedLaunch ? ` · ${selectedLaunch.status}` : ''}</p></div>{canManage && <button className="secondary-button compact" type="button" onClick={() => void prepareVideoWall()} disabled={busy || !groupPlaylistId || selectedMemberIds.length === 0}>Preparar telas</button>}{canManage && <button className="primary-button compact" type="button" onClick={() => void startVideoWall()} disabled={busy || !selectedLaunch || selectedReady.length !== selectedMemberIds.length}>Iniciar sincronizado</button>}</div>}
-      <div className="display-wall-grid" style={{ gridTemplateColumns: `repeat(${selectedGroup.columns}, minmax(150px, 1fr))` }}>{Array.from({ length: selectedGroup.rows * selectedGroup.columns }).map((_, index) => { const rowIndex = Math.floor(index / selectedGroup.columns); const columnIndex = index % selectedGroup.columns; const slot = `${rowIndex}:${columnIndex}`; const displayId = draftSlots[slot] || ''; const ready = selectedReady.some((row) => row.display_id === displayId); return <label className="display-wall-slot" key={slot}><span>TV {index + 1} {selectedLaunch && displayId ? (ready ? '· READY' : '· aguardando') : ''}</span><small>Linha {rowIndex + 1} · Coluna {columnIndex + 1}</small><select value={displayId} onChange={(event) => setDraftSlots((current) => ({ ...current, [slot]: event.target.value }))} disabled={!canManage}><option value="">Sem display</option>{activeDisplays.map((display) => <option key={display.id} value={display.id}>{display.name}{display.location ? ` · ${display.location}` : ''}</option>)}</select></label> })}</div>
+      <div className="display-wall-grid" style={{ gridTemplateColumns: `repeat(${selectedGroup.columns}, minmax(150px, 1fr))` }}>{Array.from({ length: selectedGroup.rows * selectedGroup.columns }).map((_, index) => { const rowIndex = Math.floor(index / selectedGroup.columns); const columnIndex = index % selectedGroup.columns; const slot = `${rowIndex}:${columnIndex}`; const displayId = draftSlots[slot] || ''; const ready = selectedReady.some((row) => row.display_id === displayId); return <label className="display-wall-slot" key={slot}><span>TV {index + 1} {selectedLaunch && displayId ? (ready ? '· READY' : '· aguardando') : ''}</span><small>Linha {rowIndex + 1} · Coluna {columnIndex + 1}</small><select value={displayId} onChange={(event) => { setDraftSlots((current) => ({ ...current, [slot]: event.target.value })); setDraftDirty(true) }} disabled={!canManage}><option value="">Sem display</option>{activeDisplays.map((display) => <option key={display.id} value={display.id}>{display.name}{display.location ? ` · ${display.location}` : ''}</option>)}</select></label> })}</div>
     </section>}
   </section>
 }
