@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DisplayHub</title>
+    <script>
+      (function () {
+        var base = '/displayhub/'
+        var path = window.location.pathname.indexOf(base) === 0
+          ? window.location.pathname.slice(base.length)
+          : ''
+        window.location.replace(base + '?p=' + encodeURIComponent(path))
+      })()
+    </script>
+  </head>
+  <body></body>
+</html>
