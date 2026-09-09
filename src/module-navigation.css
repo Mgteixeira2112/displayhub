@@ -19,10 +19,10 @@
   border-top: 0;
 }
 
-.module-playlists .publication-form,
+.module-playlists .schedule-create-panel,
 .module-playlists .publication-list { display: none; }
 
-.module-schedule .playlist-create-grid,
+.module-schedule .playlist-create-panel,
 .module-schedule .playlist-list { display: none; }
 
 .module-schedule .playlist-workspace > .section-heading > div::after {
