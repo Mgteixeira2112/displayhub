@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { publicSupabase } from './lib/supabase'
 import YouTubeSyncPlayer, { type YouTubeController } from './YouTubeSyncPlayer'
+import HlsSyncPlayer, { type HlsMediaSample } from './HlsSyncPlayer'
 
 type Display = { id: string; name: string; location: string | null; orientation: string; resolution_width: number; resolution_height: number }
 type Template = { name: string; template_type: string }
@@ -76,6 +77,10 @@ export default function PublicPlayer({ token }: { token: string }) {
 
   const handleYouTubeBuffering = useCallback((buffering: boolean) => {
     youtubeBuffering.current = buffering
+  }, [])
+
+  const handleHlsSample = useCallback((sample: HlsMediaSample | null) => {
+    providerTelemetry.current = sample
   }, [])
 
   const loadProgram = useCallback(async () => {
@@ -166,7 +171,7 @@ export default function PublicPlayer({ token }: { token: string }) {
 
   useEffect(() => {
     if (!syncSession || !item || item.content?.type !== 'youtube' || !items.length) {
-      providerTelemetry.current = null
+      if (item?.content?.type !== 'hls') providerTelemetry.current = null
       return
     }
 
@@ -198,6 +203,13 @@ export default function PublicPlayer({ token }: { token: string }) {
     const timer = window.setInterval(sampleAndCorrect, 2000)
     return () => window.clearInterval(timer)
   }, [effectiveIndex, item?.id, item?.content?.type, items, syncSession])
+
+  const getExpectedMediaSeconds = useCallback(() => {
+    if (!syncSession || !items.length) return null
+    const expected = resolveSyncCursor(items, syncSession)
+    if (!expected || expected.index !== effectiveIndex) return null
+    return expected.offsetSeconds
+  }, [effectiveIndex, items, syncSession])
 
   useEffect(() => {
     if (!program || invalid) return
@@ -259,6 +271,8 @@ export default function PublicPlayer({ token }: { token: string }) {
       syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id}
       onYouTubeController={handleYouTubeController}
       onYouTubeBuffering={handleYouTubeBuffering}
+      getExpectedMediaSeconds={getExpectedMediaSeconds}
+      onHlsSample={handleHlsSample}
     />
   )
   const progressDuration = syncCursor ? Math.max(0.05, syncCursor.remainingMs / 1000) : item.duration_seconds
@@ -290,13 +304,15 @@ function Idle({ display }: { display: Display }) {
   return <main className="public-display"><div className="display-idle-card"><div className="brand-mark">DH</div><p className="eyebrow">DisplayHub</p><h1>{display.name}</h1><p>{display.location || 'Local não informado'}</p><strong>Nenhuma programação ativa neste horário</strong></div></main>
 }
 
-function ItemView({ item, display, startSeconds, syncKey, onYouTubeController, onYouTubeBuffering }: {
+function ItemView({ item, display, startSeconds, syncKey, onYouTubeController, onYouTubeBuffering, getExpectedMediaSeconds, onHlsSample }: {
   item: Item
   display: Display
   startSeconds: number
   syncKey: string
   onYouTubeController: (controller: YouTubeController | null) => void
   onYouTubeBuffering: (buffering: boolean) => void
+  getExpectedMediaSeconds: () => number | null
+  onHlsSample: (sample: HlsMediaSample | null) => void
 }) {
   if (item.content?.type === 'image' && item.content.signed_url) {
     return item.template?.template_type === 'split_screen'
@@ -314,6 +330,21 @@ function ItemView({ item, display, startSeconds, syncKey, onYouTubeController, o
           syncKey={syncKey}
           onController={onYouTubeController}
           onBufferingChange={onYouTubeBuffering}
+        />
+      </div>
+    )
+  }
+
+  if (item.content?.type === 'hls' && item.content.external_url) {
+    return (
+      <div className="fullscreen-media">
+        <HlsSyncPlayer
+          manifestUrl={item.content.external_url}
+          title={item.content.title}
+          startSeconds={startSeconds}
+          syncKey={syncKey}
+          getExpectedSeconds={getExpectedMediaSeconds}
+          onSample={onHlsSample}
         />
       </div>
     )
