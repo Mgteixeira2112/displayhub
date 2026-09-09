@@ -12,7 +12,8 @@ type Item = { id: string; position: number; duration_seconds: number; template: 
 type Playlist = { id: string; name: string; items: Item[] }
 type Publication = { id: string; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; playlist: Playlist }
 type SyncSession = { id: string; playlist_id: string; playback_state: 'playing' | 'paused' | 'stopped'; started_at: string; paused_position_ms: number; sequence: number }
-type Program = { display: Display; publications: Publication[]; group_mode?: string | null; group_id?: string | null; sync_session?: SyncSession | null }
+type GroupLaunch = { id: string; playlist_id: string; status: 'preparing' | 'armed' | 'started' | 'cancelled'; sequence: number; requested_at: string; start_at: string | null; updated_at: string }
+type Program = { display: Display; publications: Publication[]; group_mode?: string | null; group_id?: string | null; sync_session?: SyncSession | null; group_launch?: GroupLaunch | null }
 type WallContext = { group_id: string; group_name: string; rows: number; columns: number; virtual_width: number | null; virtual_height: number | null; row_index: number; column_index: number }
 type SyncCursor = { index: number; offsetSeconds: number; remainingMs: number; sequence: number }
 type PlaybackAnchor = { key: string; offsetMs: number; startedAt: number }
@@ -32,25 +33,13 @@ function resolveSyncCursor(items: Item[], session: SyncSession): SyncCursor | nu
   const durations = items.map((item) => Math.max(1, item.duration_seconds) * 1000)
   const cycleMs = durations.reduce((sum, duration) => sum + duration, 0)
   if (!cycleMs) return null
-
-  const rawElapsed = session.playback_state === 'paused'
-    ? Number(session.paused_position_ms || 0)
-    : Math.max(0, Date.now() - new Date(session.started_at).getTime())
+  const rawElapsed = session.playback_state === 'paused' ? Number(session.paused_position_ms || 0) : Math.max(0, Date.now() - new Date(session.started_at).getTime())
   let positionMs = rawElapsed % cycleMs
-
   for (let index = 0; index < durations.length; index += 1) {
     const durationMs = durations[index]
-    if (positionMs < durationMs) {
-      return {
-        index,
-        offsetSeconds: positionMs / 1000,
-        remainingMs: Math.max(50, durationMs - positionMs),
-        sequence: session.sequence,
-      }
-    }
+    if (positionMs < durationMs) return { index, offsetSeconds: positionMs / 1000, remainingMs: Math.max(50, durationMs - positionMs), sequence: session.sequence }
     positionMs -= durationMs
   }
-
   return { index: 0, offsetSeconds: 0, remainingMs: durations[0], sequence: session.sequence }
 }
 
@@ -69,19 +58,14 @@ export default function PublicPlayer({ token }: { token: string }) {
   const youtubeController = useRef<YouTubeController | null>(null)
   const youtubeBuffering = useRef(false)
   const providerTelemetry = useRef<ProviderTelemetry | null>(null)
+  const readyKey = useRef('')
 
   const handleYouTubeController = useCallback((controller: YouTubeController | null) => {
     youtubeController.current = controller
     if (!controller) providerTelemetry.current = null
   }, [])
-
-  const handleYouTubeBuffering = useCallback((buffering: boolean) => {
-    youtubeBuffering.current = buffering
-  }, [])
-
-  const handleHlsSample = useCallback((sample: HlsMediaSample | null) => {
-    providerTelemetry.current = sample
-  }, [])
+  const handleYouTubeBuffering = useCallback((buffering: boolean) => { youtubeBuffering.current = buffering }, [])
+  const handleHlsSample = useCallback((sample: HlsMediaSample | null) => { providerTelemetry.current = sample }, [])
 
   const loadProgram = useCallback(async () => {
     const [programRes, wallRes] = await Promise.all([
@@ -104,51 +88,37 @@ export default function PublicPlayer({ token }: { token: string }) {
   useEffect(() => {
     let active = true
     void loadProgram()
-
-    const channel = publicSupabase
-      .channel(`display:${token}`)
+    const channel = publicSupabase.channel(`display:${token}`)
       .on('broadcast', { event: 'display_invalidated' }, () => { if (active) setInvalid(true) })
       .on('broadcast', { event: 'display_program_changed' }, () => { if (active) void loadProgram() })
       .subscribe()
-
-    const scheduleRefresh = window.setInterval(() => { if (active) void loadProgram() }, 60000)
-
-    return () => {
-      active = false
-      window.clearInterval(scheduleRefresh)
-      void publicSupabase.removeChannel(channel)
-    }
+    const timer = window.setInterval(() => { if (active) void loadProgram() }, 2000)
+    return () => { active = false; window.clearInterval(timer); void publicSupabase.removeChannel(channel) }
   }, [token, loadProgram])
 
   const publication = useMemo(() => program?.publications.find((row) => publicationMatches(row)) || null, [program])
   const items = publication?.playlist.items || []
   const syncSession = program?.group_mode === 'video_wall' ? program.sync_session || null : null
+  const launch = program?.group_mode === 'video_wall' ? program.group_launch || null : null
+  const launchHolding = launch?.status === 'preparing'
+  const shouldPlay = !launch || launch.status === 'started' || launch.status === 'armed'
+  const launchStartAt = launch?.status === 'armed' ? launch.start_at : null
 
   useEffect(() => {
-    if (!syncSession || !items.length) {
-      setSyncCursor(null)
-      return
-    }
-
-    const align = () => {
-      const next = resolveSyncCursor(items, syncSession)
-      setSyncCursor(next)
-      return next
-    }
-
+    if (!syncSession || !items.length) { setSyncCursor(null); return }
+    const align = () => { const next = resolveSyncCursor(items, syncSession); setSyncCursor(next); return next }
     const current = align()
     if (!current || syncSession.playback_state !== 'playing') return
-
     let timer = window.setTimeout(function realign() {
       const next = align()
       if (next && syncSession.playback_state === 'playing') timer = window.setTimeout(realign, next.remainingMs)
     }, current.remainingMs)
-
     return () => window.clearTimeout(timer)
   }, [items, syncSession])
 
-  const effectiveIndex = syncCursor ? syncCursor.index : itemIndex
+  const effectiveIndex = launchHolding ? 0 : (syncCursor ? syncCursor.index : itemIndex)
   const item = items.length ? items[effectiveIndex % items.length] : null
+  const offsetSeconds = launchHolding ? 0 : (syncCursor?.offsetSeconds || 0)
 
   useEffect(() => {
     if (syncSession || !item || items.length < 2) return
@@ -157,59 +127,48 @@ export default function PublicPlayer({ token }: { token: string }) {
   }, [item, items.length, syncSession])
 
   useEffect(() => {
-    if (!item) {
-      playbackAnchor.current = null
-      return
-    }
+    if (!item) { playbackAnchor.current = null; return }
     const key = `${syncSession?.sequence || 0}:${item.id}`
-    playbackAnchor.current = {
-      key,
-      offsetMs: Math.max(0, Math.round((syncCursor?.offsetSeconds || 0) * 1000)),
-      startedAt: performance.now(),
-    }
-  }, [item?.id, syncCursor?.sequence, syncCursor?.offsetSeconds, syncSession?.sequence])
+    playbackAnchor.current = { key, offsetMs: Math.max(0, Math.round(offsetSeconds * 1000)), startedAt: performance.now() }
+  }, [item?.id, offsetSeconds, syncSession?.sequence])
+
+  const reportReady = useCallback((provider: string) => {
+    if (!launch || !['preparing', 'armed'].includes(launch.status) || !item) return
+    const key = `${launch.id}:${item.id}:${provider}`
+    if (readyKey.current === key) return
+    readyKey.current = key
+    void publicSupabase.functions.invoke('display-group-ready', { body: { token, launch_id: launch.id, ready: true, provider, detail: `item:${item.id}` } })
+  }, [launch, item, token])
 
   useEffect(() => {
-    if (!syncSession || !item || item.content?.type !== 'youtube' || !items.length) {
+    if (!syncSession || !item || item.content?.type !== 'youtube' || !items.length || launchHolding) {
       if (item?.content?.type !== 'hls') providerTelemetry.current = null
       return
     }
-
     const sampleAndCorrect = () => {
       const controller = youtubeController.current
       const expected = resolveSyncCursor(items, syncSession)
       if (!controller || !expected || expected.index !== effectiveIndex) return
-
       const expectedPositionMs = Math.max(0, Math.round(expected.offsetSeconds * 1000))
       const actualPositionMs = Math.max(0, Math.round(controller.getCurrentTime() * 1000))
       const state = controller.getPlayerState()
       const buffering = youtubeBuffering.current || state === 3
       const driftMs = actualPositionMs - expectedPositionMs
-
-      providerTelemetry.current = {
-        expectedPositionMs,
-        actualPositionMs,
-        buffering,
-        measurementKind: 'media',
-        sampledAt: Date.now(),
-      }
-
-      if (syncSession.playback_state === 'playing' && state === 1 && !buffering && Math.abs(driftMs) > 750) {
-        controller.seekTo(expected.offsetSeconds, true)
-      }
+      providerTelemetry.current = { expectedPositionMs, actualPositionMs, buffering, measurementKind: 'media', sampledAt: Date.now() }
+      if (shouldPlay && syncSession.playback_state === 'playing' && state === 1 && !buffering && Math.abs(driftMs) > 750) controller.seekTo(expected.offsetSeconds, true)
     }
-
     sampleAndCorrect()
     const timer = window.setInterval(sampleAndCorrect, 2000)
     return () => window.clearInterval(timer)
-  }, [effectiveIndex, item?.id, item?.content?.type, items, syncSession])
+  }, [effectiveIndex, item?.id, item?.content?.type, items, syncSession, launchHolding, shouldPlay])
 
   const getExpectedMediaSeconds = useCallback(() => {
+    if (launchHolding) return 0
     if (!syncSession || !items.length) return null
     const expected = resolveSyncCursor(items, syncSession)
     if (!expected || expected.index !== effectiveIndex) return null
     return expected.offsetSeconds
-  }, [effectiveIndex, items, syncSession])
+  }, [effectiveIndex, items, syncSession, launchHolding])
 
   useEffect(() => {
     if (!program || invalid) return
@@ -218,13 +177,9 @@ export default function PublicPlayer({ token }: { token: string }) {
       let actualPositionMs: number | null = null
       let buffering = false
       let measurementKind: 'clock' | 'media' = 'clock'
-
       const mediaSample = providerTelemetry.current
       if (mediaSample && Date.now() - mediaSample.sampledAt <= 5000) {
-        expectedPositionMs = mediaSample.expectedPositionMs
-        actualPositionMs = mediaSample.actualPositionMs
-        buffering = mediaSample.buffering
-        measurementKind = mediaSample.measurementKind
+        expectedPositionMs = mediaSample.expectedPositionMs; actualPositionMs = mediaSample.actualPositionMs; buffering = mediaSample.buffering; measurementKind = mediaSample.measurementKind
       } else if (syncSession && item && items.length) {
         const expected = resolveSyncCursor(items, syncSession)
         if (expected && expected.index === effectiveIndex) {
@@ -236,21 +191,7 @@ export default function PublicPlayer({ token }: { token: string }) {
           }
         }
       }
-
-      void publicSupabase.functions.invoke('display-state', {
-        body: {
-          token,
-          playlist_id: publication?.playlist.id ?? null,
-          item_id: item?.id ?? null,
-          group_id: program.group_id ?? null,
-          session_id: syncSession?.id ?? null,
-          expected_position_ms: expectedPositionMs,
-          actual_position_ms: actualPositionMs,
-          sequence: syncSession?.sequence ?? 0,
-          buffering,
-          measurement_kind: measurementKind,
-        },
-      })
+      void publicSupabase.functions.invoke('display-state', { body: { token, playlist_id: publication?.playlist.id ?? null, item_id: item?.id ?? null, group_id: program.group_id ?? null, session_id: syncSession?.id ?? null, expected_position_ms: expectedPositionMs, actual_position_ms: actualPositionMs, sequence: syncSession?.sequence ?? 0, buffering, measurement_kind: measurementKind } })
     }
     report()
     const timer = window.setInterval(report, 10000)
@@ -262,27 +203,13 @@ export default function PublicPlayer({ token }: { token: string }) {
   if (!program) return <main className="public-display"><div className="display-idle-card"><div className="brand-mark">DH</div><h1>Conectando display...</h1></div></main>
   if (!publication || !item) return <Idle display={program.display} />
 
-  const offsetSeconds = syncCursor?.offsetSeconds || 0
-  const content = (
-    <ItemView
-      item={item}
-      display={program.display}
-      startSeconds={offsetSeconds}
-      syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id}
-      onYouTubeController={handleYouTubeController}
-      onYouTubeBuffering={handleYouTubeBuffering}
-      getExpectedMediaSeconds={getExpectedMediaSeconds}
-      onHlsSample={handleHlsSample}
-    />
-  )
+  const content = <ItemView item={item} display={program.display} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} />
   const progressDuration = syncCursor ? Math.max(0.05, syncCursor.remainingMs / 1000) : item.duration_seconds
 
-  return (
-    <main className={`public-display player-screen player-${item.template?.template_type || 'default'} ${wall ? 'video-wall-screen' : ''}`}>
-      {wall ? <WallViewport wall={wall}>{content}</WallViewport> : content}
-      <div className="player-progress" key={`${item.id}:${syncCursor?.sequence || 0}:${Math.floor(offsetSeconds * 10)}`} style={{ animationDuration: `${progressDuration}s` }} />
-    </main>
-  )
+  return <main className={`public-display player-screen player-${item.template?.template_type || 'default'} ${wall ? 'video-wall-screen' : ''}`}>
+    {wall ? <WallViewport wall={wall}>{content}</WallViewport> : content}
+    {!launchHolding && <div className="player-progress" key={`${item.id}:${syncCursor?.sequence || 0}:${Math.floor(offsetSeconds * 10)}`} style={{ animationDuration: `${progressDuration}s` }} />}
+  </main>
 }
 
 function WallViewport({ wall, children }: { wall: WallContext; children: ReactNode }) {
@@ -290,76 +217,30 @@ function WallViewport({ wall, children }: { wall: WallContext; children: ReactNo
   const height = wall.rows * 100
   const x = -(wall.column_index * (100 / wall.columns))
   const y = -(wall.row_index * (100 / wall.rows))
-
-  return (
-    <div className="wall-viewport" data-wall={wall.group_name}>
-      <div className="wall-surface" style={{ width: `${width}%`, height: `${height}%`, transform: `translate(${x}%, ${y}%)` }}>
-        {children}
-      </div>
-    </div>
-  )
+  return <div className="wall-viewport" data-wall={wall.group_name}><div className="wall-surface" style={{ width: `${width}%`, height: `${height}%`, transform: `translate(${x}%, ${y}%)` }}>{children}</div></div>
 }
 
 function Idle({ display }: { display: Display }) {
   return <main className="public-display"><div className="display-idle-card"><div className="brand-mark">DH</div><p className="eyebrow">DisplayHub</p><h1>{display.name}</h1><p>{display.location || 'Local não informado'}</p><strong>Nenhuma programação ativa neste horário</strong></div></main>
 }
 
-function ItemView({ item, display, startSeconds, syncKey, onYouTubeController, onYouTubeBuffering, getExpectedMediaSeconds, onHlsSample }: {
-  item: Item
-  display: Display
-  startSeconds: number
-  syncKey: string
-  onYouTubeController: (controller: YouTubeController | null) => void
-  onYouTubeBuffering: (buffering: boolean) => void
-  getExpectedMediaSeconds: () => number | null
-  onHlsSample: (sample: HlsMediaSample | null) => void
+function ItemView({ item, display, startSeconds, syncKey, shouldPlay, startAt, onReady, onYouTubeController, onYouTubeBuffering, getExpectedMediaSeconds, onHlsSample }: {
+  item: Item; display: Display; startSeconds: number; syncKey: string; shouldPlay: boolean; startAt: string | null; onReady: (provider: string) => void; onYouTubeController: (controller: YouTubeController | null) => void; onYouTubeBuffering: (buffering: boolean) => void; getExpectedMediaSeconds: () => number | null; onHlsSample: (sample: HlsMediaSample | null) => void
 }) {
+  useEffect(() => {
+    if (item.structured) onReady('structured')
+  }, [item.id, item.structured, onReady])
+
   if (item.content?.type === 'image' && item.content.signed_url) {
-    return item.template?.template_type === 'split_screen'
-      ? <div className="split-layout"><div className="split-media"><img src={item.content.signed_url} alt={item.content.title} /></div><div className="split-copy"><p className="eyebrow">{display.name}</p><h1>{item.content.title}</h1><p>{display.location || 'DisplayHub'}</p></div></div>
-      : <div className="fullscreen-media"><img src={item.content.signed_url} alt={item.content.title} /></div>
+    const image = <img src={item.content.signed_url} alt={item.content.title} onLoad={() => onReady('image')} />
+    return item.template?.template_type === 'split_screen' ? <div className="split-layout"><div className="split-media">{image}</div><div className="split-copy"><p className="eyebrow">{display.name}</p><h1>{item.content.title}</h1><p>{display.location || 'DisplayHub'}</p></div></div> : <div className="fullscreen-media">{image}</div>
   }
-
-  if (item.content?.type === 'youtube' && item.content.external_id) {
-    return (
-      <div className="fullscreen-media">
-        <YouTubeSyncPlayer
-          videoId={item.content.external_id}
-          title={item.content.title}
-          startSeconds={startSeconds}
-          syncKey={syncKey}
-          onController={onYouTubeController}
-          onBufferingChange={onYouTubeBuffering}
-        />
-      </div>
-    )
-  }
-
-  if (item.content?.type === 'hls' && item.content.external_url) {
-    return (
-      <div className="fullscreen-media">
-        <HlsSyncPlayer
-          manifestUrl={item.content.external_url}
-          title={item.content.title}
-          startSeconds={startSeconds}
-          syncKey={syncKey}
-          getExpectedSeconds={getExpectedMediaSeconds}
-          onSample={onHlsSample}
-        />
-      </div>
-    )
-  }
+  if (item.content?.type === 'youtube' && item.content.external_id) return <div className="fullscreen-media"><YouTubeSyncPlayer videoId={item.content.external_id} title={item.content.title} startSeconds={startSeconds} syncKey={syncKey} shouldPlay={shouldPlay} startAt={startAt} onReady={() => onReady('youtube')} onController={onYouTubeController} onBufferingChange={onYouTubeBuffering} /></div>
+  if (item.content?.type === 'hls' && item.content.external_url) return <div className="fullscreen-media"><HlsSyncPlayer manifestUrl={item.content.external_url} title={item.content.title} startSeconds={startSeconds} syncKey={syncKey} shouldPlay={shouldPlay} startAt={startAt} getExpectedSeconds={getExpectedMediaSeconds} onReady={() => onReady('hls')} onSample={onHlsSample} /></div>
 
   const content = item.structured
   if (!content) return <div className="text-template"><h1>Conteúdo indisponível</h1></div>
-
-  if (content.kind === 'menu' || content.kind === 'price_table') {
-    return <div className="menu-template"><header><p className="eyebrow">{display.name}</p><h1>{content.title}</h1>{content.description && <p>{content.description}</p>}</header><div className="menu-rows">{content.rows.map((row) => <div className="menu-row" key={row.id}><div><strong>{row.title}</strong>{row.description && <small>{row.description}</small>}</div><div className="menu-price">{row.promo_price != null && <del>{money(row.price)}</del>}<strong>{money(row.promo_price ?? row.price)}</strong></div></div>)}</div></div>
-  }
-
-  if (content.kind === 'product') {
-    return <div className="product-template"><p className="eyebrow">{content.category || 'Destaque'}</p><h1>{content.title}</h1>{content.description && <p>{content.description}</p>}<div className="hero-price">{content.promo_price != null && <del>{money(content.price)}</del>}<strong>{money(content.promo_price ?? content.price)}</strong></div></div>
-  }
-
+  if (content.kind === 'menu' || content.kind === 'price_table') return <div className="menu-template"><header><p className="eyebrow">{display.name}</p><h1>{content.title}</h1>{content.description && <p>{content.description}</p>}</header><div className="menu-rows">{content.rows.map((row) => <div className="menu-row" key={row.id}><div><strong>{row.title}</strong>{row.description && <small>{row.description}</small>}</div><div className="menu-price">{row.promo_price != null && <del>{money(row.price)}</del>}<strong>{money(row.promo_price ?? row.price)}</strong></div></div>)}</div></div>
+  if (content.kind === 'product') return <div className="product-template"><p className="eyebrow">{content.category || 'Destaque'}</p><h1>{content.title}</h1>{content.description && <p>{content.description}</p>}<div className="hero-price">{content.promo_price != null && <del>{money(content.price)}</del>}<strong>{money(content.promo_price ?? content.price)}</strong></div></div>
   return <div className="text-template"><p className="eyebrow">{content.kind === 'qr' ? 'QR / Link' : 'Aviso'}</p><h1>{content.title}</h1><p>{content.description || content.qr_value || ''}</p></div>
 }
