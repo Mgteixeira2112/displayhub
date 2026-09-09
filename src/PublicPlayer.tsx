@@ -10,6 +10,7 @@ type Item = { id: string; position: number; duration_seconds: number; template: 
 type Playlist = { id: string; name: string; items: Item[] }
 type Publication = { id: string; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; playlist: Playlist }
 type Program = { display: Display; publications: Publication[] }
+type WallContext = { group_id: string; group_name: string; rows: number; columns: number; virtual_width: number | null; virtual_height: number | null; row_index: number; column_index: number }
 
 function publicationMatches(publication: Publication, now = new Date()) {
   if (publication.repeat_mode === 'always') return true
@@ -26,12 +27,17 @@ function money(value: number | null) {
 
 export default function PublicPlayer({ token }: { token: string }) {
   const [program, setProgram] = useState<Program | null>(null)
+  const [wall, setWall] = useState<WallContext | null>(null)
   const [invalid, setInvalid] = useState(false)
   const [itemIndex, setItemIndex] = useState(0)
   const [loadError, setLoadError] = useState(false)
 
   const loadProgram = useCallback(async () => {
-    const { data, error } = await publicSupabase.functions.invoke('display-program', { body: { token } })
+    const [programRes, wallRes] = await Promise.all([
+      publicSupabase.functions.invoke('display-program', { body: { token } }),
+      publicSupabase.functions.invoke('display-wall-context', { body: { token } }),
+    ])
+    const { data, error } = programRes
     if (error || !data?.display) {
       if ((error as { context?: { status?: number } })?.context?.status === 404 || data?.error === 'display_unavailable') setInvalid(true)
       else setLoadError(true)
@@ -40,6 +46,7 @@ export default function PublicPlayer({ token }: { token: string }) {
     setInvalid(false)
     setLoadError(false)
     setProgram(data as Program)
+    setWall((wallRes.data?.wall || null) as WallContext | null)
     setItemIndex(0)
   }, [token])
 
@@ -76,11 +83,7 @@ export default function PublicPlayer({ token }: { token: string }) {
     if (!program || invalid) return
     const report = () => {
       void publicSupabase.functions.invoke('display-state', {
-        body: {
-          token,
-          playlist_id: publication?.playlist.id ?? null,
-          item_id: item?.id ?? null,
-        },
+        body: { token, playlist_id: publication?.playlist.id ?? null, item_id: item?.id ?? null },
       })
     }
     report()
@@ -93,7 +96,28 @@ export default function PublicPlayer({ token }: { token: string }) {
   if (!program) return <main className="public-display"><div className="display-idle-card"><div className="brand-mark">DH</div><h1>Conectando display...</h1></div></main>
   if (!publication || !item) return <Idle display={program.display} />
 
-  return <main className={`public-display player-screen player-${item.template?.template_type || 'default'}`}><ItemView item={item} display={program.display} /><div className="player-progress" key={item.id} style={{ animationDuration: `${item.duration_seconds}s` }} /></main>
+  const content = <ItemView item={item} display={program.display} />
+  return (
+    <main className={`public-display player-screen player-${item.template?.template_type || 'default'} ${wall ? 'video-wall-screen' : ''}`}>
+      {wall ? <WallViewport wall={wall}>{content}</WallViewport> : content}
+      <div className="player-progress" key={item.id} style={{ animationDuration: `${item.duration_seconds}s` }} />
+    </main>
+  )
+}
+
+function WallViewport({ wall, children }: { wall: WallContext; children: React.ReactNode }) {
+  const width = wall.columns * 100
+  const height = wall.rows * 100
+  const x = -(wall.column_index * (100 / wall.columns))
+  const y = -(wall.row_index * (100 / wall.rows))
+
+  return (
+    <div className="wall-viewport" data-wall={wall.group_name}>
+      <div className="wall-surface" style={{ width: `${width}%`, height: `${height}%`, transform: `translate(${x}%, ${y}%)` }}>
+        {children}
+      </div>
+    </div>
+  )
 }
 
 function Idle({ display }: { display: Display }) {
