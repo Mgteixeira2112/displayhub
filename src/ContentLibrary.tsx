@@ -1,5 +1,4 @@
 import ContentLibraryCore from './ContentLibraryCore'
-import MonitoringPanel from './MonitoringPanel'
 import PlaylistManager from './PlaylistManager'
 import StructuredContent from './StructuredContent'
 import TemplateManager from './TemplateManager'
@@ -16,7 +15,6 @@ export default function ContentLibrary(props: Props) {
       <StructuredContent {...props} />
       <TemplateManager {...props} />
       <PlaylistManager {...props} />
-      <MonitoringPanel companyId={props.companyId} />
     </>
   )
 }
