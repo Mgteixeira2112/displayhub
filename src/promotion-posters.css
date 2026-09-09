@@ -11,7 +11,9 @@
 .promotion-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .promotion-preview-panel { display: grid; gap: 12px; justify-items: center; }
 .promotion-preview-panel > span { justify-self: start; color: var(--dh-muted); font-size: .76rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-.promo-poster { position: relative; overflow: hidden; width: min(100%, 430px); aspect-ratio: 4 / 5; border-radius: 22px; isolation: isolate; box-shadow: 0 18px 40px rgba(15,23,42,.16); }
+.promo-poster { position: relative; overflow: hidden; border-radius: 22px; isolation: isolate; box-shadow: 0 18px 40px rgba(15,23,42,.16); }
+.promo-portrait { width: min(100%, 430px); aspect-ratio: 9 / 16; }
+.promo-landscape { width: min(100%, 720px); aspect-ratio: 16 / 9; }
 .promo-poster-shape { position: absolute; inset: 0; z-index: -1; }
 .promo-poster-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 9% 8%; text-align: center; }
 .promo-headline { font-weight: 1000; font-size: clamp(1.05rem, 3vw, 2rem); letter-spacing: -.04em; text-transform: uppercase; line-height: .95; }
@@ -19,6 +21,13 @@
 .promo-price { margin-top: 5%; font-size: clamp(2.8rem, 10vw, 7.3rem); font-weight: 1000; letter-spacing: -.085em; line-height: .82; white-space: nowrap; }
 .promo-unit { margin-top: 4%; font-size: clamp(.8rem, 2vw, 1.25rem); font-weight: 900; text-transform: uppercase; }
 .promo-footer { position: absolute; bottom: 5.5%; right: 7%; font-size: clamp(.75rem, 1.8vw, 1.2rem); font-weight: 900; }
+
+.promo-landscape .promo-poster-content { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); grid-template-rows: auto auto 1fr; align-items: center; gap: 2% 4%; padding: 8% 7%; text-align: left; }
+.promo-landscape .promo-headline { position: static !important; grid-column: 1 / -1; justify-self: start; transform: none; }
+.promo-landscape .promo-product { grid-column: 1; grid-row: 2 / 4; margin: 0; max-width: 100%; font-size: clamp(1.7rem, 4.2vw, 4.5rem); line-height: .92; align-self: center; }
+.promo-landscape .promo-price { grid-column: 2; grid-row: 2; margin: 0; justify-self: center; font-size: clamp(3.6rem, 9vw, 8.5rem); }
+.promo-landscape .promo-unit { grid-column: 2; grid-row: 3; margin: 0; justify-self: center; align-self: start; }
+.promo-landscape .promo-footer { bottom: 5%; right: 5%; }
 
 .promo-theme-hot_red { background: #c8102e; color: #fff; }
 .promo-theme-hot_red .promo-poster-shape::before { content: ''; position: absolute; left: -9%; right: -9%; top: 19%; bottom: 7%; background: #ffe600; border-radius: 49% 44% 35% 51% / 22% 28% 40% 34%; transform: rotate(-4deg); box-shadow: inset 0 0 0 7px rgba(255,255,255,.92); }
@@ -28,6 +37,11 @@
 .promo-theme-hot_red .promo-price,
 .promo-theme-hot_red .promo-unit { color: #b70822; text-shadow: 0 2px 0 rgba(255,255,255,.45); }
 .promo-theme-hot_red .promo-footer { color: #b70822; }
+.promo-theme-hot_red.promo-landscape .promo-poster-shape::before { left: 31%; right: -5%; top: 12%; bottom: 10%; border-radius: 45% 38% 42% 36%; transform: rotate(-3deg); }
+.promo-theme-hot_red.promo-landscape .promo-product { color: #fff; text-shadow: none; }
+.promo-theme-hot_red.promo-landscape .promo-price,
+.promo-theme-hot_red.promo-landscape .promo-unit,
+.promo-theme-hot_red.promo-landscape .promo-footer { color: #b70822; }
 
 .promo-theme-burst_yellow { background: #ffe600; color: #111827; }
 .promo-theme-burst_yellow .promo-poster-shape { background: radial-gradient(circle at 50% 48%, transparent 0 24%, rgba(255,255,255,.38) 24% 25%, transparent 25% 32%), conic-gradient(from 0deg, #ff3b30 0 7deg, transparent 7deg 20deg, #ff3b30 20deg 27deg, transparent 27deg 42deg, #ff3b30 42deg 49deg, transparent 49deg 64deg, #ff3b30 64deg 71deg, transparent 71deg 90deg); opacity: .93; }
@@ -35,6 +49,7 @@
 .promo-theme-burst_yellow .promo-price { color: #e21b2d; text-shadow: 4px 4px 0 #fff; }
 .promo-theme-burst_yellow .promo-product { color: #111827; }
 .promo-theme-burst_yellow .promo-footer { color: #e21b2d; }
+.promo-theme-burst_yellow.promo-landscape .promo-poster-shape { background: radial-gradient(circle at 72% 51%, transparent 0 21%, rgba(255,255,255,.4) 21% 22%, transparent 22% 29%), conic-gradient(from 0deg at 72% 51%, #ff3b30 0 7deg, transparent 7deg 20deg, #ff3b30 20deg 27deg, transparent 27deg 42deg, #ff3b30 42deg 49deg, transparent 49deg 64deg, #ff3b30 64deg 71deg, transparent 71deg 90deg); }
 
 .promo-theme-price_blast { background: #f5efe4; color: #101828; }
 .promo-theme-price_blast .promo-poster-shape::before { content: ''; position: absolute; inset: 3%; background: #fff; border: 10px solid #161616; border-radius: 10px; transform: rotate(-1.2deg); }
@@ -44,15 +59,17 @@
 .promo-theme-price_blast .promo-price { color: #d91e28; font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; -webkit-text-stroke: 2px #111; transform: rotate(-2deg); }
 .promo-theme-price_blast .promo-unit,
 .promo-theme-price_blast .promo-footer { color: #111; }
+.promo-theme-price_blast.promo-landscape .promo-poster-shape::after { left: 39%; right: -4%; bottom: 20%; height: 46%; }
 
 .promotion-saved-heading { margin-top: 8px; }
 .promotion-poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
 .promotion-poster-card { display: grid; gap: 12px; background: var(--dh-panel); border: 1px solid var(--dh-border); border-radius: 20px; padding: 12px; }
 .promotion-poster-card .promo-poster { width: 100%; border-radius: 14px; box-shadow: none; }
+.promotion-poster-card.card-landscape { grid-column: span 2; }
 .promotion-card-actions { display: grid; gap: 5px; }
 .promotion-card-actions > strong { font-size: .96rem; }
 .promotion-card-actions > small { color: var(--dh-muted); }
 .promotion-card-actions > div { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 5px; }
 
-@media (max-width: 900px) { .promotion-editor-grid { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .promo-poster { width: 100%; } .promotion-form, .promotion-preview-panel { padding: 14px; border-radius: 16px; } }
+@media (max-width: 900px) { .promotion-editor-grid { grid-template-columns: 1fr; } .promotion-poster-card.card-landscape { grid-column: span 1; } }
+@media (max-width: 560px) { .promo-poster { width: 100%; } .promotion-form, .promotion-preview-panel { padding: 14px; border-radius: 16px; } .promo-landscape .promo-poster-content { padding: 7% 6%; } }
