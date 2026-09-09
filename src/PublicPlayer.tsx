@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { publicSupabase } from './lib/supabase'
 
 type Display = { id: string; name: string; location: string | null; orientation: string; resolution_width: number; resolution_height: number }
@@ -13,6 +13,7 @@ type SyncSession = { id: string; playlist_id: string; playback_state: 'playing' 
 type Program = { display: Display; publications: Publication[]; group_mode?: string | null; group_id?: string | null; sync_session?: SyncSession | null }
 type WallContext = { group_id: string; group_name: string; rows: number; columns: number; virtual_width: number | null; virtual_height: number | null; row_index: number; column_index: number }
 type SyncCursor = { index: number; offsetSeconds: number; remainingMs: number; sequence: number }
+type PlaybackAnchor = { key: string; offsetMs: number; startedAt: number }
 
 function publicationMatches(publication: Publication, now = new Date()) {
   if (publication.repeat_mode === 'always') return true
@@ -61,6 +62,7 @@ export default function PublicPlayer({ token }: { token: string }) {
   const [itemIndex, setItemIndex] = useState(0)
   const [syncCursor, setSyncCursor] = useState<SyncCursor | null>(null)
   const [loadError, setLoadError] = useState(false)
+  const playbackAnchor = useRef<PlaybackAnchor | null>(null)
 
   const loadProgram = useCallback(async () => {
     const [programRes, wallRes] = await Promise.all([
@@ -136,16 +138,55 @@ export default function PublicPlayer({ token }: { token: string }) {
   }, [item, items.length, syncSession])
 
   useEffect(() => {
+    if (!item) {
+      playbackAnchor.current = null
+      return
+    }
+    const key = `${syncSession?.sequence || 0}:${item.id}`
+    playbackAnchor.current = {
+      key,
+      offsetMs: Math.max(0, Math.round((syncCursor?.offsetSeconds || 0) * 1000)),
+      startedAt: performance.now(),
+    }
+  }, [item?.id, syncCursor?.sequence, syncCursor?.offsetSeconds, syncSession?.sequence])
+
+  useEffect(() => {
     if (!program || invalid) return
     const report = () => {
+      let expectedPositionMs: number | null = null
+      let actualPositionMs: number | null = null
+
+      if (syncSession && item && items.length) {
+        const expected = resolveSyncCursor(items, syncSession)
+        if (expected && expected.index === effectiveIndex) {
+          expectedPositionMs = Math.max(0, Math.round(expected.offsetSeconds * 1000))
+          const anchor = playbackAnchor.current
+          if (anchor?.key === `${syncSession.sequence}:${item.id}`) {
+            const elapsed = syncSession.playback_state === 'playing' ? Math.max(0, performance.now() - anchor.startedAt) : 0
+            actualPositionMs = Math.min(item.duration_seconds * 1000, Math.max(0, Math.round(anchor.offsetMs + elapsed)))
+          }
+        }
+      }
+
       void publicSupabase.functions.invoke('display-state', {
-        body: { token, playlist_id: publication?.playlist.id ?? null, item_id: item?.id ?? null },
+        body: {
+          token,
+          playlist_id: publication?.playlist.id ?? null,
+          item_id: item?.id ?? null,
+          group_id: program.group_id ?? null,
+          session_id: syncSession?.id ?? null,
+          expected_position_ms: expectedPositionMs,
+          actual_position_ms: actualPositionMs,
+          sequence: syncSession?.sequence ?? 0,
+          buffering: false,
+          measurement_kind: 'clock',
+        },
       })
     }
     report()
-    const timer = window.setInterval(report, 30000)
+    const timer = window.setInterval(report, 10000)
     return () => window.clearInterval(timer)
-  }, [token, program, invalid, publication?.playlist.id, item?.id])
+  }, [token, program, invalid, publication?.playlist.id, item?.id, item?.duration_seconds, items, syncSession, effectiveIndex])
 
   if (invalid) return <main className="public-display invalid-display"><div className="brand-mark">DH</div><h1>Display indisponível</h1><p>Este link foi revogado, desativado ou não existe.</p></main>
   if (loadError) return <main className="public-display invalid-display"><div className="brand-mark">DH</div><h1>Falha de conexão</h1><p>O player tentará carregar novamente automaticamente.</p></main>
