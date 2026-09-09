@@ -1,6 +1,7 @@
 import ContentLibraryCore from './ContentLibraryCore'
 import MonitoringPanel from './MonitoringPanel'
 import PlaylistManager from './PlaylistManager'
+import PromotionPosterManager from './PromotionPosterManager'
 import StructuredContent from './StructuredContent'
 import TemplateManager from './TemplateManager'
 
@@ -19,6 +20,10 @@ export default function ContentLibrary(props: Props) {
       <div className="software-module module-library">
         <ContentLibraryCore {...props} />
         <StructuredContent {...props} />
+      </div>
+
+      <div className="software-module module-posters">
+        <PromotionPosterManager {...props} />
       </div>
 
       <div className="software-module module-playlists">
