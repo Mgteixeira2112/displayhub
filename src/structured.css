@@ -1,0 +1,109 @@
+.structured-create-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.inline-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.structured-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.structured-card {
+  display: grid;
+  gap: 13px;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  background: rgba(255,255,255,.035);
+}
+
+.structured-card-header {
+  display: grid;
+  gap: 5px;
+}
+
+.structured-card-header span,
+.structured-rows small,
+.structured-row span,
+.structured-row small {
+  color: #7f8aa6;
+  font-size: .78rem;
+}
+
+.structured-card p {
+  margin: 0;
+  color: #9ca8c4;
+  line-height: 1.45;
+}
+
+.price-line,
+.row-price {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.price-line strong { font-size: 1.25rem; }
+.price-line del,
+.row-price del { color: #7f8aa6; font-size: .82rem; }
+
+.qr-value {
+  padding: 11px;
+  overflow-wrap: anywhere;
+  border-radius: 10px;
+  background: rgba(255,255,255,.05);
+  color: #aab8ff;
+}
+
+.structured-rows {
+  display: grid;
+  gap: 8px;
+}
+
+.structured-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 0;
+  border-top: 1px solid rgba(255,255,255,.07);
+}
+
+.structured-row > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.row-price {
+  align-self: start;
+  white-space: nowrap;
+}
+
+.row-price button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255,91,91,.12);
+  color: #ffb4b4;
+}
+
+@media (max-width: 840px) {
+  .structured-create-grid,
+  .structured-list { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .inline-fields { grid-template-columns: 1fr; }
+  .structured-row { display: grid; }
+}
