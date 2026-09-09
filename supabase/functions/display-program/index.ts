@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
       publications = data || []
     }
 
-    if (!publications.length) return json({ display, publications: [], group_mode: groupPublication?.mode ?? null, group_id: groupPublication?.groupId ?? null, sync_session: null })
+    if (!publications.length) return json({ display, publications: [], group_mode: groupPublication?.mode ?? null, group_id: groupPublication?.groupId ?? null, sync_session: null, group_launch: null })
 
     const playlistIds = [...new Set(publications.map((row) => String(row.playlist_id)))]
     const [{ data: playlists, error: playlistError }, { data: items, error: itemError }] = await Promise.all([
@@ -105,6 +105,9 @@ Deno.serve(async (req: Request) => {
     const syncSession = groupPublication?.mode === 'video_wall'
       ? await getOrCreateSyncSession(db, display.company_id, groupPublication.groupId, String(groupPublication.publication.playlist_id))
       : null
+    const groupLaunch = groupPublication?.mode === 'video_wall'
+      ? await getGroupLaunch(db, display.company_id, groupPublication.groupId, String(groupPublication.publication.playlist_id))
+      : null
 
     return json({
       display,
@@ -112,6 +115,7 @@ Deno.serve(async (req: Request) => {
       group_mode: groupPublication?.mode ?? null,
       group_id: groupPublication?.groupId ?? null,
       sync_session: syncSession,
+      group_launch: groupLaunch,
     })
   } catch (error) {
     console.error(error)
@@ -170,6 +174,18 @@ async function getGroupPublication(db: ReturnType<typeof createClient>, displayI
   }
 
   return null
+}
+
+async function getGroupLaunch(db: ReturnType<typeof createClient>, companyId: string, groupId: string, playlistId: string) {
+  const { data, error } = await db
+    .from('display_group_launches')
+    .select('id,playlist_id,status,sequence,requested_at,start_at,updated_at')
+    .eq('company_id', companyId)
+    .eq('group_id', groupId)
+    .eq('playlist_id', playlistId)
+    .maybeSingle()
+  if (error) throw error
+  return data || null
 }
 
 async function getOrCreateSyncSession(db: ReturnType<typeof createClient>, companyId: string, groupId: string, playlistId: string) {
