@@ -28,20 +28,29 @@ Deno.serve(async (req: Request) => {
     if (displayError) throw displayError
     if (!display) return json({ error: 'display_unavailable' }, 404)
 
-    const now = new Date().toISOString()
-    const { data: publications, error: pubError } = await db
-      .from('display_publications')
-      .select('id,playlist_id,starts_at,ends_at,repeat_mode,daily_start,daily_end,weekdays,created_at')
-      .eq('display_id', display.id)
-      .eq('is_active', true)
-      .or(`starts_at.is.null,starts_at.lte.${now}`)
-      .or(`ends_at.is.null,ends_at.gte.${now}`)
-      .order('created_at', { ascending: false })
+    const mirrorPublication = await getMirrorPublication(db, display.id)
+    let publications: Array<Record<string, unknown>> = []
 
-    if (pubError) throw pubError
-    if (!publications?.length) return json({ display, publications: [] })
+    if (mirrorPublication) {
+      publications = [mirrorPublication]
+    } else {
+      const now = new Date().toISOString()
+      const { data, error: pubError } = await db
+        .from('display_publications')
+        .select('id,playlist_id,starts_at,ends_at,repeat_mode,daily_start,daily_end,weekdays,created_at')
+        .eq('display_id', display.id)
+        .eq('is_active', true)
+        .or(`starts_at.is.null,starts_at.lte.${now}`)
+        .or(`ends_at.is.null,ends_at.gte.${now}`)
+        .order('created_at', { ascending: false })
 
-    const playlistIds = [...new Set(publications.map((row) => row.playlist_id))]
+      if (pubError) throw pubError
+      publications = data || []
+    }
+
+    if (!publications.length) return json({ display, publications: [] })
+
+    const playlistIds = [...new Set(publications.map((row) => String(row.playlist_id)))]
     const [{ data: playlists, error: playlistError }, { data: items, error: itemError }] = await Promise.all([
       db.from('playlists').select('id,name,is_active').in('id', playlistIds).eq('is_active', true),
       db.from('playlist_items').select('id,playlist_id,source_type,content_item_id,structured_content_id,template_id,position,duration_seconds').in('playlist_id', playlistIds).order('position'),
@@ -95,13 +104,61 @@ Deno.serve(async (req: Request) => {
 
     return json({
       display,
-      publications: publications.map((publication) => ({ ...publication, playlist: playlistMap.get(publication.playlist_id) || null })).filter((publication) => publication.playlist),
+      publications: publications.map((publication) => ({ ...publication, playlist: playlistMap.get(String(publication.playlist_id)) || null })).filter((publication) => publication.playlist),
+      group_mode: mirrorPublication ? 'mirror' : null,
     })
   } catch (error) {
     console.error(error)
     return json({ error: 'internal_error' }, 500)
   }
 })
+
+async function getMirrorPublication(db: ReturnType<typeof createClient>, displayId: string) {
+  const { data: memberships, error: memberError } = await db
+    .from('display_group_members')
+    .select('group_id')
+    .eq('display_id', displayId)
+
+  if (memberError) throw memberError
+  if (!memberships?.length) return null
+
+  const groupIds = memberships.map((row) => row.group_id)
+  const { data: groups, error: groupError } = await db
+    .from('display_groups')
+    .select('id,updated_at')
+    .in('id', groupIds)
+    .eq('mode', 'mirror')
+    .eq('is_active', true)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+
+  if (groupError) throw groupError
+  const group = groups?.[0]
+  if (!group) return null
+
+  const { data: publication, error: publicationError } = await db
+    .from('display_group_publications')
+    .select('id,playlist_id,created_at')
+    .eq('group_id', group.id)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (publicationError) throw publicationError
+  if (!publication) return null
+
+  return {
+    id: publication.id,
+    playlist_id: publication.playlist_id,
+    starts_at: null,
+    ends_at: null,
+    repeat_mode: 'always',
+    daily_start: null,
+    daily_end: null,
+    weekdays: [0, 1, 2, 3, 4, 5, 6],
+    created_at: publication.created_at,
+    group_id: group.id,
+  }
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
