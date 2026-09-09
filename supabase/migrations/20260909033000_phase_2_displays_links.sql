@@ -104,7 +104,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  touched boolean;
+  touched_count integer;
 begin
   update public.displays
   set last_seen_at = now()
@@ -112,8 +112,8 @@ begin
     and is_active = true
     and revoked_at is null;
 
-  get diagnostics touched = row_count;
-  return touched;
+  get diagnostics touched_count = row_count;
+  return touched_count > 0;
 end;
 $$;
 
