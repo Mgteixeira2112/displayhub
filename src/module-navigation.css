@@ -12,11 +12,20 @@
 .view-displays .software-dashboard-panel > .workspace-section { display: block; }
 .view-settings .software-dashboard-panel > .account-grid { display: grid; }
 
+.software-module {
+  width: 100%;
+}
+
 .software-module > .workspace-section:first-child,
 .software-module > .operational-overview:first-child {
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
+}
+
+.software-module > .workspace-section + .workspace-section {
+  margin-top: 30px;
+  padding-top: 30px;
 }
 
 .module-playlists .schedule-create-panel,
@@ -31,6 +40,7 @@
   margin-top: 6px;
   color: var(--dh-muted);
   font-size: .84rem;
+  font-weight: 500;
 }
 
 .module-history .overview-heading,
@@ -44,17 +54,78 @@
 
 .module-history .overview-history .history-list article { padding-block: 16px; }
 
+.view-settings .account-grid {
+  gap: 14px;
+}
+
 .view-settings .account-grid::before {
   content: 'Dados da conta';
   grid-column: 1 / -1;
   display: block;
   margin-bottom: 4px;
   color: var(--dh-text);
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.software-nav-item {
+  position: relative;
+  transition: background-color .16s ease, color .16s ease, transform .16s ease;
+}
+
+.software-nav-item:hover {
+  background: rgba(255,255,255,.58);
+  color: var(--dh-text);
+}
+
+.software-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--dh-primary);
+}
+
+.software-topbar-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.software-topbar-copy strong {
+  font-size: 1.02rem;
+  letter-spacing: -.01em;
+}
+
+.software-topbar-copy p {
+  margin: 0;
+  color: var(--dh-muted);
+  font-size: .76rem;
+}
+
+.view-displays .workspace-section:first-of-type,
+.view-library .module-library,
+.view-playlists .module-playlists,
+.view-schedule .module-schedule,
+.view-templates .module-templates,
+.view-history .module-history,
+.view-settings .account-grid {
+  animation: module-in .16s ease-out;
+}
+
+@keyframes module-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 900px) {
   .software-nav-item:not(.active) { display: block; }
   .software-nav { overflow-y: auto; }
+}
+
+@media (max-width: 640px) {
+  .software-topbar-copy p { display: none; }
 }
