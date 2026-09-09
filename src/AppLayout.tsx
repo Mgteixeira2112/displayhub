@@ -22,11 +22,29 @@ const labels: Record<View, string> = {
   settings: 'Configurações',
 }
 
+const descriptions: Record<View, string> = {
+  overview: 'Status da operação e atividade das telas',
+  displays: 'Gerencie telas, links públicos e disponibilidade',
+  library: 'Organize mídias e conteúdo comercial',
+  playlists: 'Monte sequências de conteúdo para exibição',
+  schedule: 'Defina onde e quando cada playlist será exibida',
+  templates: 'Gerencie modelos de apresentação',
+  history: 'Consulte alterações registradas na operação',
+  settings: 'Dados da conta e permissões de acesso',
+}
+
 export default function AppLayout({ companyName, userName, roleLabel, busy, onSignOut, children }: Props) {
   const [view, setView] = useState<View>('overview')
 
   const nav = (target: View, label: string) => (
-    <button type="button" className={`software-nav-item ${view === target ? 'active' : ''}`} onClick={() => setView(target)}>{label}</button>
+    <button
+      type="button"
+      className={`software-nav-item ${view === target ? 'active' : ''}`}
+      aria-current={view === target ? 'page' : undefined}
+      onClick={() => setView(target)}
+    >
+      {label}
+    </button>
   )
 
   return (
@@ -59,7 +77,10 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
 
       <div className={`software-main view-${view}`}>
         <header className="software-topbar">
-          <div><p>DisplayHub</p><strong>{labels[view]}</strong></div>
+          <div className="software-topbar-copy">
+            <strong>{labels[view]}</strong>
+            <p>{descriptions[view]}</p>
+          </div>
           <span>{companyName}</span>
         </header>
         <main className="software-content">{children}</main>
