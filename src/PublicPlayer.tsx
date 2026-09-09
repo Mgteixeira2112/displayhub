@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { publicSupabase } from './lib/supabase'
 
 type Display = { id: string; name: string; location: string | null; orientation: string; resolution_width: number; resolution_height: number }
@@ -9,8 +9,10 @@ type Structured = { kind: string; title: string; category: string | null; descri
 type Item = { id: string; position: number; duration_seconds: number; template: Template | null; content: Content | null; structured: Structured | null }
 type Playlist = { id: string; name: string; items: Item[] }
 type Publication = { id: string; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; playlist: Playlist }
-type Program = { display: Display; publications: Publication[] }
+type SyncSession = { id: string; playlist_id: string; playback_state: 'playing' | 'paused' | 'stopped'; started_at: string; paused_position_ms: number; sequence: number }
+type Program = { display: Display; publications: Publication[]; group_mode?: string | null; group_id?: string | null; sync_session?: SyncSession | null }
 type WallContext = { group_id: string; group_name: string; rows: number; columns: number; virtual_width: number | null; virtual_height: number | null; row_index: number; column_index: number }
+type SyncCursor = { index: number; offsetSeconds: number; remainingMs: number; sequence: number }
 
 function publicationMatches(publication: Publication, now = new Date()) {
   if (publication.repeat_mode === 'always') return true
@@ -19,6 +21,33 @@ function publicationMatches(publication: Publication, now = new Date()) {
   const [sh, sm] = publication.daily_start.split(':').map(Number)
   const [eh, em] = publication.daily_end.split(':').map(Number)
   return current >= sh * 60 + sm && current < eh * 60 + em
+}
+
+function resolveSyncCursor(items: Item[], session: SyncSession): SyncCursor | null {
+  if (!items.length || session.playback_state === 'stopped') return null
+  const durations = items.map((item) => Math.max(1, item.duration_seconds) * 1000)
+  const cycleMs = durations.reduce((sum, duration) => sum + duration, 0)
+  if (!cycleMs) return null
+
+  const rawElapsed = session.playback_state === 'paused'
+    ? Number(session.paused_position_ms || 0)
+    : Math.max(0, Date.now() - new Date(session.started_at).getTime())
+  let positionMs = rawElapsed % cycleMs
+
+  for (let index = 0; index < durations.length; index += 1) {
+    const durationMs = durations[index]
+    if (positionMs < durationMs) {
+      return {
+        index,
+        offsetSeconds: positionMs / 1000,
+        remainingMs: Math.max(50, durationMs - positionMs),
+        sequence: session.sequence,
+      }
+    }
+    positionMs -= durationMs
+  }
+
+  return { index: 0, offsetSeconds: 0, remainingMs: durations[0], sequence: session.sequence }
 }
 
 function money(value: number | null) {
@@ -30,6 +59,7 @@ export default function PublicPlayer({ token }: { token: string }) {
   const [wall, setWall] = useState<WallContext | null>(null)
   const [invalid, setInvalid] = useState(false)
   const [itemIndex, setItemIndex] = useState(0)
+  const [syncCursor, setSyncCursor] = useState<SyncCursor | null>(null)
   const [loadError, setLoadError] = useState(false)
 
   const loadProgram = useCallback(async () => {
@@ -71,13 +101,39 @@ export default function PublicPlayer({ token }: { token: string }) {
 
   const publication = useMemo(() => program?.publications.find((row) => publicationMatches(row)) || null, [program])
   const items = publication?.playlist.items || []
-  const item = items.length ? items[itemIndex % items.length] : null
+  const syncSession = program?.group_mode === 'video_wall' ? program.sync_session || null : null
 
   useEffect(() => {
-    if (!item || items.length < 2) return
+    if (!syncSession || !items.length) {
+      setSyncCursor(null)
+      return
+    }
+
+    const align = () => {
+      const next = resolveSyncCursor(items, syncSession)
+      setSyncCursor(next)
+      return next
+    }
+
+    const current = align()
+    if (!current || syncSession.playback_state !== 'playing') return
+
+    let timer = window.setTimeout(function realign() {
+      const next = align()
+      if (next && syncSession.playback_state === 'playing') timer = window.setTimeout(realign, next.remainingMs)
+    }, current.remainingMs)
+
+    return () => window.clearTimeout(timer)
+  }, [items, syncSession])
+
+  const effectiveIndex = syncCursor ? syncCursor.index : itemIndex
+  const item = items.length ? items[effectiveIndex % items.length] : null
+
+  useEffect(() => {
+    if (syncSession || !item || items.length < 2) return
     const timer = window.setTimeout(() => setItemIndex((value) => (value + 1) % items.length), item.duration_seconds * 1000)
     return () => window.clearTimeout(timer)
-  }, [item, items.length])
+  }, [item, items.length, syncSession])
 
   useEffect(() => {
     if (!program || invalid) return
@@ -96,16 +152,19 @@ export default function PublicPlayer({ token }: { token: string }) {
   if (!program) return <main className="public-display"><div className="display-idle-card"><div className="brand-mark">DH</div><h1>Conectando display...</h1></div></main>
   if (!publication || !item) return <Idle display={program.display} />
 
-  const content = <ItemView item={item} display={program.display} />
+  const offsetSeconds = syncCursor?.offsetSeconds || 0
+  const content = <ItemView item={item} display={program.display} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id} />
+  const progressDuration = syncCursor ? Math.max(0.05, syncCursor.remainingMs / 1000) : item.duration_seconds
+
   return (
     <main className={`public-display player-screen player-${item.template?.template_type || 'default'} ${wall ? 'video-wall-screen' : ''}`}>
       {wall ? <WallViewport wall={wall}>{content}</WallViewport> : content}
-      <div className="player-progress" key={item.id} style={{ animationDuration: `${item.duration_seconds}s` }} />
+      <div className="player-progress" key={`${item.id}:${syncCursor?.sequence || 0}:${Math.floor(offsetSeconds * 10)}`} style={{ animationDuration: `${progressDuration}s` }} />
     </main>
   )
 }
 
-function WallViewport({ wall, children }: { wall: WallContext; children: React.ReactNode }) {
+function WallViewport({ wall, children }: { wall: WallContext; children: ReactNode }) {
   const width = wall.columns * 100
   const height = wall.rows * 100
   const x = -(wall.column_index * (100 / wall.columns))
@@ -124,7 +183,7 @@ function Idle({ display }: { display: Display }) {
   return <main className="public-display"><div className="display-idle-card"><div className="brand-mark">DH</div><p className="eyebrow">DisplayHub</p><h1>{display.name}</h1><p>{display.location || 'Local não informado'}</p><strong>Nenhuma programação ativa neste horário</strong></div></main>
 }
 
-function ItemView({ item, display }: { item: Item; display: Display }) {
+function ItemView({ item, display, startSeconds, syncKey }: { item: Item; display: Display; startSeconds: number; syncKey: string }) {
   if (item.content?.type === 'image' && item.content.signed_url) {
     return item.template?.template_type === 'split_screen'
       ? <div className="split-layout"><div className="split-media"><img src={item.content.signed_url} alt={item.content.title} /></div><div className="split-copy"><p className="eyebrow">{display.name}</p><h1>{item.content.title}</h1><p>{display.location || 'DisplayHub'}</p></div></div>
@@ -132,7 +191,8 @@ function ItemView({ item, display }: { item: Item; display: Display }) {
   }
 
   if (item.content?.type === 'youtube' && item.content.external_id) {
-    return <div className="fullscreen-media"><iframe title={item.content.title} src={`https://www.youtube-nocookie.com/embed/${item.content.external_id}?autoplay=1&mute=1&controls=0&rel=0&playsinline=1`} allow="autoplay; encrypted-media" /></div>
+    const start = Math.max(0, Math.floor(startSeconds))
+    return <div className="fullscreen-media"><iframe key={syncKey} title={item.content.title} src={`https://www.youtube-nocookie.com/embed/${item.content.external_id}?autoplay=1&mute=1&controls=0&rel=0&playsinline=1&start=${start}`} allow="autoplay; encrypted-media" /></div>
   }
 
   const content = item.structured
