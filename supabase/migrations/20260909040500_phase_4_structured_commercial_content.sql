@@ -135,13 +135,13 @@ on public.structured_content_rows
 for insert
 to authenticated
 with check (
-  company_id = private.current_company_id()
+  structured_content_rows.company_id = private.current_company_id()
   and private.current_user_role() in ('admin', 'manager')
   and exists (
     select 1
     from public.structured_contents sc
-    where sc.id = content_id
-      and sc.company_id = company_id
+    where sc.id = structured_content_rows.content_id
+      and sc.company_id = structured_content_rows.company_id
       and sc.kind in ('menu', 'price_table')
   )
 );
@@ -155,13 +155,13 @@ using (
   and private.current_user_role() in ('admin', 'manager')
 )
 with check (
-  company_id = private.current_company_id()
+  structured_content_rows.company_id = private.current_company_id()
   and private.current_user_role() in ('admin', 'manager')
   and exists (
     select 1
     from public.structured_contents sc
-    where sc.id = content_id
-      and sc.company_id = company_id
+    where sc.id = structured_content_rows.content_id
+      and sc.company_id = structured_content_rows.company_id
       and sc.kind in ('menu', 'price_table')
   )
 );
