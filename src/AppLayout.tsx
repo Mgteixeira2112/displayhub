@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import DisplayGroupsManager from './DisplayGroupsManager'
 
-type View = 'overview' | 'displays' | 'groups' | 'library' | 'playlists' | 'schedule' | 'templates' | 'history' | 'settings'
+type View = 'overview' | 'displays' | 'groups' | 'library' | 'posters' | 'playlists' | 'schedule' | 'templates' | 'history' | 'settings'
 
 type Props = {
   companyName: string
@@ -17,6 +17,7 @@ const labels: Record<View, string> = {
   displays: 'Displays',
   groups: 'Grupos de Displays',
   library: 'Biblioteca',
+  posters: 'Cartazes Promocionais',
   playlists: 'Playlists',
   schedule: 'Programação',
   templates: 'Templates',
@@ -29,6 +30,7 @@ const descriptions: Record<View, string> = {
   displays: 'Gerencie telas, links públicos e disponibilidade',
   groups: 'Monte grupos, grades e posições para exibições compartilhadas',
   library: 'Organize mídias e conteúdo comercial',
+  posters: 'Crie cartazes de promoção com produto, preço e fundos prontos',
   playlists: 'Monte sequências de conteúdo para exibição',
   schedule: 'Defina onde e quando cada playlist será exibida',
   templates: 'Gerencie modelos de apresentação',
@@ -65,6 +67,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           {nav('groups', 'Grupos de Displays')}
           <span className="software-nav-group">Conteúdo</span>
           {nav('library', 'Biblioteca')}
+          {nav('posters', 'Cartazes Promocionais')}
           {nav('playlists', 'Playlists')}
           {nav('schedule', 'Programação')}
           {nav('templates', 'Templates')}
