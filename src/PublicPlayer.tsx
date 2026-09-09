@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { publicSupabase } from './lib/supabase'
-import YouTubeSyncPlayer, { type YouTubeController } from './YouTubeSyncPlayer'
+import YouTubeSyncPlayer, { type MediaFit, type YouTubeController } from './YouTubeSyncPlayer'
 import HlsSyncPlayer, { type HlsMediaSample } from './HlsSyncPlayer'
 
 type Display = { id: string; name: string; location: string | null; orientation: string; resolution_width: number; resolution_height: number }
@@ -14,7 +14,7 @@ type Publication = { id: string; repeat_mode: 'always' | 'daily'; daily_start: s
 type SyncSession = { id: string; playlist_id: string; playback_state: 'playing' | 'paused' | 'stopped'; started_at: string; paused_position_ms: number; sequence: number }
 type GroupLaunch = { id: string; playlist_id: string; status: 'preparing' | 'armed' | 'started' | 'cancelled'; sequence: number; requested_at: string; start_at: string | null; updated_at: string }
 type Program = { display: Display; publications: Publication[]; group_mode?: string | null; group_id?: string | null; sync_session?: SyncSession | null; group_launch?: GroupLaunch | null }
-type WallContext = { group_id: string; group_name: string; rows: number; columns: number; virtual_width: number | null; virtual_height: number | null; row_index: number; column_index: number }
+type WallContext = { group_id: string; group_name: string; rows: number; columns: number; virtual_width: number | null; virtual_height: number | null; media_fit: MediaFit; row_index: number; column_index: number }
 type SyncCursor = { index: number; offsetSeconds: number; remainingMs: number; sequence: number }
 type PlaybackAnchor = { key: string; offsetMs: number; startedAt: number }
 type ProviderTelemetry = { expectedPositionMs: number; actualPositionMs: number; buffering: boolean; measurementKind: 'media'; sampledAt: number }
@@ -203,7 +203,8 @@ export default function PublicPlayer({ token }: { token: string }) {
   if (!program) return <main className="public-display"><div className="display-idle-card"><div className="brand-mark">DH</div><h1>Conectando display...</h1></div></main>
   if (!publication || !item) return <Idle display={program.display} />
 
-  const content = <ItemView item={item} display={program.display} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} />
+  const mediaFit = wall?.media_fit || 'cover'
+  const content = <ItemView item={item} display={program.display} mediaFit={mediaFit} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} />
   const progressDuration = syncCursor ? Math.max(0.05, syncCursor.remainingMs / 1000) : item.duration_seconds
 
   return <main className={`public-display player-screen player-${item.template?.template_type || 'default'} ${wall ? 'video-wall-screen' : ''}`}>
@@ -217,26 +218,27 @@ function WallViewport({ wall, children }: { wall: WallContext; children: ReactNo
   const height = wall.rows * 100
   const x = -(wall.column_index * (100 / wall.columns))
   const y = -(wall.row_index * (100 / wall.rows))
-  return <div className="wall-viewport" data-wall={wall.group_name}><div className="wall-surface" style={{ width: `${width}%`, height: `${height}%`, transform: `translate(${x}%, ${y}%)` }}>{children}</div></div>
+  return <div className="wall-viewport" data-wall={wall.group_name}><div className="wall-surface" data-fit={wall.media_fit} style={{ width: `${width}%`, height: `${height}%`, transform: `translate(${x}%, ${y}%)` }}>{children}</div></div>
 }
 
 function Idle({ display }: { display: Display }) {
   return <main className="public-display"><div className="display-idle-card"><div className="brand-mark">DH</div><p className="eyebrow">DisplayHub</p><h1>{display.name}</h1><p>{display.location || 'Local não informado'}</p><strong>Nenhuma programação ativa neste horário</strong></div></main>
 }
 
-function ItemView({ item, display, startSeconds, syncKey, shouldPlay, startAt, onReady, onYouTubeController, onYouTubeBuffering, getExpectedMediaSeconds, onHlsSample }: {
-  item: Item; display: Display; startSeconds: number; syncKey: string; shouldPlay: boolean; startAt: string | null; onReady: (provider: string) => void; onYouTubeController: (controller: YouTubeController | null) => void; onYouTubeBuffering: (buffering: boolean) => void; getExpectedMediaSeconds: () => number | null; onHlsSample: (sample: HlsMediaSample | null) => void
+function ItemView({ item, display, mediaFit, startSeconds, syncKey, shouldPlay, startAt, onReady, onYouTubeController, onYouTubeBuffering, getExpectedMediaSeconds, onHlsSample }: {
+  item: Item; display: Display; mediaFit: MediaFit; startSeconds: number; syncKey: string; shouldPlay: boolean; startAt: string | null; onReady: (provider: string) => void; onYouTubeController: (controller: YouTubeController | null) => void; onYouTubeBuffering: (buffering: boolean) => void; getExpectedMediaSeconds: () => number | null; onHlsSample: (sample: HlsMediaSample | null) => void
 }) {
   useEffect(() => {
     if (item.structured) onReady('structured')
   }, [item.id, item.structured, onReady])
 
   if (item.content?.type === 'image' && item.content.signed_url) {
-    const image = <img src={item.content.signed_url} alt={item.content.title} onLoad={() => onReady('image')} />
+    const objectFit = mediaFit === 'native' ? 'fill' : mediaFit
+    const image = <img src={item.content.signed_url} alt={item.content.title} style={{ objectFit }} onLoad={() => onReady('image')} />
     return item.template?.template_type === 'split_screen' ? <div className="split-layout"><div className="split-media">{image}</div><div className="split-copy"><p className="eyebrow">{display.name}</p><h1>{item.content.title}</h1><p>{display.location || 'DisplayHub'}</p></div></div> : <div className="fullscreen-media">{image}</div>
   }
-  if (item.content?.type === 'youtube' && item.content.external_id) return <div className="fullscreen-media"><YouTubeSyncPlayer videoId={item.content.external_id} title={item.content.title} startSeconds={startSeconds} syncKey={syncKey} shouldPlay={shouldPlay} startAt={startAt} onReady={() => onReady('youtube')} onController={onYouTubeController} onBufferingChange={onYouTubeBuffering} /></div>
-  if (item.content?.type === 'hls' && item.content.external_url) return <div className="fullscreen-media"><HlsSyncPlayer manifestUrl={item.content.external_url} title={item.content.title} startSeconds={startSeconds} syncKey={syncKey} shouldPlay={shouldPlay} startAt={startAt} getExpectedSeconds={getExpectedMediaSeconds} onReady={() => onReady('hls')} onSample={onHlsSample} /></div>
+  if (item.content?.type === 'youtube' && item.content.external_id) return <div className="fullscreen-media"><YouTubeSyncPlayer videoId={item.content.external_id} title={item.content.title} startSeconds={startSeconds} syncKey={syncKey} shouldPlay={shouldPlay} startAt={startAt} fitMode={mediaFit} onReady={() => onReady('youtube')} onController={onYouTubeController} onBufferingChange={onYouTubeBuffering} /></div>
+  if (item.content?.type === 'hls' && item.content.external_url) return <div className="fullscreen-media"><HlsSyncPlayer manifestUrl={item.content.external_url} title={item.content.title} startSeconds={startSeconds} syncKey={syncKey} shouldPlay={shouldPlay} startAt={startAt} fitMode={mediaFit} getExpectedSeconds={getExpectedMediaSeconds} onReady={() => onReady('hls')} onSample={onHlsSample} /></div>
 
   const content = item.structured
   if (!content) return <div className="text-template"><h1>Conteúdo indisponível</h1></div>
