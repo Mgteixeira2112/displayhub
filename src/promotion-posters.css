@@ -11,6 +11,7 @@
 .promotion-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .promotion-preview-panel { display: grid; gap: 12px; justify-items: center; }
 .promotion-preview-panel > span { justify-self: start; color: var(--dh-muted); font-size: .76rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.promotion-drag-hint { justify-self: start; color: var(--dh-muted); line-height: 1.4; }
 .promo-poster { position: relative; overflow: hidden; border-radius: 22px; isolation: isolate; box-shadow: 0 18px 40px rgba(15,23,42,.16); }
 .promo-portrait { width: min(100%, 430px); aspect-ratio: 9 / 16; }
 .promo-landscape { width: min(100%, 720px); aspect-ratio: 16 / 9; }
@@ -60,6 +61,13 @@
 .promo-theme-price_blast .promo-unit,
 .promo-theme-price_blast .promo-footer { color: #111; }
 .promo-theme-price_blast.promo-landscape .promo-poster-shape::after { left: 39%; right: -4%; bottom: 20%; height: 46%; }
+
+.promo-editable .promo-draggable { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.promo-editable .promo-draggable:hover { outline: 2px dashed rgba(15,23,42,.45); outline-offset: 7px; border-radius: 6px; }
+.promo-editable .promo-draggable:active { cursor: grabbing; outline: 2px solid rgba(15,23,42,.65); }
+.promo-custom-position { position: absolute !important; z-index: 3; margin: 0 !important; right: auto !important; bottom: auto !important; max-width: 88%; transform: translate(-50%, -50%) !important; justify-self: auto !important; align-self: auto !important; grid-column: auto !important; grid-row: auto !important; }
+.promo-theme-burst_yellow .promo-custom-position.promo-headline { transform: translate(-50%, -50%) !important; }
+.promo-theme-price_blast .promo-custom-position { transform: translate(-50%, -50%) !important; }
 
 .promotion-saved-heading { margin-top: 8px; }
 .promotion-poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
