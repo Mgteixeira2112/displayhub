@@ -1,5 +1,6 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
+import AppLayout from './AppLayout'
 import ContentLibrary from './ContentLibrary'
 import { publicSupabase, supabase } from './lib/supabase'
 
@@ -288,22 +289,23 @@ function App() {
 
   if (user) {
     const canManage = account?.role === 'admin' || account?.role === 'manager'
+    const companyLabel = account?.companyName || 'Carregando...'
+    const userLabel = account?.fullName || user.email || 'Usuário'
+    const roleLabel = account ? roleLabels[account.role] : '—'
 
     return (
-      <main className="app-shell dashboard-shell">
-        <section className="panel dashboard-panel">
-          <div className="dashboard-header">
-            <div className="brand-row">
-              <div className="brand-mark" aria-hidden="true">DH</div>
-              <div><strong>DisplayHub</strong><span>{account?.companyName || 'Carregando...'}</span></div>
-            </div>
-            <button className="secondary-button compact" type="button" onClick={handleSignOut} disabled={busy}>Sair</button>
-          </div>
-
+      <AppLayout
+        companyName={companyLabel}
+        userName={userLabel}
+        roleLabel={roleLabel}
+        busy={busy}
+        onSignOut={handleSignOut}
+      >
+        <section className="panel dashboard-panel software-dashboard-panel">
           <div className="account-grid">
-            <article><span>Usuário</span><strong>{account?.fullName || user.email}</strong></article>
+            <article><span>Usuário</span><strong>{userLabel}</strong></article>
             <article><span>Unidade</span><strong>{account?.unitName || '—'}</strong></article>
-            <article><span>Permissão</span><strong>{account ? roleLabels[account.role] : '—'}</strong></article>
+            <article><span>Permissão</span><strong>{roleLabel}</strong></article>
           </div>
 
           {canManage && (
@@ -349,7 +351,7 @@ function App() {
 
           {account && <ContentLibrary companyId={account.companyId} role={account.role} />}
         </section>
-      </main>
+      </AppLayout>
     )
   }
 
