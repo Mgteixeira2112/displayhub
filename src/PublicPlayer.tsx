@@ -54,12 +54,10 @@ export default function PublicPlayer({ token }: { token: string }) {
       .on('broadcast', { event: 'display_program_changed' }, () => { if (active) void loadProgram() })
       .subscribe()
 
-    const heartbeat = window.setInterval(() => { if (active && !invalid) void publicSupabase.rpc('heartbeat_display', { p_token: token }) }, 30000)
     const scheduleRefresh = window.setInterval(() => { if (active && !invalid) void loadProgram() }, 60000)
 
     return () => {
       active = false
-      window.clearInterval(heartbeat)
       window.clearInterval(scheduleRefresh)
       void publicSupabase.removeChannel(channel)
     }
@@ -74,6 +72,18 @@ export default function PublicPlayer({ token }: { token: string }) {
     const timer = window.setTimeout(() => setItemIndex((value) => (value + 1) % items.length), item.duration_seconds * 1000)
     return () => window.clearTimeout(timer)
   }, [item, items.length])
+
+  useEffect(() => {
+    if (!program || invalid) return
+    const report = () => void publicSupabase.rpc('report_display_state', {
+      p_token: token,
+      p_playlist_id: publication?.playlist.id ?? null,
+      p_item_id: item?.id ?? null,
+    })
+    report()
+    const heartbeat = window.setInterval(report, 30000)
+    return () => window.clearInterval(heartbeat)
+  }, [token, program, invalid, publication?.playlist.id, item?.id])
 
   if (invalid) return <main className="public-display invalid-display"><div className="brand-mark">DH</div><h1>Display indisponível</h1><p>Este link foi revogado, desativado ou não existe.</p></main>
   if (loadError) return <main className="public-display invalid-display"><div className="brand-mark">DH</div><h1>Falha de conexão</h1><p>O player tentará carregar novamente automaticamente.</p></main>
