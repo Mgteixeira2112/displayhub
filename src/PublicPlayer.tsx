@@ -46,7 +46,11 @@ export default function PublicPlayer({ token }: { token: string }) {
   useEffect(() => {
     let active = true
     void loadProgram()
-    void publicSupabase.rpc('heartbeat_display', { p_token: token })
+
+    const heartbeat = () => {
+      if (active) void publicSupabase.rpc('heartbeat_display', { p_token: token })
+    }
+    heartbeat()
 
     const channel = publicSupabase
       .channel(`display:${token}`)
@@ -54,14 +58,16 @@ export default function PublicPlayer({ token }: { token: string }) {
       .on('broadcast', { event: 'display_program_changed' }, () => { if (active) void loadProgram() })
       .subscribe()
 
-    const scheduleRefresh = window.setInterval(() => { if (active && !invalid) void loadProgram() }, 60000)
+    const heartbeatTimer = window.setInterval(heartbeat, 30000)
+    const scheduleRefresh = window.setInterval(() => { if (active) void loadProgram() }, 60000)
 
     return () => {
       active = false
+      window.clearInterval(heartbeatTimer)
       window.clearInterval(scheduleRefresh)
       void publicSupabase.removeChannel(channel)
     }
-  }, [token, loadProgram, invalid])
+  }, [token, loadProgram])
 
   const publication = useMemo(() => program?.publications.find((row) => publicationMatches(row)) || null, [program])
   const items = publication?.playlist.items || []
@@ -75,14 +81,11 @@ export default function PublicPlayer({ token }: { token: string }) {
 
   useEffect(() => {
     if (!program || invalid) return
-    const report = () => void publicSupabase.rpc('report_display_state', {
+    void publicSupabase.rpc('report_display_state', {
       p_token: token,
       p_playlist_id: publication?.playlist.id ?? null,
       p_item_id: item?.id ?? null,
     })
-    report()
-    const heartbeat = window.setInterval(report, 30000)
-    return () => window.clearInterval(heartbeat)
   }, [token, program, invalid, publication?.playlist.id, item?.id])
 
   if (invalid) return <main className="public-display invalid-display"><div className="brand-mark">DH</div><h1>Display indisponível</h1><p>Este link foi revogado, desativado ou não existe.</p></main>
