@@ -33,8 +33,10 @@ export default function DisplayGroupsManager() {
   const [virtualHeight, setVirtualHeight] = useState('')
   const [draftSlots, setDraftSlots] = useState<Record<string, string>>({})
   const [groupPlaylistId, setGroupPlaylistId] = useState('')
+  const [mediaFitDraft, setMediaFitDraft] = useState<MediaFit>('cover')
   const [draftDirty, setDraftDirty] = useState(false)
   const [playlistDirty, setPlaylistDirty] = useState(false)
+  const [mediaFitDirty, setMediaFitDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -76,12 +78,14 @@ export default function DisplayGroupsManager() {
   useEffect(() => {
     setDraftDirty(false)
     setPlaylistDirty(false)
+    setMediaFitDirty(false)
   }, [selectedGroupId])
 
   useEffect(() => {
     if (!selectedGroup) {
       if (!draftDirty) setDraftSlots({})
       if (!playlistDirty) setGroupPlaylistId('')
+      if (!mediaFitDirty) setMediaFitDraft('cover')
       return
     }
     if (!draftDirty) {
@@ -92,7 +96,8 @@ export default function DisplayGroupsManager() {
     if (!playlistDirty) {
       setGroupPlaylistId(groupPublications.find((publication) => publication.group_id === selectedGroup.id && publication.is_active)?.playlist_id || '')
     }
-  }, [selectedGroup, members, groupPublications, draftDirty, playlistDirty])
+    if (!mediaFitDirty) setMediaFitDraft(selectedGroup.media_fit || 'cover')
+  }, [selectedGroup, members, groupPublications, draftDirty, playlistDirty, mediaFitDirty])
 
   const activeDisplays = useMemo(() => displays.filter((display) => display.is_active && !display.revoked_at), [displays])
   const selectedLaunch = selectedGroup ? launches.find((launch) => launch.group_id === selectedGroup.id) || null : null
@@ -137,12 +142,21 @@ export default function DisplayGroupsManager() {
 
   async function saveMediaFit(mediaFit: MediaFit) {
     if (!selectedGroup || selectedGroup.mode !== 'video_wall' || !canManage) return
+    setMediaFitDraft(mediaFit)
+    setMediaFitDirty(true)
     setBusy(true); setMessage('')
     try {
-      const { error } = await supabase.from('display_groups').update({ media_fit: mediaFit }).eq('id', selectedGroup.id)
+      const { data, error } = await supabase.from('display_groups').update({ media_fit: mediaFit }).eq('id', selectedGroup.id).select('media_fit').single()
       if (error) throw error
-      await load(); setMessage(`Encaixe salvo: ${fitLabels[mediaFit]}.`)
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível salvar o modo de encaixe.') } finally { setBusy(false) }
+      if (data?.media_fit !== mediaFit) throw new Error('O banco não confirmou o modo de encaixe selecionado.')
+      await load()
+      setMediaFitDirty(false)
+      setMessage(`Encaixe salvo: ${fitLabels[mediaFit]}.`)
+    } catch (error) {
+      setMediaFitDraft(selectedGroup.media_fit || 'cover')
+      setMediaFitDirty(false)
+      setMessage(error instanceof Error ? error.message : 'Não foi possível salvar o modo de encaixe.')
+    } finally { setBusy(false) }
   }
 
   async function prepareVideoWall() {
@@ -178,7 +192,7 @@ export default function DisplayGroupsManager() {
     {selectedGroup && <section className="display-group-editor">
       <div className="section-heading"><div><p className="eyebrow">Posicionamento</p><h3>{selectedGroup.name}</h3><p>{modeLabels[selectedGroup.mode]} · grade {selectedGroup.rows}×{selectedGroup.columns}</p></div>{canManage && <button className="primary-button compact" type="button" onClick={() => void saveLayout()} disabled={busy}>Salvar posições</button>}</div>
       {(selectedGroup.mode === 'mirror' || selectedGroup.mode === 'video_wall') && <div className="display-group-mirror-config"><div><p className="eyebrow">{selectedGroup.mode === 'video_wall' ? 'Conteúdo do Video Wall' : 'Conteúdo espelhado'}</p><h4>Playlist do grupo</h4><p>Todos os displays carregam a mesma playlist; no Video Wall cada TV exibe sua região.</p></div><label>Playlist<select value={groupPlaylistId} onChange={(event) => { setGroupPlaylistId(event.target.value); setPlaylistDirty(true) }} disabled={!canManage}><option value="">Nenhuma playlist</option>{playlists.map((playlist) => <option key={playlist.id} value={playlist.id}>{playlist.name}</option>)}</select></label>{canManage && <button className="primary-button compact" type="button" onClick={() => void saveGroupPlaylist()} disabled={busy}>Salvar playlist</button>}</div>}
-      {selectedGroup.mode === 'video_wall' && <div className="display-group-mirror-config"><div><p className="eyebrow">Encaixe da mídia</p><h4>Como o conteúdo ocupa o Video Wall</h4><p><strong>Contain</strong> preserva o vídeo inteiro; <strong>Cover</strong> preenche a superfície com cortes; <strong>Wall nativo</strong> é indicado para conteúdo já preparado na proporção total do grupo.</p></div><label>Encaixe<select value={selectedGroup.media_fit || 'cover'} onChange={(event) => void saveMediaFit(event.target.value as MediaFit)} disabled={!canManage || busy}><option value="contain">Contain · vídeo inteiro</option><option value="cover">Cover · preencher telas</option><option value="native">Wall nativo · conteúdo preparado</option></select></label></div>}
+      {selectedGroup.mode === 'video_wall' && <div className="display-group-mirror-config"><div><p className="eyebrow">Encaixe da mídia</p><h4>Como o conteúdo ocupa o Video Wall</h4><p><strong>Contain</strong> preserva o vídeo inteiro; <strong>Cover</strong> preenche a superfície com cortes; <strong>Wall nativo</strong> é indicado para conteúdo já preparado na proporção total do grupo.</p></div><label>Encaixe<select value={mediaFitDraft} onChange={(event) => void saveMediaFit(event.target.value as MediaFit)} disabled={!canManage || busy}><option value="contain">Contain · vídeo inteiro</option><option value="cover">Cover · preencher telas</option><option value="native">Wall nativo · conteúdo preparado</option></select></label></div>}
       {selectedGroup.mode === 'video_wall' && <div className="display-group-mirror-config"><div><p className="eyebrow">Teste sincronizado</p><h4>PRELOAD → READY → START</h4><p>Prontas: <strong>{selectedReady.length}/{selectedMemberIds.length}</strong>{selectedLaunch ? ` · ${selectedLaunch.status}` : ''}</p></div>{canManage && <button className="secondary-button compact" type="button" onClick={() => void prepareVideoWall()} disabled={busy || !groupPlaylistId || selectedMemberIds.length === 0}>Preparar telas</button>}{canManage && <button className="primary-button compact" type="button" onClick={() => void startVideoWall()} disabled={busy || !selectedLaunch || selectedReady.length !== selectedMemberIds.length}>Iniciar sincronizado</button>}</div>}
       <div className="display-wall-grid" style={{ gridTemplateColumns: `repeat(${selectedGroup.columns}, minmax(150px, 1fr))` }}>{Array.from({ length: selectedGroup.rows * selectedGroup.columns }).map((_, index) => { const rowIndex = Math.floor(index / selectedGroup.columns); const columnIndex = index % selectedGroup.columns; const slot = `${rowIndex}:${columnIndex}`; const displayId = draftSlots[slot] || ''; const ready = selectedReady.some((row) => row.display_id === displayId); return <label className="display-wall-slot" key={slot}><span>TV {index + 1} {selectedLaunch && displayId ? (ready ? '· READY' : '· aguardando') : ''}</span><small>Linha {rowIndex + 1} · Coluna {columnIndex + 1}</small><select value={displayId} onChange={(event) => { setDraftSlots((current) => ({ ...current, [slot]: event.target.value })); setDraftDirty(true) }} disabled={!canManage}><option value="">Sem display</option>{activeDisplays.map((display) => <option key={display.id} value={display.id}>{display.name}{display.location ? ` · ${display.location}` : ''}</option>)}</select></label> })}</div>
     </section>}
