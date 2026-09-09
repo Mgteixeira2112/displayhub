@@ -77,25 +77,39 @@ type Props = {
 
 export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKey, shouldPlay, startAt, onReady, onController, onBufferingChange }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
+  const playerRef = useRef<YouTubeController | null>(null)
+  const startTimerRef = useRef(0)
+  const startSecondsRef = useRef(startSeconds)
+  const shouldPlayRef = useRef(shouldPlay)
+  const startAtRef = useRef(startAt)
+  const onReadyRef = useRef(onReady)
+  const onControllerRef = useRef(onController)
+  const onBufferingChangeRef = useRef(onBufferingChange)
+
+  startSecondsRef.current = startSeconds
+  shouldPlayRef.current = shouldPlay
+  startAtRef.current = startAt
+  onReadyRef.current = onReady
+  onControllerRef.current = onController
+  onBufferingChangeRef.current = onBufferingChange
 
   useEffect(() => {
     let disposed = false
-    let player: YouTubeController | null = null
-    let startTimer = 0
 
     const scheduleStart = (target: YouTubeController) => {
-      window.clearTimeout(startTimer)
-      if (!shouldPlay) {
+      window.clearTimeout(startTimerRef.current)
+      if (!shouldPlayRef.current) {
         target.pauseVideo()
         return
       }
-      const delay = startAt ? Math.max(0, new Date(startAt).getTime() - Date.now()) : 0
+      const targetStartAt = startAtRef.current
+      const delay = targetStartAt ? Math.max(0, new Date(targetStartAt).getTime() - Date.now()) : 0
       if (delay <= 20) {
         target.playVideo()
         return
       }
       target.pauseVideo()
-      startTimer = window.setTimeout(() => {
+      startTimerRef.current = window.setTimeout(() => {
         if (!disposed) target.playVideo()
       }, delay)
     }
@@ -103,7 +117,8 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
     void loadYouTubeIframeApi().then(() => {
       if (disposed || !hostRef.current || !window.YT?.Player) return
 
-      player = new window.YT.Player(hostRef.current, {
+      const initialStartSeconds = Math.max(0, startSecondsRef.current)
+      const player = new window.YT.Player(hostRef.current, {
         videoId,
         playerVars: {
           autoplay: 0,
@@ -112,38 +127,62 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
           playsinline: 1,
           disablekb: 1,
           modestbranding: 1,
-          start: Math.max(0, Math.floor(startSeconds)),
+          start: Math.floor(initialStartSeconds),
           origin: window.location.origin,
         },
         events: {
           onReady: ({ target }) => {
             if (disposed) return
+            playerRef.current = target
             target.mute()
-            target.seekTo(Math.max(0, startSeconds), true)
+            target.seekTo(initialStartSeconds, true)
             target.pauseVideo()
-            onController(target)
-            onReady()
+            onControllerRef.current(target)
+            onReadyRef.current()
             scheduleStart(target)
           },
           onStateChange: ({ data }) => {
             if (disposed) return
-            onBufferingChange(data === 3)
+            onBufferingChangeRef.current(data === 3)
           },
-          onAutoplayBlocked: () => onBufferingChange(true),
+          onAutoplayBlocked: () => onBufferingChangeRef.current(true),
         },
       })
+      playerRef.current = player
     }).catch(() => {
-      if (!disposed) onBufferingChange(true)
+      if (!disposed) onBufferingChangeRef.current(true)
     })
 
     return () => {
       disposed = true
-      window.clearTimeout(startTimer)
-      onController(null)
-      onBufferingChange(false)
-      player?.destroy()
+      window.clearTimeout(startTimerRef.current)
+      startTimerRef.current = 0
+      playerRef.current = null
+      onControllerRef.current(null)
+      onBufferingChangeRef.current(false)
     }
-  }, [videoId, syncKey, startSeconds, shouldPlay, startAt, onReady, onController, onBufferingChange])
+  }, [videoId, syncKey])
+
+  useEffect(() => {
+    const player = playerRef.current
+    if (!player) return
+
+    window.clearTimeout(startTimerRef.current)
+    if (!shouldPlay) {
+      player.pauseVideo()
+      return
+    }
+
+    const delay = startAt ? Math.max(0, new Date(startAt).getTime() - Date.now()) : 0
+    if (delay <= 20) {
+      player.playVideo()
+      return
+    }
+
+    player.pauseVideo()
+    startTimerRef.current = window.setTimeout(() => player.playVideo(), delay)
+    return () => window.clearTimeout(startTimerRef.current)
+  }, [shouldPlay, startAt])
 
   return <div className="youtube-sync-player" role="img" aria-label={title} ref={hostRef} />
 }
