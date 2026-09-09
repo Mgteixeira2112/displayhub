@@ -200,6 +200,7 @@ export default function YouTubeSyncPlayer({ videoId, title, startSeconds, syncKe
     window.clearTimeout(startTimerRef.current)
     if (!shouldPlay) {
       player.pauseVideo()
+      onReadyRef.current()
       return
     }
 
