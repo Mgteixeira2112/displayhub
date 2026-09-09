@@ -17,6 +17,33 @@ const roleLabels: Record<string, string> = {
   operator: 'Operador',
 }
 
+async function loadAccount(userId: string, userEmail: string | undefined): Promise<AccountSummary> {
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('company_id, unit_id, role, full_name')
+    .eq('user_id', userId)
+    .single()
+
+  if (profileError) throw profileError
+
+  const [{ data: company, error: companyError }, { data: unit, error: unitError }] = await Promise.all([
+    supabase.from('companies').select('name').eq('id', profile.company_id).single(),
+    profile.unit_id
+      ? supabase.from('units').select('name').eq('id', profile.unit_id).single()
+      : Promise.resolve({ data: null, error: null }),
+  ])
+
+  if (companyError) throw companyError
+  if (unitError) throw unitError
+
+  return {
+    fullName: profile.full_name || userEmail || 'Usuário',
+    role: roleLabels[profile.role] || profile.role,
+    companyName: company.name,
+    unitName: unit?.name || 'Sem unidade',
+  }
+}
+
 function App() {
   const [mode, setMode] = useState<Mode>('login')
   const [user, setUser] = useState<User | null>(null)
@@ -46,37 +73,10 @@ function App() {
       return
     }
 
-    void loadAccount(user.id)
+    void loadAccount(user.id, user.email)
       .then(setAccount)
       .catch(() => setMessage('Não foi possível carregar os dados da conta.'))
   }, [user])
-
-  async function loadAccount(userId: string): Promise<AccountSummary> {
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('company_id, unit_id, role, full_name')
-      .eq('user_id', userId)
-      .single()
-
-    if (profileError) throw profileError
-
-    const [{ data: company, error: companyError }, { data: unit, error: unitError }] = await Promise.all([
-      supabase.from('companies').select('name').eq('id', profile.company_id).single(),
-      profile.unit_id
-        ? supabase.from('units').select('name').eq('id', profile.unit_id).single()
-        : Promise.resolve({ data: null, error: null }),
-    ])
-
-    if (companyError) throw companyError
-    if (unitError) throw unitError
-
-    return {
-      fullName: profile.full_name || user.email || 'Usuário',
-      role: roleLabels[profile.role] || profile.role,
-      companyName: company.name,
-      unitName: unit?.name || 'Sem unidade',
-    }
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
