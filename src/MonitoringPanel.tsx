@@ -65,7 +65,7 @@ export default function MonitoringPanel({ companyId }: Props) {
       setEvents((eventRes.data || []) as EventRow[])
       setContentNames(names)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível carregar o monitoramento.')
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar a visão geral.')
     } finally {
       setLoading(false)
     }
@@ -84,15 +84,58 @@ export default function MonitoringPanel({ companyId }: Props) {
   })), [items, contentNames])
   const displayNames = useMemo(() => Object.fromEntries(displays.map((row) => [row.id, row.name])), [displays])
 
+  const summary = useMemo(() => {
+    const now = Date.now()
+    let online = 0
+    let offline = 0
+    let revoked = 0
+    let playing = 0
+
+    for (const display of displays) {
+      const isRevoked = !!display.revoked_at || !display.is_active
+      if (isRevoked) {
+        revoked += 1
+        continue
+      }
+      const isOnline = !!display.last_seen_at && now - new Date(display.last_seen_at).getTime() < 90000
+      if (isOnline) online += 1
+      else offline += 1
+      if (display.active_playlist_id) playing += 1
+    }
+
+    return { total: displays.length, online, offline, revoked, playing }
+  }, [displays])
+
   return (
-    <section className="workspace-section monitoring-section">
-      <div className="section-heading">
-        <div><p className="eyebrow">Fase 8</p><h2>Monitoramento</h2></div>
+    <section className="operational-overview">
+      <div className="overview-heading">
+        <div>
+          <p className="eyebrow">Operação em tempo real</p>
+          <h1>Visão Geral</h1>
+          <p>Acompanhe a saúde das telas e o que está sendo exibido agora.</p>
+        </div>
         <button className="secondary-button compact" type="button" onClick={() => void load()} disabled={loading}>{loading ? 'Atualizando...' : 'Atualizar'}</button>
       </div>
+
       {error && <p className="form-message">{error}</p>}
 
+      <div className="overview-stats" aria-label="Resumo dos displays">
+        <article><span>Displays</span><strong>{summary.total}</strong></article>
+        <article className="stat-online"><span>Online</span><strong>{summary.online}</strong></article>
+        <article className="stat-offline"><span>Offline</span><strong>{summary.offline}</strong></article>
+        <article className="stat-revoked"><span>Revogados</span><strong>{summary.revoked}</strong></article>
+        <article><span>Em exibição</span><strong>{summary.playing}</strong></article>
+      </div>
+
+      <div className="overview-section-heading">
+        <div>
+          <p className="eyebrow">Displays</p>
+          <h2>Monitoramento</h2>
+        </div>
+      </div>
+
       <div className="monitor-grid">
+        {displays.length === 0 && <p className="empty-state">Nenhum display cadastrado.</p>}
         {displays.map((display) => {
           const revoked = !!display.revoked_at || !display.is_active
           const online = !revoked && !!display.last_seen_at && Date.now() - new Date(display.last_seen_at).getTime() < 90000
@@ -111,11 +154,16 @@ export default function MonitoringPanel({ companyId }: Props) {
         })}
       </div>
 
-      <div className="history-block">
-        <h3>Histórico de alterações</h3>
+      <div className="history-block overview-history">
+        <div className="overview-section-heading">
+          <div>
+            <p className="eyebrow">Atividade</p>
+            <h2>Histórico recente</h2>
+          </div>
+        </div>
         {events.length === 0 && <p className="empty-state">Nenhum evento registrado ainda. Novas alterações passam a aparecer aqui.</p>}
         <div className="history-list">
-          {events.map((event) => <article key={event.id}><div><strong>{eventLabels[event.event_type] || event.event_type}</strong><span>{displayNames[event.display_id] || 'Display'}{event.playlist_id ? ` · ${playlistNames[event.playlist_id] || 'Playlist'}` : ''}</span></div><time>{new Date(event.created_at).toLocaleString('pt-BR')}</time></article>)}
+          {events.slice(0, 6).map((event) => <article key={event.id}><div><strong>{eventLabels[event.event_type] || event.event_type}</strong><span>{displayNames[event.display_id] || 'Display'}{event.playlist_id ? ` · ${playlistNames[event.playlist_id] || 'Playlist'}` : ''}</span></div><time>{new Date(event.created_at).toLocaleString('pt-BR')}</time></article>)}
         </div>
       </div>
     </section>
