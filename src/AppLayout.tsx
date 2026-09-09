@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
+import DisplayGroupsManager from './DisplayGroupsManager'
 
-type View = 'overview' | 'displays' | 'library' | 'playlists' | 'schedule' | 'templates' | 'history' | 'settings'
+type View = 'overview' | 'displays' | 'groups' | 'library' | 'playlists' | 'schedule' | 'templates' | 'history' | 'settings'
 
 type Props = {
   companyName: string
@@ -14,6 +15,7 @@ type Props = {
 const labels: Record<View, string> = {
   overview: 'Visão Geral',
   displays: 'Displays',
+  groups: 'Grupos de Displays',
   library: 'Biblioteca',
   playlists: 'Playlists',
   schedule: 'Programação',
@@ -25,6 +27,7 @@ const labels: Record<View, string> = {
 const descriptions: Record<View, string> = {
   overview: 'Status da operação e atividade das telas',
   displays: 'Gerencie telas, links públicos e disponibilidade',
+  groups: 'Monte grupos, grades e posições para exibições compartilhadas',
   library: 'Organize mídias e conteúdo comercial',
   playlists: 'Monte sequências de conteúdo para exibição',
   schedule: 'Defina onde e quando cada playlist será exibida',
@@ -59,6 +62,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           {nav('overview', 'Visão Geral')}
           <span className="software-nav-group">Exibição</span>
           {nav('displays', 'Displays')}
+          {nav('groups', 'Grupos de Displays')}
           <span className="software-nav-group">Conteúdo</span>
           {nav('library', 'Biblioteca')}
           {nav('playlists', 'Playlists')}
@@ -83,7 +87,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           </div>
           <span>{companyName}</span>
         </header>
-        <main className="software-content">{children}</main>
+        <main className="software-content">{view === 'groups' ? <DisplayGroupsManager /> : children}</main>
       </div>
     </div>
   )
