@@ -14,6 +14,7 @@ import './ux-actions.css'
 import './display-groups.css'
 import './promotion-posters.css'
 import './promotion-posters-fixes.css'
+import './promotion-animated-backgrounds.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
