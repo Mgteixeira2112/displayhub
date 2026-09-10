@@ -7,67 +7,59 @@
   background: #000;
 }
 
-/* O cartaz continua preservando sua proporção; esta camada existe apenas para
-   preencher a sobra da viewport sem criar faixas laterais. */
+/* O cartaz mantém sempre o seu próprio fundo e a sua própria geometria.
+   Esta camada só aparece nas sobras de viewport fora da proporção do cartaz. */
 .promotion-player::before {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -8%;
   z-index: 0;
   pointer-events: none;
+  transform: scale(1.08);
+  filter: blur(28px) saturate(.92);
+  opacity: .9;
 }
 
 .promotion-player:has(.promo-theme-hot_red) { background: #c8102e; }
 .promotion-player:has(.promo-theme-burst_yellow) { background: #ffe600; }
 .promotion-player:has(.promo-theme-price_blast) { background: #f5efe4; }
 
+/* Nos temas animados, a sobra recebe apenas uma extensão ambiente das cores.
+   As formas (raios, círculos, faixas etc.) continuam existindo somente dentro
+   do cartaz 16:9/9:16, evitando duplicação e distorção visual. */
 .promotion-player:has(.promo-theme-animated_hot) {
-  background: linear-gradient(145deg, #d80d2f 0%, #b90825 58%, #8f061d 100%);
+  background: #b90825;
 }
 .promotion-player:has(.promo-theme-animated_hot)::before {
-  inset: -18%;
-  background: radial-gradient(ellipse at 48% 58%, #ffe500 0 34%, transparent 34.5%), linear-gradient(145deg, #d80d2f 0%, #b90825 58%, #8f061d 100%);
-  animation: promoHotWave 4.8s ease-in-out infinite alternate;
+  background: linear-gradient(145deg, #d80d2f 0%, #b90825 58%, #8f061d 100%);
 }
 
 .promotion-player:has(.promo-theme-animated_burst) {
   background: #ff9f0a;
 }
 .promotion-player:has(.promo-theme-animated_burst)::before {
-  inset: -35%;
-  background:
-    radial-gradient(circle at 50% 50%, #ffe500 0 25%, rgba(255,229,0,.96) 25% 31%, transparent 31.5%),
-    repeating-conic-gradient(from 0deg at 50% 50%, #e11d48 0 7deg, #ff9f0a 7deg 18deg);
-  animation: promoBurstSpin 14s linear infinite;
+  background: radial-gradient(circle at 50% 50%, #ffe500 0%, #ffb30a 44%, #ff7a18 72%, #ef233c 100%);
 }
 
 .promotion-player:has(.promo-theme-animated_bands) {
   background: #0f172a;
 }
 .promotion-player:has(.promo-theme-animated_bands)::before {
-  inset: -45%;
-  background: repeating-linear-gradient(-28deg, #0f172a 0 70px, #2563eb 70px 120px, #22d3ee 120px 160px, #f8fafc 160px 172px);
-  animation: promoBandsSlide 7s linear infinite;
-  opacity: .92;
+  background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 46%, #22d3ee 72%, #0f172a 100%);
 }
 
 .promotion-player:has(.promo-theme-animated_pulse) {
   background: #6d0015;
 }
 .promotion-player:has(.promo-theme-animated_pulse)::before {
-  inset: -12%;
-  background: radial-gradient(circle at 50% 48%, rgba(255,229,0,.95) 0 24%, rgba(255,229,0,.18) 25% 41%, transparent 42%), #6d0015;
-  animation: promoPulseHalo 2.8s ease-in-out infinite;
+  background: radial-gradient(circle at 50% 48%, rgba(255,229,0,.82) 0 22%, #9b1027 52%, #6d0015 100%);
 }
 
 .promotion-player:has(.promo-theme-animated_neon) {
-  background: radial-gradient(circle at 50% 40%, #20204f 0%, #09090f 68%);
+  background: #09090f;
 }
 .promotion-player:has(.promo-theme-animated_neon)::before {
-  inset: 3%;
-  border: 4px solid #2ef2ff;
-  box-shadow: inset 0 0 28px #2ef2ff, 0 0 24px #2ef2ff, 0 0 65px rgba(217,70,239,.7);
-  animation: promoNeonFlicker 3.7s steps(1,end) infinite;
+  background: radial-gradient(circle at 50% 40%, #30306c 0%, #18183d 40%, #09090f 78%);
 }
 
 .promotion-player .promo-poster {
@@ -77,29 +69,6 @@
   max-height: 100vh;
   border-radius: 0;
   box-shadow: none;
-}
-
-/* No player público, fundos animados são desenhados uma única vez pela camada
-   full-bleed do .promotion-player. O cartaz interno mantém apenas conteúdo e
-   geometria, evitando dois fundos sobrepostos. */
-.promotion-player .promo-poster:is(
-  .promo-theme-animated_hot,
-  .promo-theme-animated_burst,
-  .promo-theme-animated_bands,
-  .promo-theme-animated_pulse,
-  .promo-theme-animated_neon
-) {
-  background: transparent !important;
-}
-
-.promotion-player .promo-poster:is(
-  .promo-theme-animated_hot,
-  .promo-theme-animated_burst,
-  .promo-theme-animated_bands,
-  .promo-theme-animated_pulse,
-  .promo-theme-animated_neon
-) > .promo-poster-shape {
-  display: none !important;
 }
 
 .promotion-player .promo-poster.promo-landscape {
