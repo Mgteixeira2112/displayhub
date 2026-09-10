@@ -7,36 +7,68 @@
   background: #000;
 }
 
-/* O cartaz mantém sempre o seu próprio fundo e a sua própria geometria.
-   A sobra de viewport usa apenas uma cor-base do tema, sem reproduzir formas,
-   círculos, halos, raios ou qualquer outro elemento decorativo. */
-.promotion-player::before {
-  content: none;
-}
-
+/* Fundos estáticos continuam usando uma cor simples nas sobras. */
 .promotion-player:has(.promo-theme-hot_red) { background: #c8102e; }
 .promotion-player:has(.promo-theme-burst_yellow) { background: #ffe600; }
 .promotion-player:has(.promo-theme-price_blast) { background: #f5efe4; }
 
-.promotion-player:has(.promo-theme-animated_hot) {
-  background: #b90825;
+/* Fundo animado definitivo: uma segunda superfície proporcional cobre toda a
+   viewport em modo cover. Ela nunca é esticada: mantém exatamente 16:9/9:16
+   e apenas sofre crop nas bordas quando a viewport tem outra proporção. */
+.promotion-player .promo-poster-backdrop {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  overflow: hidden;
+  isolation: isolate;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
-.promotion-player:has(.promo-theme-animated_burst) {
-  background: #ff9f0a;
+.promotion-player .promo-poster-backdrop > .promo-poster-shape {
+  z-index: 0;
 }
 
-.promotion-player:has(.promo-theme-animated_bands) {
-  background: #0f172a;
+.promotion-player .promo-poster-backdrop.promo-landscape {
+  width: max(100vw, calc(100vh * 16 / 9));
+  height: max(100vh, calc(100vw * 9 / 16));
+  aspect-ratio: 16 / 9;
 }
 
-.promotion-player:has(.promo-theme-animated_pulse) {
-  background: #6d0015;
+.promotion-player .promo-poster-backdrop.promo-portrait {
+  width: max(100vw, calc(100vh * 9 / 16));
+  height: max(100vh, calc(100vw * 16 / 9));
+  aspect-ratio: 9 / 16;
 }
 
-.promotion-player:has(.promo-theme-animated_neon) {
-  background: #09090f;
+/* A camada frontal conserva somente conteúdo e geometria. O fundo e as formas
+   dos temas animados são desenhados uma única vez pelo backdrop acima. */
+.promotion-player .promo-player-foreground {
+  background: transparent !important;
 }
+
+.promotion-player .promo-player-foreground > .promo-poster-shape {
+  display: none !important;
+}
+
+/* Mantém animações escolhidas pelo usuário ativas no player, mesmo quando o
+   dispositivo solicita reduced motion. */
+.promotion-player .promo-poster-backdrop.promo-theme-animated_hot .promo-poster-shape::before { animation: promoHotWave 4.8s ease-in-out infinite alternate !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_hot .promo-poster-shape::after { animation: promoHotRing 3.4s ease-in-out infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_burst .promo-poster-shape { animation: promoBurstSpin 14s linear infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_burst .promo-poster-shape::before { animation: promoBurstPulse 2.2s ease-in-out infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_bands .promo-poster-shape { animation: promoBandsSlide 7s linear infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_pulse { animation: promoPulseBackground 2.8s ease-in-out infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_pulse .promo-poster-shape { animation: promoPulseHalo 2.8s ease-in-out infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_pulse .promo-poster-shape::after { animation: promoPulseBand 3.2s ease-in-out infinite alternate !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_neon .promo-poster-shape { animation: promoNeonFlicker 3.7s steps(1,end) infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_neon .promo-poster-shape::before,
+.promotion-player .promo-poster-backdrop.promo-theme-animated_neon .promo-poster-shape::after { animation: promoNeonScan 4.2s ease-in-out infinite alternate !important; }
 
 .promotion-player .promo-poster {
   position: relative;
@@ -47,6 +79,7 @@
   box-shadow: none;
 }
 
+/* Conteúdo sempre usa contain para preservar exatamente a geometria do preview. */
 .promotion-player .promo-poster.promo-landscape {
   width: min(100vw, calc(100vh * 16 / 9));
   height: auto;

@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import PromotionPosterBackdrop, { isAnimatedPosterTheme } from './PromotionPosterBackdrop'
 
 type Orientation = 'portrait' | 'landscape'
 type ElementKey = 'headline' | 'product' | 'price' | 'unit' | 'footer'
@@ -57,6 +58,8 @@ function moneyLabel(value: number) {
 export default function PromotionPosterView({ poster, className = '' }: { poster: PromotionPosterData; className?: string }) {
   const orientation = poster.orientation || 'portrait'
   const layout = poster.layout_positions?.[orientation] || {}
+  const theme = poster.theme || 'hot_red'
+  const animated = isAnimatedPosterTheme(theme)
 
   const renderElement = (key: ElementKey, baseClass: string, tag: 'span' | 'strong' | 'div' | 'em', text: string) => {
     const item = layout[key] || {}
@@ -79,14 +82,17 @@ export default function PromotionPosterView({ poster, className = '' }: { poster
     return <span {...props}>{text}</span>
   }
 
-  return <div className={`promo-poster promo-${orientation} promo-theme-${poster.theme || 'hot_red'} ${className}`.trim()}>
-    <div className="promo-poster-shape" aria-hidden="true" />
-    <div className="promo-poster-content">
-      {renderElement('headline', 'promo-headline', 'span', poster.headline)}
-      {renderElement('product', 'promo-product', 'strong', poster.product_name)}
-      {renderElement('price', 'promo-price', 'div', moneyLabel(poster.price))}
-      {poster.unit && renderElement('unit', 'promo-unit', 'span', poster.unit)}
-      {poster.footer && renderElement('footer', 'promo-footer', 'em', poster.footer)}
+  return <>
+    <PromotionPosterBackdrop theme={theme} orientation={orientation} />
+    <div className={`promo-poster promo-${orientation} promo-theme-${theme}${animated ? ' promo-player-foreground' : ''} ${className}`.trim()}>
+      <div className="promo-poster-shape" aria-hidden="true" />
+      <div className="promo-poster-content">
+        {renderElement('headline', 'promo-headline', 'span', poster.headline)}
+        {renderElement('product', 'promo-product', 'strong', poster.product_name)}
+        {renderElement('price', 'promo-price', 'div', moneyLabel(poster.price))}
+        {poster.unit && renderElement('unit', 'promo-unit', 'span', poster.unit)}
+        {poster.footer && renderElement('footer', 'promo-footer', 'em', poster.footer)}
+      </div>
     </div>
-  </div>
+  </>
 }
