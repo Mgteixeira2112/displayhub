@@ -31,6 +31,11 @@
   color: var(--dh-muted);
 }
 
+.playlist-transition-controls select:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
 .poster-transition-stage,
 .poster-transition-layer {
   position: absolute;
