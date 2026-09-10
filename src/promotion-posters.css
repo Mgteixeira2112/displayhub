@@ -79,10 +79,11 @@
 .promo-editable .promo-draggable:active { cursor: grabbing; }
 .promo-editable .promo-selected { position: relative; outline: 2px solid #2563eb; outline-offset: 0; border-radius: 2px; overflow: visible !important; }
 .promo-editable .promo-selected:hover { outline-style: solid; }
-.promo-custom-position { position: absolute !important; z-index: 3; margin: 0 !important; right: auto !important; bottom: auto !important; max-width: 88%; transform: translate(-50%, -50%) !important; justify-self: auto !important; align-self: auto !important; grid-column: auto !important; grid-row: auto !important; }
+.promo-custom-position { position: absolute !important; z-index: 3; margin: 0 !important; right: auto !important; bottom: auto !important; max-width: 88%; transform: translate(-50%, -50%) rotate(var(--promo-rotation, 0deg)) !important; transform-origin: center center; justify-self: auto !important; align-self: auto !important; grid-column: auto !important; grid-row: auto !important; }
 .promo-landscape .promo-custom-position.promo-headline { position: absolute !important; grid-column: auto !important; justify-self: auto !important; }
-.promo-theme-burst_yellow .promo-custom-position.promo-headline { transform: translate(-50%, -50%) !important; }
-.promo-theme-price_blast .promo-custom-position { transform: translate(-50%, -50%) !important; }
+.promo-theme-burst_yellow .promo-custom-position.promo-headline,
+.promo-theme-price_blast .promo-custom-position { transform: translate(-50%, -50%) rotate(var(--promo-rotation, 0deg)) !important; }
+.promo-has-rotation:not(.promo-custom-position) { transform: rotate(var(--promo-rotation, 0deg)) !important; transform-origin: center center; }
 
 .promo-resize-handle { position: absolute; z-index: 12; width: 10px; height: 10px; background: #fff; border: 2px solid #2563eb; border-radius: 1px; box-sizing: border-box; touch-action: none; }
 .promo-resize-nw { left: 0; top: 0; transform: translate(-50%, -50%); cursor: nwse-resize; }
