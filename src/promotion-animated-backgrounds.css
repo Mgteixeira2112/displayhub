@@ -1,14 +1,12 @@
 /* Fundos animados prontos para o Gerador de Cartazes.
-   Apenas a camada de fundo anima; textos e caixas permanecem independentes. */
+   Regra visual: a animação pertence ao fundo; textos e caixas nunca se movem. */
 
+/* 1. Oferta Quente — onda discreta + aro pulsante. */
 .promo-theme-animated_hot {
   background: linear-gradient(145deg, #d80d2f 0%, #b90825 58%, #8f061d 100%);
   color: #fff;
 }
-.promo-theme-animated_hot .promo-poster-shape {
-  inset: 0;
-  overflow: hidden;
-}
+.promo-theme-animated_hot .promo-poster-shape { inset: 0; overflow: hidden; }
 .promo-theme-animated_hot .promo-poster-shape::before {
   content: '';
   position: absolute;
@@ -19,7 +17,7 @@
   border-radius: 50%;
   background: #ffe500;
   box-shadow: 0 0 0 8px rgba(255,255,255,.92);
-  animation: promoHotWave 4.8s ease-in-out infinite alternate;
+  animation: promoHotWave 5.6s ease-in-out infinite alternate;
 }
 .promo-theme-animated_hot .promo-poster-shape::after {
   content: '';
@@ -30,56 +28,71 @@
   top: 4%;
   border: 14px solid #ffe500;
   border-radius: 50%;
-  animation: promoHotRing 3.4s ease-in-out infinite;
+  animation: promoHotRing 3.8s ease-in-out infinite;
 }
 
+/* 2. Preço Explosivo — os raios giram; o centro amarelo NÃO gira.
+   O centro só faz um zoom in/out suave. */
 .promo-theme-animated_burst {
-  background: radial-gradient(circle at 50% 50%, #fff4a8 0%, #ffe500 28%, #ff9f0a 68%, #ef233c 100%);
+  background: linear-gradient(135deg, #ff9f0a 0%, #ff7a18 58%, #ef233c 100%);
   color: #111827;
 }
 .promo-theme-animated_burst .promo-poster-shape {
-  inset: -12%;
-  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(225,29,72,.95) 0 7deg, transparent 7deg 18deg);
-  animation: promoBurstSpin 14s linear infinite;
+  inset: 0;
+  overflow: hidden;
+}
+.promo-theme-animated_burst .promo-poster-shape::after {
+  content: '';
+  position: absolute;
+  inset: -42%;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(225,29,72,.96) 0 7deg, transparent 7deg 18deg);
+  animation: promoBurstSpin 16s linear infinite;
+  transform-origin: 50% 50%;
 }
 .promo-theme-animated_burst .promo-poster-shape::before {
   content: '';
   position: absolute;
-  inset: 18%;
+  z-index: 1;
+  left: 18%;
+  right: 18%;
+  top: 17%;
+  bottom: 17%;
   border-radius: 50%;
   background: #ffe500;
-  box-shadow: 0 0 0 12px rgba(255,255,255,.8);
-  animation: promoBurstPulse 2.2s ease-in-out infinite;
+  box-shadow: 0 0 0 10px rgba(255,255,255,.82);
+  animation: promoBurstPulse 3.2s ease-in-out infinite;
+  transform-origin: 50% 50%;
 }
 
-.promo-theme-animated_bands {
-  background: #0f172a;
-  color: #fff;
-}
-.promo-theme-animated_bands .promo-poster-shape {
-  inset: -40%;
+/* 3. Faixa Deslizante — só as faixas se deslocam; a área central fica estável. */
+.promo-theme-animated_bands { background: #0f172a; color: #fff; }
+.promo-theme-animated_bands .promo-poster-shape { inset: 0; overflow: hidden; }
+.promo-theme-animated_bands .promo-poster-shape::before {
+  content: '';
+  position: absolute;
+  inset: -45%;
   background: repeating-linear-gradient(-28deg, #0f172a 0 70px, #2563eb 70px 120px, #22d3ee 120px 160px, #f8fafc 160px 172px);
-  animation: promoBandsSlide 7s linear infinite;
+  animation: promoBandsSlide 8s linear infinite;
   opacity: .92;
 }
 .promo-theme-animated_bands .promo-poster-shape::after {
   content: '';
   position: absolute;
-  inset: 28%;
-  border-radius: 50%;
-  background: rgba(15,23,42,.72);
-  box-shadow: 0 0 80px rgba(34,211,238,.45);
+  inset: 22%;
+  border-radius: 28px;
+  background: rgba(15,23,42,.76);
+  box-shadow: 0 0 80px rgba(34,211,238,.42);
 }
 
-.promo-theme-animated_pulse {
-  background: #6d0015;
-  color: #fff;
-  animation: promoPulseBackground 2.8s ease-in-out infinite;
-}
-.promo-theme-animated_pulse .promo-poster-shape {
-  inset: 0;
-  background: radial-gradient(circle at 50% 48%, rgba(255,229,0,.95) 0 24%, rgba(255,229,0,.18) 25% 41%, transparent 42%), radial-gradient(circle at 50% 48%, transparent 0 54%, rgba(255,255,255,.22) 55% 56%, transparent 57%);
-  animation: promoPulseHalo 2.8s ease-in-out infinite;
+/* 4. Liquidação Pulsante — fundo estável, apenas halo e faixa respiram. */
+.promo-theme-animated_pulse { background: #6d0015; color: #fff; }
+.promo-theme-animated_pulse .promo-poster-shape { inset: 0; overflow: hidden; }
+.promo-theme-animated_pulse .promo-poster-shape::before {
+  content: '';
+  position: absolute;
+  inset: 6%;
+  background: radial-gradient(circle at 50% 48%, rgba(255,229,0,.92) 0 24%, rgba(255,229,0,.14) 25% 41%, transparent 42%);
+  animation: promoPulseHalo 3.4s ease-in-out infinite;
 }
 .promo-theme-animated_pulse .promo-poster-shape::after {
   content: '';
@@ -90,9 +103,10 @@
   height: 12%;
   background: #ffe500;
   transform: rotate(-4deg);
-  animation: promoPulseBand 3.2s ease-in-out infinite alternate;
+  animation: promoPulseBand 4s ease-in-out infinite alternate;
 }
 
+/* 5. Neon Promocional — moldura e scan animam; conteúdo fica estável. */
 .promo-theme-animated_neon {
   background: radial-gradient(circle at 50% 40%, #20204f 0%, #09090f 68%);
   color: #fff;
@@ -102,7 +116,7 @@
   border: 4px solid #2ef2ff;
   border-radius: 8%;
   box-shadow: inset 0 0 28px #2ef2ff, 0 0 24px #2ef2ff, 0 0 65px rgba(217,70,239,.7);
-  animation: promoNeonFlicker 3.7s steps(1,end) infinite;
+  animation: promoNeonFlicker 4.4s steps(1,end) infinite;
 }
 .promo-theme-animated_neon .promo-poster-shape::before,
 .promo-theme-animated_neon .promo-poster-shape::after {
@@ -112,12 +126,104 @@
   height: 4px;
   background: #f43f5e;
   box-shadow: 0 0 16px #f43f5e, 0 0 32px #f43f5e;
-  animation: promoNeonScan 4.2s ease-in-out infinite alternate;
+  animation: promoNeonScan 4.8s ease-in-out infinite alternate;
 }
 .promo-theme-animated_neon .promo-poster-shape::before { left: 8%; top: 22%; }
-.promo-theme-animated_neon .promo-poster-shape::after { right: 8%; bottom: 22%; animation-delay: -2.1s; }
+.promo-theme-animated_neon .promo-poster-shape::after { right: 8%; bottom: 22%; animation-delay: -2.4s; }
 
-/* Cores-base dos textos dos novos templates. Overrides manuais continuam vencendo via style inline. */
+/* 6. Confete de Oferta — confetes caem, base permanece fixa. */
+.promo-theme-animated_confetti {
+  background: linear-gradient(145deg, #7c3aed 0%, #db2777 55%, #f97316 100%);
+  color: #fff;
+}
+.promo-theme-animated_confetti .promo-poster-shape { inset: 0; overflow: hidden; }
+.promo-theme-animated_confetti .promo-poster-shape::before,
+.promo-theme-animated_confetti .promo-poster-shape::after {
+  content: '';
+  position: absolute;
+  inset: -35% -12%;
+  background-image:
+    radial-gradient(circle, #ffe500 0 5px, transparent 6px),
+    radial-gradient(circle, #22d3ee 0 4px, transparent 5px),
+    radial-gradient(circle, #fff 0 4px, transparent 5px),
+    radial-gradient(circle, #34d399 0 5px, transparent 6px);
+  background-size: 110px 140px, 150px 180px, 125px 165px, 175px 210px;
+  background-position: 12px 20px, 60px 40px, 32px 82px, 94px 16px;
+  opacity: .82;
+  animation: promoConfettiFall 9s linear infinite;
+}
+.promo-theme-animated_confetti .promo-poster-shape::after { opacity: .5; animation-duration: 13s; animation-delay: -5s; transform: scale(.78); }
+
+/* 7. Chevron em Movimento — setas percorrem a tela horizontalmente. */
+.promo-theme-animated_chevron {
+  background: #111827;
+  color: #fff;
+}
+.promo-theme-animated_chevron .promo-poster-shape { inset: 0; overflow: hidden; }
+.promo-theme-animated_chevron .promo-poster-shape::before {
+  content: '';
+  position: absolute;
+  inset: -25% -45%;
+  background: repeating-linear-gradient(135deg, #f59e0b 0 70px, #ef4444 70px 140px, #111827 140px 210px);
+  transform: skewX(-12deg);
+  animation: promoChevronMove 8s linear infinite;
+  opacity: .9;
+}
+.promo-theme-animated_chevron .promo-poster-shape::after {
+  content: '';
+  position: absolute;
+  inset: 13% 9%;
+  border-radius: 26px;
+  background: rgba(17,24,39,.78);
+  box-shadow: 0 0 0 4px rgba(255,255,255,.15);
+}
+
+/* 8. Glow Premium — brilho suave sem deslocar a arte. */
+.promo-theme-animated_glow {
+  background: linear-gradient(145deg, #07111f 0%, #111827 50%, #1e1b4b 100%);
+  color: #fff;
+}
+.promo-theme-animated_glow .promo-poster-shape { inset: 0; overflow: hidden; }
+.promo-theme-animated_glow .promo-poster-shape::before,
+.promo-theme-animated_glow .promo-poster-shape::after {
+  content: '';
+  position: absolute;
+  width: 54%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(26px);
+  opacity: .6;
+  animation: promoGlowBreath 5.2s ease-in-out infinite alternate;
+}
+.promo-theme-animated_glow .promo-poster-shape::before { left: -12%; top: -18%; background: #0ea5e9; }
+.promo-theme-animated_glow .promo-poster-shape::after { right: -15%; bottom: -22%; background: #a855f7; animation-delay: -2.6s; }
+
+/* 9. Flash de Liquidação — um feixe de luz cruza a tela; fundo permanece fixo. */
+.promo-theme-animated_flash {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 52%, #7f1d1d 100%);
+  color: #fff;
+}
+.promo-theme-animated_flash .promo-poster-shape { inset: 0; overflow: hidden; }
+.promo-theme-animated_flash .promo-poster-shape::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: repeating-linear-gradient(-18deg, transparent 0 12%, rgba(255,229,0,.22) 12% 18%, transparent 18% 31%);
+}
+.promo-theme-animated_flash .promo-poster-shape::after {
+  content: '';
+  position: absolute;
+  top: -35%;
+  bottom: -35%;
+  width: 26%;
+  left: -35%;
+  transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.86), rgba(255,229,0,.72), transparent);
+  filter: blur(5px);
+  animation: promoFlashSweep 4.6s ease-in-out infinite;
+}
+
+/* Cores-base; qualquer cor manual continua vencendo via style inline. */
 .promo-theme-animated_hot .promo-headline,
 .promo-theme-animated_hot .promo-product { color: #fff; }
 .promo-theme-animated_hot .promo-price,
@@ -126,83 +232,148 @@
 
 .promo-theme-animated_burst .promo-headline,
 .promo-theme-animated_burst .promo-price { color: #d71938; }
+
 .promo-theme-animated_bands .promo-headline,
 .promo-theme-animated_bands .promo-product,
 .promo-theme-animated_bands .promo-price,
 .promo-theme-animated_bands .promo-unit,
-.promo-theme-animated_bands .promo-footer { color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.65); }
+.promo-theme-animated_bands .promo-footer,
+.promo-theme-animated_confetti .promo-headline,
+.promo-theme-animated_confetti .promo-product,
+.promo-theme-animated_confetti .promo-price,
+.promo-theme-animated_confetti .promo-unit,
+.promo-theme-animated_confetti .promo-footer,
+.promo-theme-animated_chevron .promo-headline,
+.promo-theme-animated_chevron .promo-product,
+.promo-theme-animated_chevron .promo-price,
+.promo-theme-animated_chevron .promo-unit,
+.promo-theme-animated_chevron .promo-footer,
+.promo-theme-animated_glow .promo-headline,
+.promo-theme-animated_glow .promo-product,
+.promo-theme-animated_glow .promo-unit,
+.promo-theme-animated_glow .promo-footer,
+.promo-theme-animated_flash .promo-headline,
+.promo-theme-animated_flash .promo-product,
+.promo-theme-animated_flash .promo-unit,
+.promo-theme-animated_flash .promo-footer { color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.55); }
+
 .promo-theme-animated_pulse .promo-headline { color: #fff; }
 .promo-theme-animated_pulse .promo-product,
 .promo-theme-animated_pulse .promo-price,
 .promo-theme-animated_pulse .promo-unit { color: #8a001b; }
+
 .promo-theme-animated_neon .promo-headline,
 .promo-theme-animated_neon .promo-product { color: #fff; text-shadow: 0 0 12px #2ef2ff; }
 .promo-theme-animated_neon .promo-price { color: #ffe500; text-shadow: 0 0 12px #ffe500, 0 0 24px #f43f5e; }
 .promo-theme-animated_neon .promo-unit,
 .promo-theme-animated_neon .promo-footer { color: #67e8f9; }
 
+.promo-theme-animated_glow .promo-price { color: #facc15; text-shadow: 0 0 22px rgba(250,204,21,.48); }
+.promo-theme-animated_flash .promo-price { color: #ffe500; text-shadow: 0 3px 0 rgba(127,29,29,.65); }
+
 @keyframes promoHotWave {
-  from { transform: translateY(-4%) rotate(-2deg) scaleX(.96); }
-  to { transform: translateY(6%) rotate(2deg) scaleX(1.04); }
+  from { transform: translateY(-2%) scaleX(.98); }
+  to { transform: translateY(3%) scaleX(1.02); }
 }
 @keyframes promoHotRing {
-  0%,100% { transform: scale(.82); opacity: .55; }
-  50% { transform: scale(1.14); opacity: 1; }
+  0%,100% { transform: scale(.9); opacity: .62; }
+  50% { transform: scale(1.08); opacity: 1; }
 }
 @keyframes promoBurstSpin { to { transform: rotate(360deg); } }
 @keyframes promoBurstPulse {
-  0%,100% { transform: scale(.92); }
-  50% { transform: scale(1.06); }
+  0%,100% { transform: scale(.98); }
+  50% { transform: scale(1.025); }
 }
 @keyframes promoBandsSlide {
-  from { transform: translate3d(-8%, -5%, 0); }
-  to { transform: translate3d(8%, 5%, 0); }
-}
-@keyframes promoPulseBackground {
-  0%,100% { filter: brightness(.92) saturate(.95); }
-  50% { filter: brightness(1.16) saturate(1.16); }
+  from { transform: translate3d(-7%, -4%, 0); }
+  to { transform: translate3d(7%, 4%, 0); }
 }
 @keyframes promoPulseHalo {
-  0%,100% { transform: scale(.95); opacity: .76; }
-  50% { transform: scale(1.08); opacity: 1; }
+  0%,100% { transform: scale(.97); opacity: .72; }
+  50% { transform: scale(1.035); opacity: 1; }
 }
 @keyframes promoPulseBand {
-  from { transform: translateX(-3%) rotate(-4deg); }
-  to { transform: translateX(3%) rotate(-2deg); }
+  from { transform: translateX(-2%) rotate(-4deg); }
+  to { transform: translateX(2%) rotate(-3deg); }
 }
 @keyframes promoNeonFlicker {
-  0%,18%,22%,54%,58%,100% { opacity: 1; }
-  20%,56% { opacity: .48; }
+  0%,20%,24%,57%,61%,100% { opacity: 1; }
+  22%,59% { opacity: .58; }
 }
 @keyframes promoNeonScan {
-  from { transform: translateX(-12%) scaleX(.8); opacity: .55; }
+  from { transform: translateX(-12%) scaleX(.8); opacity: .5; }
   to { transform: translateX(120%) scaleX(1.15); opacity: 1; }
+}
+@keyframes promoConfettiFall {
+  from { transform: translate3d(0,-16%,0) rotate(0deg); }
+  to { transform: translate3d(4%,18%,0) rotate(8deg); }
+}
+@keyframes promoChevronMove {
+  from { transform: translateX(-8%) skewX(-12deg); }
+  to { transform: translateX(8%) skewX(-12deg); }
+}
+@keyframes promoGlowBreath {
+  from { transform: scale(.88); opacity: .42; }
+  to { transform: scale(1.12); opacity: .72; }
+}
+@keyframes promoFlashSweep {
+  0%,18% { left: -38%; opacity: 0; }
+  28% { opacity: .95; }
+  62% { left: 115%; opacity: .85; }
+  72%,100% { left: 115%; opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .promo-theme-animated_hot .promo-poster-shape::before,
   .promo-theme-animated_hot .promo-poster-shape::after,
-  .promo-theme-animated_burst .promo-poster-shape,
+  .promo-theme-animated_burst .promo-poster-shape::after,
   .promo-theme-animated_burst .promo-poster-shape::before,
-  .promo-theme-animated_bands .promo-poster-shape,
-  .promo-theme-animated_pulse,
-  .promo-theme-animated_pulse .promo-poster-shape,
+  .promo-theme-animated_bands .promo-poster-shape::before,
+  .promo-theme-animated_pulse .promo-poster-shape::before,
   .promo-theme-animated_pulse .promo-poster-shape::after,
   .promo-theme-animated_neon .promo-poster-shape,
   .promo-theme-animated_neon .promo-poster-shape::before,
-  .promo-theme-animated_neon .promo-poster-shape::after { animation: none !important; }
+  .promo-theme-animated_neon .promo-poster-shape::after,
+  .promo-theme-animated_confetti .promo-poster-shape::before,
+  .promo-theme-animated_confetti .promo-poster-shape::after,
+  .promo-theme-animated_chevron .promo-poster-shape::before,
+  .promo-theme-animated_glow .promo-poster-shape::before,
+  .promo-theme-animated_glow .promo-poster-shape::after,
+  .promo-theme-animated_flash .promo-poster-shape::after { animation: none !important; }
 }
 
-/* O editor precisa sempre permitir visualizar o movimento escolhido pelo usuário.
-   Estas regras vêm depois de prefers-reduced-motion e só afetam o preview editável. */
-.promo-editable.promo-theme-animated_hot .promo-poster-shape::before { animation: promoHotWave 4.8s ease-in-out infinite alternate !important; }
-.promo-editable.promo-theme-animated_hot .promo-poster-shape::after { animation: promoHotRing 3.4s ease-in-out infinite !important; }
-.promo-editable.promo-theme-animated_burst .promo-poster-shape { animation: promoBurstSpin 14s linear infinite !important; }
-.promo-editable.promo-theme-animated_burst .promo-poster-shape::before { animation: promoBurstPulse 2.2s ease-in-out infinite !important; }
-.promo-editable.promo-theme-animated_bands .promo-poster-shape { animation: promoBandsSlide 7s linear infinite !important; }
-.promo-editable.promo-theme-animated_pulse { animation: promoPulseBackground 2.8s ease-in-out infinite !important; }
-.promo-editable.promo-theme-animated_pulse .promo-poster-shape { animation: promoPulseHalo 2.8s ease-in-out infinite !important; }
-.promo-editable.promo-theme-animated_pulse .promo-poster-shape::after { animation: promoPulseBand 3.2s ease-in-out infinite alternate !important; }
-.promo-editable.promo-theme-animated_neon .promo-poster-shape { animation: promoNeonFlicker 3.7s steps(1,end) infinite !important; }
+/* Preview: sempre mostra a animação escolhida. */
+.promo-editable.promo-theme-animated_hot .promo-poster-shape::before { animation: promoHotWave 5.6s ease-in-out infinite alternate !important; }
+.promo-editable.promo-theme-animated_hot .promo-poster-shape::after { animation: promoHotRing 3.8s ease-in-out infinite !important; }
+.promo-editable.promo-theme-animated_burst .promo-poster-shape::after { animation: promoBurstSpin 16s linear infinite !important; }
+.promo-editable.promo-theme-animated_burst .promo-poster-shape::before { animation: promoBurstPulse 3.2s ease-in-out infinite !important; }
+.promo-editable.promo-theme-animated_bands .promo-poster-shape::before { animation: promoBandsSlide 8s linear infinite !important; }
+.promo-editable.promo-theme-animated_pulse .promo-poster-shape::before { animation: promoPulseHalo 3.4s ease-in-out infinite !important; }
+.promo-editable.promo-theme-animated_pulse .promo-poster-shape::after { animation: promoPulseBand 4s ease-in-out infinite alternate !important; }
+.promo-editable.promo-theme-animated_neon .promo-poster-shape { animation: promoNeonFlicker 4.4s steps(1,end) infinite !important; }
 .promo-editable.promo-theme-animated_neon .promo-poster-shape::before,
-.promo-editable.promo-theme-animated_neon .promo-poster-shape::after { animation: promoNeonScan 4.2s ease-in-out infinite alternate !important; }
+.promo-editable.promo-theme-animated_neon .promo-poster-shape::after { animation: promoNeonScan 4.8s ease-in-out infinite alternate !important; }
+.promo-editable.promo-theme-animated_confetti .promo-poster-shape::before { animation: promoConfettiFall 9s linear infinite !important; }
+.promo-editable.promo-theme-animated_confetti .promo-poster-shape::after { animation: promoConfettiFall 13s linear infinite -5s !important; }
+.promo-editable.promo-theme-animated_chevron .promo-poster-shape::before { animation: promoChevronMove 8s linear infinite !important; }
+.promo-editable.promo-theme-animated_glow .promo-poster-shape::before,
+.promo-editable.promo-theme-animated_glow .promo-poster-shape::after { animation: promoGlowBreath 5.2s ease-in-out infinite alternate !important; }
+.promo-editable.promo-theme-animated_flash .promo-poster-shape::after { animation: promoFlashSweep 4.6s ease-in-out infinite !important; }
+
+/* Player público/backdrop: também sempre anima. */
+.promotion-player .promo-poster-backdrop.promo-theme-animated_hot .promo-poster-shape::before { animation: promoHotWave 5.6s ease-in-out infinite alternate !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_hot .promo-poster-shape::after { animation: promoHotRing 3.8s ease-in-out infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_burst .promo-poster-shape::after { animation: promoBurstSpin 16s linear infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_burst .promo-poster-shape::before { animation: promoBurstPulse 3.2s ease-in-out infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_bands .promo-poster-shape::before { animation: promoBandsSlide 8s linear infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_pulse .promo-poster-shape::before { animation: promoPulseHalo 3.4s ease-in-out infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_pulse .promo-poster-shape::after { animation: promoPulseBand 4s ease-in-out infinite alternate !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_neon .promo-poster-shape { animation: promoNeonFlicker 4.4s steps(1,end) infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_neon .promo-poster-shape::before,
+.promotion-player .promo-poster-backdrop.promo-theme-animated_neon .promo-poster-shape::after { animation: promoNeonScan 4.8s ease-in-out infinite alternate !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_confetti .promo-poster-shape::before { animation: promoConfettiFall 9s linear infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_confetti .promo-poster-shape::after { animation: promoConfettiFall 13s linear infinite -5s !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_chevron .promo-poster-shape::before { animation: promoChevronMove 8s linear infinite !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_glow .promo-poster-shape::before,
+.promotion-player .promo-poster-backdrop.promo-theme-animated_glow .promo-poster-shape::after { animation: promoGlowBreath 5.2s ease-in-out infinite alternate !important; }
+.promotion-player .promo-poster-backdrop.promo-theme-animated_flash .promo-poster-shape::after { animation: promoFlashSweep 4.6s ease-in-out infinite !important; }
