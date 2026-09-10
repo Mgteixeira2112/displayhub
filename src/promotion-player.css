@@ -1,0 +1,41 @@
+.promotion-player {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #000;
+}
+
+.promotion-player .promo-poster {
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.promotion-player .promo-poster.promo-portrait {
+  height: 100%;
+  width: auto;
+  aspect-ratio: 9 / 16;
+}
+
+.promotion-player .promo-poster.promo-landscape {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+@media (orientation: portrait) {
+  .promotion-player .promo-poster.promo-landscape {
+    width: 100%;
+    height: auto;
+  }
+}
+
+@media (orientation: landscape) {
+  .promotion-player .promo-poster.promo-portrait {
+    height: 100%;
+    width: auto;
+  }
+}
