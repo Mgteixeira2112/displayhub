@@ -131,6 +131,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
   const [footer, setFooter] = useState('Aproveite!')
   const [layoutPositions, setLayoutPositions] = useState<LayoutPositions>({})
   const [selectedElement, setSelectedElement] = useState<ElementKey>('product')
+  const [selectionActive, setSelectionActive] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const interactionRef = useRef<Interaction | null>(null)
@@ -157,7 +158,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
   useEffect(() => { void load().catch(() => setMessage('Não foi possível carregar os cartazes promocionais.')) }, [load])
 
   function resetForm() {
-    setEditingId(null); setTemplateKey('oferta_quente'); setOrientation('portrait'); setProductName('ARROZ TIPO 1'); setPrice('24,90'); setUnit('5 KG'); setHeadline('OFERTA QUENTE!'); setFooter('Aproveite!'); setLayoutPositions({}); setSelectedElement('product')
+    setEditingId(null); setTemplateKey('oferta_quente'); setOrientation('portrait'); setProductName('ARROZ TIPO 1'); setPrice('24,90'); setUnit('5 KG'); setHeadline('OFERTA QUENTE!'); setFooter('Aproveite!'); setLayoutPositions({}); setSelectedElement('product'); setSelectionActive(false)
   }
 
   function updateElementLayout(targetOrientation: Orientation, key: ElementKey, changes: Partial<ElementLayout>) {
@@ -200,7 +201,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
     if (!canManage) return
     const poster = event.currentTarget.closest('.promo-poster') as HTMLElement | null
     if (!poster) return
-    event.preventDefault(); event.stopPropagation(); setSelectedElement(key)
+    event.preventDefault(); event.stopPropagation(); setSelectedElement(key); setSelectionActive(true)
     const posterRect = poster.getBoundingClientRect()
     ensureMeasuredLayout(event.currentTarget, posterRect, key, targetOrientation)
     interactionRef.current = { mode: 'drag', key, orientation: targetOrientation, pointerId: event.pointerId, posterRect }
@@ -212,7 +213,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
     const element = event.currentTarget.parentElement as HTMLElement | null
     const poster = event.currentTarget.closest('.promo-poster') as HTMLElement | null
     if (!element || !poster) return
-    event.preventDefault(); event.stopPropagation(); setSelectedElement(key)
+    event.preventDefault(); event.stopPropagation(); setSelectedElement(key); setSelectionActive(true)
     const posterRect = poster.getBoundingClientRect()
     const layout = ensureMeasuredLayout(element, posterRect, key, targetOrientation)
     const width = layout.width ?? 30
@@ -284,7 +285,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
   }
 
   function editPoster(poster: Poster) {
-    setEditingId(poster.id); setTemplateKey(poster.template_key); setOrientation(poster.orientation); setProductName(poster.product_name); setPrice(String(poster.price).replace('.', ',')); setUnit(poster.unit || ''); setHeadline(poster.headline); setFooter(poster.footer || ''); setLayoutPositions(poster.layout_positions || {}); setSelectedElement('product'); window.scrollTo({ top: 0, behavior: 'smooth' })
+    setEditingId(poster.id); setTemplateKey(poster.template_key); setOrientation(poster.orientation); setProductName(poster.product_name); setPrice(String(poster.price).replace('.', ',')); setUnit(poster.unit || ''); setHeadline(poster.headline); setFooter(poster.footer || ''); setLayoutPositions(poster.layout_positions || {}); setSelectedElement('product'); setSelectionActive(false); window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function duplicatePoster(poster: Poster) {
@@ -311,7 +312,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
       const item = currentLayout[key] || {}
       const hasPosition = typeof item.x === 'number' && typeof item.y === 'number'
       const hasRotation = typeof item.rotation === 'number' && item.rotation !== 0
-      const isSelected = editable && selectedElement === key
+      const isSelected = editable && selectionActive && selectedElement === key
       const className = `${baseClass} promo-element${hasPosition ? ' promo-custom-position' : ''}${editable ? ' promo-draggable' : ''}${isSelected ? ' promo-selected' : ''}${hasRotation ? ' promo-has-rotation' : ''}`
       const style: CSSProperties & Record<string, string | number | undefined> = {}
       if (hasPosition) { style.left = `${item.x}%`; style.top = `${item.y}%` }
@@ -337,7 +338,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
       return <span {...props}>{text}{handles}</span>
     }
 
-    return <div className={`promo-poster promo-${posterOrientation} promo-theme-${theme}${editable ? ' promo-editable' : ''}`}><div className="promo-poster-shape" aria-hidden="true" /><div className="promo-poster-content">{renderElement('headline', 'promo-headline', 'span', values.headline)}{renderElement('product', 'promo-product', 'strong', values.product_name)}{renderElement('price', 'promo-price', 'div', moneyLabel(values.price))}{values.unit && renderElement('unit', 'promo-unit', 'span', values.unit)}{values.footer && renderElement('footer', 'promo-footer', 'em', values.footer)}</div></div>
+    return <div className={`promo-poster promo-${posterOrientation} promo-theme-${theme}${editable ? ' promo-editable' : ''}`} onPointerDown={editable ? () => setSelectionActive(false) : undefined}><div className="promo-poster-shape" aria-hidden="true" /><div className="promo-poster-content">{renderElement('headline', 'promo-headline', 'span', values.headline)}{renderElement('product', 'promo-product', 'strong', values.product_name)}{renderElement('price', 'promo-price', 'div', moneyLabel(values.price))}{values.unit && renderElement('unit', 'promo-unit', 'span', values.unit)}{values.footer && renderElement('footer', 'promo-footer', 'em', values.footer)}</div></div>
   }
 
   return <section className="workspace-section promotion-workspace">
@@ -355,7 +356,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
         <label>Rodapé<input value={footer} onChange={(e) => setFooter(e.target.value)} maxLength={80} placeholder="Aproveite!" /></label>
         {canManage && <div className="promotion-box-controls">
           <strong>Ajustar texto selecionado</strong>
-          <label>Elemento<select value={selectedElement} onChange={(e) => setSelectedElement(e.target.value as ElementKey)}>{elementKeys.map((key) => <option key={key} value={key}>{elementLabels[key]}</option>)}</select></label>
+          <label>Elemento<select value={selectedElement} onChange={(e) => { setSelectedElement(e.target.value as ElementKey); setSelectionActive(true) }}>{elementKeys.map((key) => <option key={key} value={key}>{elementLabels[key]}</option>)}</select></label>
           <div className="promotion-box-status"><span>Caixa</span><strong>{typeof selectedElementLayout.width === 'number' ? `${Math.round(selectedElementLayout.width)}% × ${Math.round(selectedElementLayout.height ?? 0)}%` : 'automática'}</strong></div>
           <small>Os quadradinhos alteram somente a caixa. Tamanho e rotação do texto são controlados manualmente abaixo.</small>
           <label>Tamanho da fonte (px do cartaz)
@@ -378,7 +379,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
         </div>}
         {canManage && <div className="promotion-actions"><button className="primary-button" type="submit" disabled={busy}>{editingId ? 'Salvar alterações' : 'Salvar cartaz'}</button><button className="secondary-button" type="button" onClick={() => restoreTemplateLayout(orientation)} disabled={busy}>Restaurar layout</button>{editingId && <button className="secondary-button" type="button" onClick={resetForm} disabled={busy}>Cancelar</button>}</div>}
       </form>
-      <div className="promotion-preview-panel"><span>Pré-visualização · {orientation === 'portrait' ? 'Vertical' : 'Horizontal'}</span>{canManage && <small className="promotion-drag-hint">Clique no texto para selecionar. Arraste pelo centro para mover, use os quadradinhos para redimensionar a caixa e ajuste tamanho/rotação no painel.</small>}{posterPreview(selectedTemplate?.theme || 'hot_red', orientation, { product_name: productName || 'NOME DO PRODUTO', price: previewPrice, unit: unit || null, headline: headline || 'OFERTA', footer: footer || null }, layoutPositions, canManage)}</div>
+      <div className="promotion-preview-panel"><span>Pré-visualização · {orientation === 'portrait' ? 'Vertical' : 'Horizontal'}</span>{canManage && <small className="promotion-drag-hint">Clique no texto para selecionar. Clique em uma área vazia do cartaz para remover a seleção.</small>}{posterPreview(selectedTemplate?.theme || 'hot_red', orientation, { product_name: productName || 'NOME DO PRODUTO', price: previewPrice, unit: unit || null, headline: headline || 'OFERTA', footer: footer || null }, layoutPositions, canManage)}</div>
     </div>
     <div className="section-heading promotion-saved-heading"><div><p className="eyebrow">Salvos</p><h3>{posters.length} cartaz{posters.length === 1 ? '' : 'es'}</h3></div></div>
     <div className="promotion-poster-grid">{posters.length === 0 && <p className="empty-state">Nenhum cartaz salvo.</p>}{posters.map((poster) => { const template = templates.find((item) => item.key === poster.template_key); return <article className={`promotion-poster-card card-${poster.orientation}`} key={poster.id}>{posterPreview(template?.theme || 'hot_red', poster.orientation, poster, poster.layout_positions)}<div className="promotion-card-actions"><strong>{poster.product_name}</strong><small>{template?.name || poster.template_key} · {poster.orientation === 'portrait' ? 'Vertical' : 'Horizontal'}</small>{canManage && <div><button className="secondary-button compact" type="button" onClick={() => editPoster(poster)} disabled={busy}>Editar</button><button className="secondary-button compact" type="button" onClick={() => void duplicatePoster(poster)} disabled={busy}>Duplicar</button><button className="danger-button" type="button" onClick={() => void removePoster(poster.id)} disabled={busy}>Excluir</button></div>}</div></article> })}</div>
