@@ -192,3 +192,17 @@
   .promo-theme-animated_neon .promo-poster-shape::before,
   .promo-theme-animated_neon .promo-poster-shape::after { animation: none !important; }
 }
+
+/* O editor precisa sempre permitir visualizar o movimento escolhido pelo usuário.
+   Estas regras vêm depois de prefers-reduced-motion e só afetam o preview editável. */
+.promo-editable.promo-theme-animated_hot .promo-poster-shape::before { animation: promoHotWave 4.8s ease-in-out infinite alternate !important; }
+.promo-editable.promo-theme-animated_hot .promo-poster-shape::after { animation: promoHotRing 3.4s ease-in-out infinite !important; }
+.promo-editable.promo-theme-animated_burst .promo-poster-shape { animation: promoBurstSpin 14s linear infinite !important; }
+.promo-editable.promo-theme-animated_burst .promo-poster-shape::before { animation: promoBurstPulse 2.2s ease-in-out infinite !important; }
+.promo-editable.promo-theme-animated_bands .promo-poster-shape { animation: promoBandsSlide 7s linear infinite !important; }
+.promo-editable.promo-theme-animated_pulse { animation: promoPulseBackground 2.8s ease-in-out infinite !important; }
+.promo-editable.promo-theme-animated_pulse .promo-poster-shape { animation: promoPulseHalo 2.8s ease-in-out infinite !important; }
+.promo-editable.promo-theme-animated_pulse .promo-poster-shape::after { animation: promoPulseBand 3.2s ease-in-out infinite alternate !important; }
+.promo-editable.promo-theme-animated_neon .promo-poster-shape { animation: promoNeonFlicker 3.7s steps(1,end) infinite !important; }
+.promo-editable.promo-theme-animated_neon .promo-poster-shape::before,
+.promo-editable.promo-theme-animated_neon .promo-poster-shape::after { animation: promoNeonScan 4.2s ease-in-out infinite alternate !important; }
