@@ -1,0 +1,194 @@
+/* Fundos animados prontos para o Gerador de Cartazes.
+   Apenas a camada de fundo anima; textos e caixas permanecem independentes. */
+
+.promo-theme-animated_hot {
+  background: linear-gradient(145deg, #d80d2f 0%, #b90825 58%, #8f061d 100%);
+  color: #fff;
+}
+.promo-theme-animated_hot .promo-poster-shape {
+  inset: 0;
+  overflow: hidden;
+}
+.promo-theme-animated_hot .promo-poster-shape::before {
+  content: '';
+  position: absolute;
+  width: 150%;
+  height: 54%;
+  left: -25%;
+  top: 33%;
+  border-radius: 50%;
+  background: #ffe500;
+  box-shadow: 0 0 0 8px rgba(255,255,255,.92);
+  animation: promoHotWave 4.8s ease-in-out infinite alternate;
+}
+.promo-theme-animated_hot .promo-poster-shape::after {
+  content: '';
+  position: absolute;
+  width: 36%;
+  aspect-ratio: 1;
+  right: -12%;
+  top: 4%;
+  border: 14px solid #ffe500;
+  border-radius: 50%;
+  animation: promoHotRing 3.4s ease-in-out infinite;
+}
+
+.promo-theme-animated_burst {
+  background: radial-gradient(circle at 50% 50%, #fff4a8 0%, #ffe500 28%, #ff9f0a 68%, #ef233c 100%);
+  color: #111827;
+}
+.promo-theme-animated_burst .promo-poster-shape {
+  inset: -12%;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(225,29,72,.95) 0 7deg, transparent 7deg 18deg);
+  animation: promoBurstSpin 14s linear infinite;
+}
+.promo-theme-animated_burst .promo-poster-shape::before {
+  content: '';
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: #ffe500;
+  box-shadow: 0 0 0 12px rgba(255,255,255,.8);
+  animation: promoBurstPulse 2.2s ease-in-out infinite;
+}
+
+.promo-theme-animated_bands {
+  background: #0f172a;
+  color: #fff;
+}
+.promo-theme-animated_bands .promo-poster-shape {
+  inset: -40%;
+  background: repeating-linear-gradient(-28deg, #0f172a 0 70px, #2563eb 70px 120px, #22d3ee 120px 160px, #f8fafc 160px 172px);
+  animation: promoBandsSlide 7s linear infinite;
+  opacity: .92;
+}
+.promo-theme-animated_bands .promo-poster-shape::after {
+  content: '';
+  position: absolute;
+  inset: 28%;
+  border-radius: 50%;
+  background: rgba(15,23,42,.72);
+  box-shadow: 0 0 80px rgba(34,211,238,.45);
+}
+
+.promo-theme-animated_pulse {
+  background: #6d0015;
+  color: #fff;
+  animation: promoPulseBackground 2.8s ease-in-out infinite;
+}
+.promo-theme-animated_pulse .promo-poster-shape {
+  inset: 0;
+  background: radial-gradient(circle at 50% 48%, rgba(255,229,0,.95) 0 24%, rgba(255,229,0,.18) 25% 41%, transparent 42%), radial-gradient(circle at 50% 48%, transparent 0 54%, rgba(255,255,255,.22) 55% 56%, transparent 57%);
+  animation: promoPulseHalo 2.8s ease-in-out infinite;
+}
+.promo-theme-animated_pulse .promo-poster-shape::after {
+  content: '';
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 7%;
+  height: 12%;
+  background: #ffe500;
+  transform: rotate(-4deg);
+  animation: promoPulseBand 3.2s ease-in-out infinite alternate;
+}
+
+.promo-theme-animated_neon {
+  background: radial-gradient(circle at 50% 40%, #20204f 0%, #09090f 68%);
+  color: #fff;
+}
+.promo-theme-animated_neon .promo-poster-shape {
+  inset: 6%;
+  border: 4px solid #2ef2ff;
+  border-radius: 8%;
+  box-shadow: inset 0 0 28px #2ef2ff, 0 0 24px #2ef2ff, 0 0 65px rgba(217,70,239,.7);
+  animation: promoNeonFlicker 3.7s steps(1,end) infinite;
+}
+.promo-theme-animated_neon .promo-poster-shape::before,
+.promo-theme-animated_neon .promo-poster-shape::after {
+  content: '';
+  position: absolute;
+  width: 42%;
+  height: 4px;
+  background: #f43f5e;
+  box-shadow: 0 0 16px #f43f5e, 0 0 32px #f43f5e;
+  animation: promoNeonScan 4.2s ease-in-out infinite alternate;
+}
+.promo-theme-animated_neon .promo-poster-shape::before { left: 8%; top: 22%; }
+.promo-theme-animated_neon .promo-poster-shape::after { right: 8%; bottom: 22%; animation-delay: -2.1s; }
+
+/* Cores-base dos textos dos novos templates. Overrides manuais continuam vencendo via style inline. */
+.promo-theme-animated_hot .promo-headline,
+.promo-theme-animated_hot .promo-product { color: #fff; }
+.promo-theme-animated_hot .promo-price,
+.promo-theme-animated_hot .promo-unit,
+.promo-theme-animated_hot .promo-footer { color: #c90b2c; }
+
+.promo-theme-animated_burst .promo-headline,
+.promo-theme-animated_burst .promo-price { color: #d71938; }
+.promo-theme-animated_bands .promo-headline,
+.promo-theme-animated_bands .promo-product,
+.promo-theme-animated_bands .promo-price,
+.promo-theme-animated_bands .promo-unit,
+.promo-theme-animated_bands .promo-footer { color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.65); }
+.promo-theme-animated_pulse .promo-headline { color: #fff; }
+.promo-theme-animated_pulse .promo-product,
+.promo-theme-animated_pulse .promo-price,
+.promo-theme-animated_pulse .promo-unit { color: #8a001b; }
+.promo-theme-animated_neon .promo-headline,
+.promo-theme-animated_neon .promo-product { color: #fff; text-shadow: 0 0 12px #2ef2ff; }
+.promo-theme-animated_neon .promo-price { color: #ffe500; text-shadow: 0 0 12px #ffe500, 0 0 24px #f43f5e; }
+.promo-theme-animated_neon .promo-unit,
+.promo-theme-animated_neon .promo-footer { color: #67e8f9; }
+
+@keyframes promoHotWave {
+  from { transform: translateY(-4%) rotate(-2deg) scaleX(.96); }
+  to { transform: translateY(6%) rotate(2deg) scaleX(1.04); }
+}
+@keyframes promoHotRing {
+  0%,100% { transform: scale(.82); opacity: .55; }
+  50% { transform: scale(1.14); opacity: 1; }
+}
+@keyframes promoBurstSpin { to { transform: rotate(360deg); } }
+@keyframes promoBurstPulse {
+  0%,100% { transform: scale(.92); }
+  50% { transform: scale(1.06); }
+}
+@keyframes promoBandsSlide {
+  from { transform: translate3d(-8%, -5%, 0); }
+  to { transform: translate3d(8%, 5%, 0); }
+}
+@keyframes promoPulseBackground {
+  0%,100% { filter: brightness(.92) saturate(.95); }
+  50% { filter: brightness(1.16) saturate(1.16); }
+}
+@keyframes promoPulseHalo {
+  0%,100% { transform: scale(.95); opacity: .76; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+@keyframes promoPulseBand {
+  from { transform: translateX(-3%) rotate(-4deg); }
+  to { transform: translateX(3%) rotate(-2deg); }
+}
+@keyframes promoNeonFlicker {
+  0%,18%,22%,54%,58%,100% { opacity: 1; }
+  20%,56% { opacity: .48; }
+}
+@keyframes promoNeonScan {
+  from { transform: translateX(-12%) scaleX(.8); opacity: .55; }
+  to { transform: translateX(120%) scaleX(1.15); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-theme-animated_hot .promo-poster-shape::before,
+  .promo-theme-animated_hot .promo-poster-shape::after,
+  .promo-theme-animated_burst .promo-poster-shape,
+  .promo-theme-animated_burst .promo-poster-shape::before,
+  .promo-theme-animated_bands .promo-poster-shape,
+  .promo-theme-animated_pulse,
+  .promo-theme-animated_pulse .promo-poster-shape,
+  .promo-theme-animated_pulse .promo-poster-shape::after,
+  .promo-theme-animated_neon .promo-poster-shape,
+  .promo-theme-animated_neon .promo-poster-shape::before,
+  .promo-theme-animated_neon .promo-poster-shape::after { animation: none !important; }
+}
