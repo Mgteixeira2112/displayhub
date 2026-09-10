@@ -8,58 +8,34 @@
 }
 
 /* O cartaz mantém sempre o seu próprio fundo e a sua própria geometria.
-   Esta camada só aparece nas sobras de viewport fora da proporção do cartaz. */
+   A sobra de viewport usa apenas uma cor-base do tema, sem reproduzir formas,
+   círculos, halos, raios ou qualquer outro elemento decorativo. */
 .promotion-player::before {
-  content: '';
-  position: absolute;
-  inset: -8%;
-  z-index: 0;
-  pointer-events: none;
-  transform: scale(1.08);
-  filter: blur(28px) saturate(.92);
-  opacity: .9;
+  content: none;
 }
 
 .promotion-player:has(.promo-theme-hot_red) { background: #c8102e; }
 .promotion-player:has(.promo-theme-burst_yellow) { background: #ffe600; }
 .promotion-player:has(.promo-theme-price_blast) { background: #f5efe4; }
 
-/* Nos temas animados, a sobra recebe apenas uma extensão ambiente das cores.
-   As formas (raios, círculos, faixas etc.) continuam existindo somente dentro
-   do cartaz 16:9/9:16, evitando duplicação e distorção visual. */
 .promotion-player:has(.promo-theme-animated_hot) {
   background: #b90825;
-}
-.promotion-player:has(.promo-theme-animated_hot)::before {
-  background: linear-gradient(145deg, #d80d2f 0%, #b90825 58%, #8f061d 100%);
 }
 
 .promotion-player:has(.promo-theme-animated_burst) {
   background: #ff9f0a;
 }
-.promotion-player:has(.promo-theme-animated_burst)::before {
-  background: radial-gradient(circle at 50% 50%, #ffe500 0%, #ffb30a 44%, #ff7a18 72%, #ef233c 100%);
-}
 
 .promotion-player:has(.promo-theme-animated_bands) {
   background: #0f172a;
-}
-.promotion-player:has(.promo-theme-animated_bands)::before {
-  background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 46%, #22d3ee 72%, #0f172a 100%);
 }
 
 .promotion-player:has(.promo-theme-animated_pulse) {
   background: #6d0015;
 }
-.promotion-player:has(.promo-theme-animated_pulse)::before {
-  background: radial-gradient(circle at 50% 48%, rgba(255,229,0,.82) 0 22%, #9b1027 52%, #6d0015 100%);
-}
 
 .promotion-player:has(.promo-theme-animated_neon) {
   background: #09090f;
-}
-.promotion-player:has(.promo-theme-animated_neon)::before {
-  background: radial-gradient(circle at 50% 40%, #30306c 0%, #18183d 40%, #09090f 78%);
 }
 
 .promotion-player .promo-poster {
