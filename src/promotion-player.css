@@ -7,6 +7,18 @@
   background: #000;
 }
 
+/* Quando a viewport não está exatamente na mesma proporção do cartaz, a arte
+   continua inteira e a área externa usa a cor-base do template em vez de
+   exibir barras pretas. Isso preserva o layout do preview sem distorção. */
+.promotion-player:has(.promo-theme-hot_red) { background: #c8102e; }
+.promotion-player:has(.promo-theme-burst_yellow) { background: #ffe600; }
+.promotion-player:has(.promo-theme-price_blast) { background: #f5efe4; }
+.promotion-player:has(.promo-theme-animated_hot) { background: #b90825; }
+.promotion-player:has(.promo-theme-animated_burst) { background: #ffe500; }
+.promotion-player:has(.promo-theme-animated_bands) { background: #0f172a; }
+.promotion-player:has(.promo-theme-animated_pulse) { background: #6d0015; }
+.promotion-player:has(.promo-theme-animated_neon) { background: #09090f; }
+
 .promotion-player .promo-poster {
   max-width: 100vw;
   max-height: 100vh;
@@ -14,9 +26,6 @@
   box-shadow: none;
 }
 
-/* O cartaz deve sempre caber inteiro na viewport, preservando exatamente a
-   proporção usada no preview. Nunca usar width:100% ou height:100% isolados,
-   pois isso pode fazer a outra dimensão ultrapassar a tela e cortar a arte. */
 .promotion-player .promo-poster.promo-landscape {
   width: min(100vw, calc(100vh * 16 / 9));
   height: auto;
