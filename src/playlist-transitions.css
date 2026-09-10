@@ -1,0 +1,139 @@
+.playlist-transition-controls {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(160px, 220px) minmax(130px, 170px);
+  gap: 12px;
+  align-items: end;
+  padding: 12px 14px;
+  border: 1px solid var(--dh-border);
+  border-radius: 12px;
+  background: rgba(148, 163, 184, .06);
+}
+
+.playlist-transition-controls > div {
+  display: grid;
+  gap: 3px;
+}
+
+.playlist-transition-controls > div > strong {
+  font-size: .82rem;
+}
+
+.playlist-transition-controls > div > small {
+  color: var(--dh-muted);
+  line-height: 1.35;
+}
+
+.playlist-transition-controls label {
+  display: grid;
+  gap: 5px;
+  font-size: .75rem;
+  font-weight: 800;
+  color: var(--dh-muted);
+}
+
+.playlist-transition-controls select:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+.poster-transition-stage,
+.poster-transition-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.poster-transition-stage {
+  background: #000;
+}
+
+.poster-transition-layer {
+  will-change: opacity, transform;
+}
+
+.poster-transition-old { z-index: 1; }
+.poster-transition-new { z-index: 2; }
+
+.poster-transition-fade .poster-transition-old {
+  animation-name: playlistPosterFadeOut;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+.poster-transition-fade .poster-transition-new {
+  animation-name: playlistPosterFadeIn;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+.poster-transition-slide_left .poster-transition-old {
+  animation-name: playlistPosterSlideLeftOut;
+  animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+  animation-fill-mode: forwards;
+}
+.poster-transition-slide_left .poster-transition-new {
+  animation-name: playlistPosterSlideLeftIn;
+  animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+  animation-fill-mode: forwards;
+}
+
+.poster-transition-slide_up .poster-transition-old {
+  animation-name: playlistPosterSlideUpOut;
+  animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+  animation-fill-mode: forwards;
+}
+.poster-transition-slide_up .poster-transition-new {
+  animation-name: playlistPosterSlideUpIn;
+  animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+  animation-fill-mode: forwards;
+}
+
+.poster-transition-zoom .poster-transition-old {
+  animation-name: playlistPosterZoomOut;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+.poster-transition-zoom .poster-transition-new {
+  animation-name: playlistPosterZoomIn;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes playlistPosterFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes playlistPosterFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes playlistPosterSlideLeftOut {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+@keyframes playlistPosterSlideLeftIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes playlistPosterSlideUpOut {
+  from { transform: translateY(0); }
+  to { transform: translateY(-100%); }
+}
+@keyframes playlistPosterSlideUpIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes playlistPosterZoomOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.08); }
+}
+@keyframes playlistPosterZoomIn {
+  from { opacity: 0; transform: scale(.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 760px) {
+  .playlist-transition-controls {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
