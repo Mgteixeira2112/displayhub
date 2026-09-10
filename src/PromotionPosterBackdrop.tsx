@@ -6,6 +6,10 @@ const animatedThemes = new Set([
   'animated_bands',
   'animated_pulse',
   'animated_neon',
+  'animated_confetti',
+  'animated_chevron',
+  'animated_glow',
+  'animated_flash',
 ])
 
 export function isAnimatedPosterTheme(theme: string) {
