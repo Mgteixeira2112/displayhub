@@ -10,7 +10,8 @@ type Content = { type: string; title: string; signed_url?: string; external_url?
 type StructuredRow = { id: string; title: string; category: string | null; description: string | null; price: number | null; promo_price: number | null; position: number }
 type Structured = { kind: string; title: string; category: string | null; description: string | null; price: number | null; promo_price: number | null; qr_value: string | null; rows: StructuredRow[] }
 type Item = { id: string; position: number; duration_seconds: number; template: Template | null; content: Content | null; structured: Structured | null; poster: PromotionPosterData | null }
-type Playlist = { id: string; name: string; items: Item[] }
+type TransitionType = 'none' | 'fade' | 'slide_left' | 'slide_up' | 'zoom'
+type Playlist = { id: string; name: string; transition_type: TransitionType; transition_duration_ms: number; items: Item[] }
 type Publication = { id: string; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; playlist: Playlist }
 type SyncSession = { id: string; playlist_id: string; playback_state: 'playing' | 'paused' | 'stopped'; started_at: string; paused_position_ms: number; sequence: number }
 type GroupLaunch = { id: string; playlist_id: string; status: 'preparing' | 'armed' | 'started' | 'cancelled'; sequence: number; requested_at: string; start_at: string | null; updated_at: string }
@@ -55,11 +56,16 @@ export default function PublicPlayer({ token }: { token: string }) {
   const [itemIndex, setItemIndex] = useState(0)
   const [syncCursor, setSyncCursor] = useState<SyncCursor | null>(null)
   const [loadError, setLoadError] = useState(false)
+  const [previousPosterItem, setPreviousPosterItem] = useState<Item | null>(null)
+  const [transitionSerial, setTransitionSerial] = useState(0)
   const playbackAnchor = useRef<PlaybackAnchor | null>(null)
   const youtubeController = useRef<YouTubeController | null>(null)
   const youtubeBuffering = useRef(false)
   const providerTelemetry = useRef<ProviderTelemetry | null>(null)
   const readyKey = useRef('')
+  const activePlaylistIdRef = useRef<string | null>(null)
+  const lastItemRef = useRef<Item | null>(null)
+  const transitionTimerRef = useRef<number | null>(null)
 
   const handleYouTubeController = useCallback((controller: YouTubeController | null) => {
     youtubeController.current = controller
@@ -79,11 +85,23 @@ export default function PublicPlayer({ token }: { token: string }) {
       else setLoadError(true)
       return
     }
+    const nextProgram = data as Program
+    const nextPublication = nextProgram.publications.find((row) => publicationMatches(row)) || null
+    const nextPlaylistId = nextPublication?.playlist.id ?? null
+    if (activePlaylistIdRef.current !== nextPlaylistId) {
+      activePlaylistIdRef.current = nextPlaylistId
+      setItemIndex(0)
+      lastItemRef.current = null
+      setPreviousPosterItem(null)
+      if (transitionTimerRef.current != null) {
+        window.clearTimeout(transitionTimerRef.current)
+        transitionTimerRef.current = null
+      }
+    }
     setInvalid(false)
     setLoadError(false)
-    setProgram(data as Program)
+    setProgram(nextProgram)
     setWall((wallRes.data?.wall || null) as WallContext | null)
-    setItemIndex(0)
   }, [token])
 
   useEffect(() => {
@@ -94,7 +112,12 @@ export default function PublicPlayer({ token }: { token: string }) {
       .on('broadcast', { event: 'display_program_changed' }, () => { if (active) void loadProgram() })
       .subscribe()
     const timer = window.setInterval(() => { if (active) void loadProgram() }, 2000)
-    return () => { active = false; window.clearInterval(timer); void publicSupabase.removeChannel(channel) }
+    return () => {
+      active = false
+      window.clearInterval(timer)
+      if (transitionTimerRef.current != null) window.clearTimeout(transitionTimerRef.current)
+      void publicSupabase.removeChannel(channel)
+    }
   }, [token, loadProgram])
 
   const publication = useMemo(() => program?.publications.find((row) => publicationMatches(row)) || null, [program])
@@ -120,12 +143,37 @@ export default function PublicPlayer({ token }: { token: string }) {
   const effectiveIndex = launchHolding ? 0 : (syncCursor ? syncCursor.index : itemIndex)
   const item = items.length ? items[effectiveIndex % items.length] : null
   const offsetSeconds = launchHolding ? 0 : (syncCursor?.offsetSeconds || 0)
+  const transitionType = publication?.playlist.transition_type || 'fade'
+  const configuredTransitionMs = Math.max(0, Math.min(2000, Number(publication?.playlist.transition_duration_ms ?? 600)))
+  const transitionDurationMs = item ? Math.min(configuredTransitionMs, Math.max(100, item.duration_seconds * 1000 - 100)) : configuredTransitionMs
 
   useEffect(() => {
     if (syncSession || !item || items.length < 2) return
     const timer = window.setTimeout(() => setItemIndex((value) => (value + 1) % items.length), item.duration_seconds * 1000)
     return () => window.clearTimeout(timer)
-  }, [item, items.length, syncSession])
+  }, [item?.id, item?.duration_seconds, items.length, syncSession])
+
+  useEffect(() => {
+    if (!item) {
+      lastItemRef.current = null
+      setPreviousPosterItem(null)
+      return
+    }
+    const previous = lastItemRef.current
+    const canTransition = !wall && transitionType !== 'none' && transitionDurationMs > 0 && previous?.id !== item.id && Boolean(previous?.poster && item.poster)
+    if (canTransition && previous) {
+      if (transitionTimerRef.current != null) window.clearTimeout(transitionTimerRef.current)
+      setPreviousPosterItem(previous)
+      setTransitionSerial((value) => value + 1)
+      transitionTimerRef.current = window.setTimeout(() => {
+        setPreviousPosterItem(null)
+        transitionTimerRef.current = null
+      }, transitionDurationMs)
+    } else if (previous?.id !== item.id) {
+      setPreviousPosterItem(null)
+    }
+    lastItemRef.current = item
+  }, [item?.id, transitionType, transitionDurationMs, wall])
 
   useEffect(() => {
     if (!item) { playbackAnchor.current = null; return }
@@ -205,7 +253,14 @@ export default function PublicPlayer({ token }: { token: string }) {
   if (!publication || !item) return <Idle display={program.display} />
 
   const mediaFit = wall?.media_fit || 'cover'
-  const content = <ItemView item={item} display={program.display} mediaFit={mediaFit} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} />
+  const currentContent = <ItemView item={item} display={program.display} mediaFit={mediaFit} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} />
+  const showPosterTransition = !wall && transitionType !== 'none' && Boolean(previousPosterItem?.poster && item.poster)
+  const content = showPosterTransition && previousPosterItem?.poster
+    ? <div className={`poster-transition-stage poster-transition-${transitionType}`} key={`poster-transition-${transitionSerial}-${item.id}`}>
+        <div className="poster-transition-layer poster-transition-old" style={{ animationDuration: `${transitionDurationMs}ms` }}><div className="promotion-player"><PromotionPosterView poster={previousPosterItem.poster} /></div></div>
+        <div className="poster-transition-layer poster-transition-new" style={{ animationDuration: `${transitionDurationMs}ms` }}>{currentContent}</div>
+      </div>
+    : currentContent
   const progressDuration = syncCursor ? Math.max(0.05, syncCursor.remainingMs / 1000) : item.duration_seconds
 
   return <main className={`public-display player-screen player-${item.template?.template_type || 'default'} ${wall ? 'video-wall-screen' : ''}`}>
