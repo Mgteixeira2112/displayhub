@@ -1,0 +1,6 @@
+.promo-landscape .promo-headline.promo-custom-position {
+  position: absolute !important;
+  grid-column: auto !important;
+  justify-self: auto !important;
+  transform: translate(-50%, -50%) !important;
+}
