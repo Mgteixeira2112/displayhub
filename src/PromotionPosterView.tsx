@@ -25,9 +25,14 @@ const designFontSizes: Record<Orientation, Record<ElementKey, number>> = {
   landscape: { headline: 64, product: 110, price: 200, unit: 42, footer: 36 },
 }
 
-const designWidths: Record<Orientation, number> = {
-  portrait: 1080,
-  landscape: 1920,
+const previewWidths: Record<Orientation, number> = {
+  portrait: 430,
+  landscape: 720,
+}
+
+const previewMaxRem: Record<Orientation, Record<ElementKey, number>> = {
+  portrait: { headline: 2, product: 3.5, price: 7.3, unit: 1.25, footer: 1.2 },
+  landscape: { headline: 2, product: 4.5, price: 8.5, unit: 1.25, footer: 1.2 },
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -37,8 +42,12 @@ function clamp(value: number, min: number, max: number) {
 function manualFontSize(key: ElementKey, orientation: Orientation, item: ElementLayout) {
   const direct = typeof item.fontSize === 'number' ? item.fontSize : null
   const legacy = direct == null && typeof item.fontScale === 'number' ? designFontSizes[orientation][key] * item.fontScale / 100 : null
-  const logicalPx = clamp(direct ?? legacy ?? designFontSizes[orientation][key], 8, 400)
-  return `${((logicalPx / designWidths[orientation]) * 100).toFixed(4)}cqw`
+  const fontSize = direct ?? legacy
+  if (fontSize == null) return undefined
+
+  const scale = clamp(fontSize, 8, 400) / designFontSizes[orientation][key]
+  const previewPx = previewMaxRem[orientation][key] * 16 * scale
+  return `${((previewPx / previewWidths[orientation]) * 100).toFixed(4)}cqw`
 }
 
 function moneyLabel(value: number) {
@@ -58,11 +67,12 @@ export default function PromotionPosterView({ poster, className = '' }: { poster
     if (hasPosition) { style.left = `${item.x}%`; style.top = `${item.y}%` }
     if (typeof item.width === 'number') { style.width = `${item.width}%`; style.maxWidth = `${item.width}%` }
     if (typeof item.height === 'number') { style.height = `${item.height}%`; style.maxHeight = `${item.height}%`; style.overflow = 'hidden' }
-    style.fontSize = manualFontSize(key, orientation, item)
+    const manualSize = manualFontSize(key, orientation, item)
+    if (manualSize) style.fontSize = manualSize
     if (item.align) style.textAlign = item.align
     if (item.color) style.color = item.color
     if (hasRotation) style['--promo-rotation'] = `${item.rotation}deg`
-    const props = { className: classes, style }
+    const props = { className: classes, style: Object.keys(style).length ? style : undefined }
     if (tag === 'strong') return <strong {...props}>{text}</strong>
     if (tag === 'div') return <div {...props}>{text}</div>
     if (tag === 'em') return <em {...props}>{text}</em>
