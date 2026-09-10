@@ -1,1 +1,0 @@
-Traditional resize implementation branch marker.
