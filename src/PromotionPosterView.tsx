@@ -37,9 +37,7 @@ function clamp(value: number, min: number, max: number) {
 function manualFontSize(key: ElementKey, orientation: Orientation, item: ElementLayout) {
   const direct = typeof item.fontSize === 'number' ? item.fontSize : null
   const legacy = direct == null && typeof item.fontScale === 'number' ? designFontSizes[orientation][key] * item.fontScale / 100 : null
-  const fontSize = direct ?? legacy
-  if (fontSize == null) return undefined
-  const logicalPx = clamp(fontSize, 8, 400)
+  const logicalPx = clamp(direct ?? legacy ?? designFontSizes[orientation][key], 8, 400)
   return `${((logicalPx / designWidths[orientation]) * 100).toFixed(4)}cqw`
 }
 
@@ -60,12 +58,11 @@ export default function PromotionPosterView({ poster, className = '' }: { poster
     if (hasPosition) { style.left = `${item.x}%`; style.top = `${item.y}%` }
     if (typeof item.width === 'number') { style.width = `${item.width}%`; style.maxWidth = `${item.width}%` }
     if (typeof item.height === 'number') { style.height = `${item.height}%`; style.maxHeight = `${item.height}%`; style.overflow = 'hidden' }
-    const manualSize = manualFontSize(key, orientation, item)
-    if (manualSize) style.fontSize = manualSize
+    style.fontSize = manualFontSize(key, orientation, item)
     if (item.align) style.textAlign = item.align
     if (item.color) style.color = item.color
     if (hasRotation) style['--promo-rotation'] = `${item.rotation}deg`
-    const props = { className: classes, style: Object.keys(style).length ? style : undefined }
+    const props = { className: classes, style }
     if (tag === 'strong') return <strong {...props}>{text}</strong>
     if (tag === 'div') return <div {...props}>{text}</div>
     if (tag === 'em') return <em {...props}>{text}</em>
