@@ -4,7 +4,8 @@ import { templateLabels } from './TemplateManager'
 
 type Props = { companyId: string; role: string }
 type SourceType = 'content_item' | 'structured_content' | 'promotion_poster'
-type Playlist = { id: string; name: string; description: string | null; is_active: boolean }
+type TransitionType = 'none' | 'fade' | 'slide_left' | 'slide_up' | 'zoom'
+type Playlist = { id: string; name: string; description: string | null; is_active: boolean; transition_type: TransitionType; transition_duration_ms: number }
 type Source = { id: string; label: string; sourceType: SourceType }
 type TemplateType = keyof typeof templateLabels
 type DisplayTemplate = { id: string; name: string; template_type: TemplateType; is_active: boolean }
@@ -13,6 +14,14 @@ type Display = { id: string; name: string; is_active: boolean; revoked_at: strin
 type Publication = { id: string; display_id: string; playlist_id: string; starts_at: string | null; ends_at: string | null; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; is_active: boolean }
 
 const week = [[0,'Dom'],[1,'Seg'],[2,'Ter'],[3,'Qua'],[4,'Qui'],[5,'Sex'],[6,'Sáb']] as const
+const transitionOptions: Array<{ value: TransitionType; label: string }> = [
+  { value: 'none', label: 'Nenhuma' },
+  { value: 'fade', label: 'Fade' },
+  { value: 'slide_left', label: 'Deslizar à esquerda' },
+  { value: 'slide_up', label: 'Deslizar para cima' },
+  { value: 'zoom', label: 'Zoom suave' },
+]
+const transitionDurations = [200, 400, 600, 800, 1000, 1500, 2000]
 
 function posterPrice(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))
@@ -53,7 +62,7 @@ export default function PlaylistManager({ companyId, role }: Props) {
 
   const loadAll = useCallback(async () => {
     const [playlistRes,itemRes,contentRes,structuredRes,posterRes,templateRes,displayRes,publicationRes] = await Promise.all([
-      supabase.from('playlists').select('id,name,description,is_active').order('created_at'),
+      supabase.from('playlists').select('id,name,description,is_active,transition_type,transition_duration_ms').order('created_at'),
       supabase.from('playlist_items').select('id,playlist_id,source_type,content_item_id,structured_content_id,promotion_poster_id,template_id,position,duration_seconds').order('position'),
       supabase.from('content_items').select('id,title,type').eq('is_active', true).order('title'),
       supabase.from('structured_contents').select('id,title,kind').eq('is_active', true).order('title'),
@@ -63,7 +72,7 @@ export default function PlaylistManager({ companyId, role }: Props) {
       supabase.from('display_publications').select('id,display_id,playlist_id,starts_at,ends_at,repeat_mode,daily_start,daily_end,weekdays,is_active').order('created_at',{ascending:false}),
     ])
     for (const response of [playlistRes,itemRes,contentRes,structuredRes,posterRes,templateRes,displayRes,publicationRes]) if (response.error) throw response.error
-    setPlaylists((playlistRes.data || []) as Playlist[])
+    setPlaylists((playlistRes.data || []).map((row) => ({ ...row, transition_type: row.transition_type || 'fade', transition_duration_ms: Number(row.transition_duration_ms ?? 600) })) as Playlist[])
     setItems((itemRes.data || []) as PlaylistItem[])
     setSources([
       ...(contentRes.data || []).map((row) => ({ id: row.id, label: `${row.type === 'image' ? 'Imagem' : row.type === 'hls' ? 'HLS' : 'YouTube'} · ${row.title}`, sourceType: 'content_item' as const })),
@@ -112,6 +121,15 @@ export default function PlaylistManager({ companyId, role }: Props) {
     setBusy(false)
   }
 
+  async function setPlaylistTransition(playlistIdToUpdate: string, changes: Partial<Pick<Playlist, 'transition_type' | 'transition_duration_ms'>>) {
+    if (!canManage) return
+    setBusy(true); setMessage('')
+    const { error } = await supabase.from('playlists').update(changes).eq('id', playlistIdToUpdate)
+    if (error) setMessage(error.message)
+    else { setMessage('Transição da playlist atualizada.'); await loadAll() }
+    setBusy(false)
+  }
+
   async function createPublication(event: FormEvent) {
     event.preventDefault(); if (!canManage || !publicationPlaylist || !displayId) return
     setBusy(true); setMessage('')
@@ -151,7 +169,11 @@ export default function PlaylistManager({ companyId, role }: Props) {
       </form>
     </div></details>}
 
-    <div className="playlist-list">{playlists.length===0 && <p className="empty-state">Nenhuma playlist cadastrada.</p>}{playlists.map((playlist)=><article className="playlist-card" key={playlist.id}><div className="playlist-card-head"><div><strong>{playlist.name}</strong>{playlist.description&&<p>{playlist.description}</p>}</div>{canManage&&<button className="danger-button" type="button" onClick={()=>void remove('playlists',playlist.id)} disabled={busy}>Excluir playlist</button>}</div><div className="playlist-items">{items.filter((item)=>item.playlist_id===playlist.id).map((item)=>{const sourceId=item.content_item_id||item.structured_content_id||item.promotion_poster_id||'';const label=sourceMap.get(`${item.source_type}:${sourceId}`)||'Conteúdo';return <div className="playlist-item" key={item.id}><span>#{item.position} · {label}</span><small>{item.duration_seconds}s</small><small>{item.source_type === 'promotion_poster' ? 'Template do próprio cartaz' : item.template_id ? templateMap.get(item.template_id) || 'Template' : 'Sem template'}</small>{canManage&&item.source_type!=='promotion_poster'&&<select value={item.template_id || ''} onChange={(e)=>void setItemTemplate(item.id,e.target.value)} disabled={busy}><option value="">Sem template</option>{templates.map((t)=><option key={t.id} value={t.id}>{t.name}</option>)}</select>}{canManage&&<button type="button" onClick={()=>void remove('playlist_items',item.id)}>Remover</button>}</div>})}{items.every((item)=>item.playlist_id!==playlist.id)&&<small className="empty-state">Playlist vazia.</small>}</div></article>)}</div>
+    <div className="playlist-list">{playlists.length===0 && <p className="empty-state">Nenhuma playlist cadastrada.</p>}{playlists.map((playlist)=><article className="playlist-card" key={playlist.id}>
+      <div className="playlist-card-head"><div><strong>{playlist.name}</strong>{playlist.description&&<p>{playlist.description}</p>}</div>{canManage&&<button className="danger-button" type="button" onClick={()=>void remove('playlists',playlist.id)} disabled={busy}>Excluir playlist</button>}</div>
+      <div className="playlist-transition-controls"><div><strong>Transição entre cartazes</strong><small>Aplicada apenas quando dois cartazes aparecem em sequência.</small></div><label>Efeito<select value={playlist.transition_type} onChange={(e)=>void setPlaylistTransition(playlist.id,{transition_type:e.target.value as TransitionType})} disabled={busy}>{transitionOptions.map((option)=><option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label>Duração<select value={playlist.transition_duration_ms} onChange={(e)=>void setPlaylistTransition(playlist.id,{transition_duration_ms:Number(e.target.value)})} disabled={busy||playlist.transition_type==='none'}>{transitionDurations.map((value)=><option key={value} value={value}>{value} ms</option>)}</select></label></div>
+      <div className="playlist-items">{items.filter((item)=>item.playlist_id===playlist.id).map((item)=>{const sourceId=item.content_item_id||item.structured_content_id||item.promotion_poster_id||'';const label=sourceMap.get(`${item.source_type}:${sourceId}`)||'Conteúdo';return <div className="playlist-item" key={item.id}><span>#{item.position} · {label}</span><small>{item.duration_seconds}s</small><small>{item.source_type === 'promotion_poster' ? 'Template do próprio cartaz' : item.template_id ? templateMap.get(item.template_id) || 'Template' : 'Sem template'}</small>{canManage&&item.source_type!=='promotion_poster'&&<select value={item.template_id || ''} onChange={(e)=>void setItemTemplate(item.id,e.target.value)} disabled={busy}><option value="">Sem template</option>{templates.map((t)=><option key={t.id} value={t.id}>{t.name}</option>)}</select>}{canManage&&<button type="button" onClick={()=>void remove('playlist_items',item.id)}>Remover</button>}</div>})}{items.every((item)=>item.playlist_id!==playlist.id)&&<small className="empty-state">Playlist vazia.</small>}</div>
+    </article>)}</div>
 
     {canManage && <details className="create-panel schedule-create-panel"><summary>+ Nova programação</summary><form className="content-form publication-form" onSubmit={createPublication}><h3>Publicar / agendar em display</h3><div className="publication-grid"><label>Playlist<select value={publicationPlaylist} onChange={(e)=>setPublicationPlaylist(e.target.value)} required><option value="">Selecione</option>{playlists.filter((p)=>p.is_active).map((p)=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>Display<select value={displayId} onChange={(e)=>setDisplayId(e.target.value)} required disabled={activeDisplays.length===0}><option value="">{activeDisplays.length===0 ? 'Nenhum display ativo disponível' : 'Selecione'}</option>{activeDisplays.map((d)=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Início opcional<input type="datetime-local" value={startsAt} onChange={(e)=>setStartsAt(e.target.value)}/></label><label>Fim opcional<input type="datetime-local" value={endsAt} onChange={(e)=>setEndsAt(e.target.value)}/></label><label>Repetição<select value={repeatMode} onChange={(e)=>setRepeatMode(e.target.value as 'always'|'daily')}><option value="always">Contínua</option><option value="daily">Horário diário</option></select></label>{repeatMode==='daily'&&<><label>De<input type="time" value={dailyStart} onChange={(e)=>setDailyStart(e.target.value)} required/></label><label>Até<input type="time" value={dailyEnd} onChange={(e)=>setDailyEnd(e.target.value)} required/></label></>}</div>{repeatMode==='daily'&&<div className="weekday-row">{week.map(([value,label])=><label key={value}><input type="checkbox" checked={weekdays.includes(value)} onChange={(e)=>setWeekdays(e.target.checked?[...weekdays,value].sort():weekdays.filter((day)=>day!==value))}/>{label}</label>)}</div>}<button className="primary-button" disabled={busy||activeDisplays.length===0||(repeatMode==='daily'&&weekdays.length===0)}>Criar programação</button></form></details>}
 
