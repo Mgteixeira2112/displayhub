@@ -30,14 +30,26 @@ const elementKeys: ElementKey[] = ['headline', 'product', 'price', 'unit', 'foot
 const elementLabels: Record<ElementKey, string> = { headline: 'Chamada', product: 'Produto', price: 'Preço', unit: 'Unidade', footer: 'Rodapé' }
 const resizeDirections: ResizeDirection[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
 
+const fontRules: Record<Orientation, Record<ElementKey, { min: number; fluid: number; max: number }>> = {
+  portrait: {
+    headline: { min: 1.05, fluid: 3, max: 2 },
+    product: { min: 1.3, fluid: 4.6, max: 3.5 },
+    price: { min: 2.8, fluid: 10, max: 7.3 },
+    unit: { min: 0.8, fluid: 2, max: 1.25 },
+    footer: { min: 0.75, fluid: 1.8, max: 1.2 },
+  },
+  landscape: {
+    headline: { min: 1.05, fluid: 3, max: 2 },
+    product: { min: 1.7, fluid: 4.2, max: 4.5 },
+    price: { min: 3.6, fluid: 9, max: 8.5 },
+    unit: { min: 0.8, fluid: 2, max: 1.25 },
+    footer: { min: 0.75, fluid: 1.8, max: 1.2 },
+  },
+}
+
 const designFontSizes: Record<Orientation, Record<ElementKey, number>> = {
   portrait: { headline: 64, product: 104, price: 190, unit: 42, footer: 36 },
   landscape: { headline: 64, product: 110, price: 200, unit: 42, footer: 36 },
-}
-
-const designWidths: Record<Orientation, number> = {
-  portrait: 1080,
-  landscape: 1920,
 }
 
 function moneyInput(value: string) {
@@ -54,8 +66,10 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function manualFontSize(key: ElementKey, orientation: Orientation, fontSize?: number) {
-  const logicalPx = clamp(fontSize ?? designFontSizes[orientation][key], 8, 400)
-  return `${((logicalPx / designWidths[orientation]) * 100).toFixed(4)}cqw`
+  if (typeof fontSize !== 'number') return undefined
+  const rule = fontRules[orientation][key]
+  const scale = clamp(fontSize, 8, 400) / designFontSizes[orientation][key]
+  return `clamp(${(rule.min * scale).toFixed(3)}rem, ${(rule.fluid * scale).toFixed(3)}vw, ${(rule.max * scale).toFixed(3)}rem)`
 }
 
 function templateColor(theme: Template['theme'] | undefined, key: ElementKey, orientation: Orientation) {
@@ -317,13 +331,14 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
       if (hasPosition) { style.left = `${item.x}%`; style.top = `${item.y}%` }
       if (typeof item.width === 'number') { style.width = `${item.width}%`; style.maxWidth = `${item.width}%` }
       if (typeof item.height === 'number') { style.height = `${item.height}%`; style.maxHeight = `${item.height}%`; style.overflow = 'hidden' }
-      style.fontSize = manualFontSize(key, posterOrientation, item.fontSize)
+      const manualSize = manualFontSize(key, posterOrientation, item.fontSize)
+      if (manualSize) style.fontSize = manualSize
       if (item.align) style.textAlign = item.align
       if (item.color) style.color = item.color
       if (hasRotation) style['--promo-rotation'] = `${item.rotation}deg`
       const props = {
         className,
-        style,
+        style: Object.keys(style).length ? style : undefined,
         onPointerDown: editable ? (event: ReactPointerEvent<HTMLElement>) => startDrag(event, key, posterOrientation) : undefined,
         onPointerMove: editable ? (event: ReactPointerEvent<HTMLElement>) => moveInteraction(event, key, posterOrientation) : undefined,
         onPointerUp: editable ? endInteraction : undefined,
