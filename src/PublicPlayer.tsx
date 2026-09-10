@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { publicSupabase } from './lib/supabase'
 import YouTubeSyncPlayer, { type MediaFit, type YouTubeController } from './YouTubeSyncPlayer'
 import HlsSyncPlayer, { type HlsMediaSample } from './HlsSyncPlayer'
+import PromotionPosterView, { type PromotionPosterData } from './PromotionPosterView'
 
 type Display = { id: string; name: string; location: string | null; orientation: string; resolution_width: number; resolution_height: number }
 type Template = { name: string; template_type: string }
 type Content = { type: string; title: string; signed_url?: string; external_url?: string; external_id?: string }
 type StructuredRow = { id: string; title: string; category: string | null; description: string | null; price: number | null; promo_price: number | null; position: number }
 type Structured = { kind: string; title: string; category: string | null; description: string | null; price: number | null; promo_price: number | null; qr_value: string | null; rows: StructuredRow[] }
-type Item = { id: string; position: number; duration_seconds: number; template: Template | null; content: Content | null; structured: Structured | null }
+type Item = { id: string; position: number; duration_seconds: number; template: Template | null; content: Content | null; structured: Structured | null; poster: PromotionPosterData | null }
 type Playlist = { id: string; name: string; items: Item[] }
 type Publication = { id: string; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; playlist: Playlist }
 type SyncSession = { id: string; playlist_id: string; playback_state: 'playing' | 'paused' | 'stopped'; started_at: string; paused_position_ms: number; sequence: number }
@@ -230,7 +231,10 @@ function ItemView({ item, display, mediaFit, startSeconds, syncKey, shouldPlay, 
 }) {
   useEffect(() => {
     if (item.structured) onReady('structured')
-  }, [item.id, item.structured, onReady])
+    if (item.poster) onReady('promotion_poster')
+  }, [item.id, item.structured, item.poster, onReady])
+
+  if (item.poster) return <div className="promotion-player"><PromotionPosterView poster={item.poster} className="promotion-player-poster" /></div>
 
   if (item.content?.type === 'image' && item.content.signed_url) {
     const objectFit = mediaFit === 'native' ? 'fill' : mediaFit
