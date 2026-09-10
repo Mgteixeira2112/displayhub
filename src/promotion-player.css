@@ -79,6 +79,29 @@
   box-shadow: none;
 }
 
+/* No player público, fundos animados são desenhados uma única vez pela camada
+   full-bleed do .promotion-player. O cartaz interno mantém apenas conteúdo e
+   geometria, evitando dois fundos sobrepostos. */
+.promotion-player .promo-poster:is(
+  .promo-theme-animated_hot,
+  .promo-theme-animated_burst,
+  .promo-theme-animated_bands,
+  .promo-theme-animated_pulse,
+  .promo-theme-animated_neon
+) {
+  background: transparent !important;
+}
+
+.promotion-player .promo-poster:is(
+  .promo-theme-animated_hot,
+  .promo-theme-animated_burst,
+  .promo-theme-animated_bands,
+  .promo-theme-animated_pulse,
+  .promo-theme-animated_neon
+) > .promo-poster-shape {
+  display: none !important;
+}
+
 .promotion-player .promo-poster.promo-landscape {
   width: min(100vw, calc(100vh * 16 / 9));
   height: auto;
