@@ -6,7 +6,7 @@ type Orientation = 'portrait' | 'landscape'
 type ElementKey = 'headline' | 'product' | 'price' | 'unit' | 'footer'
 type TextAlign = 'left' | 'center' | 'right'
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
-type ElementLayout = { x?: number; y?: number; width?: number; height?: number; align?: TextAlign; color?: string }
+type ElementLayout = { x?: number; y?: number; width?: number; height?: number; align?: TextAlign; color?: string; fontScale?: number }
 type OrientationLayout = Partial<Record<ElementKey, ElementLayout>>
 type LayoutPositions = Partial<Record<Orientation, OrientationLayout>>
 type Template = { key: string; name: string; description: string | null; theme: 'hot_red' | 'burst_yellow' | 'price_blast'; aspect_ratio: 'portrait' | 'landscape' | 'square' }
@@ -28,20 +28,20 @@ const elementKeys: ElementKey[] = ['headline', 'product', 'price', 'unit', 'foot
 const elementLabels: Record<ElementKey, string> = { headline: 'Chamada', product: 'Produto', price: 'Preço', unit: 'Unidade', footer: 'Rodapé' }
 const resizeDirections: ResizeDirection[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
 
-const fontRules: Record<Orientation, Record<ElementKey, { min: number; fluid: number; max: number; baselineWidth: number; baselineHeight: number }>> = {
+const fontRules: Record<Orientation, Record<ElementKey, { min: number; fluid: number; max: number }>> = {
   portrait: {
-    headline: { min: 0.72, fluid: 3, max: 2, baselineWidth: 88, baselineHeight: 10 },
-    product: { min: 0.82, fluid: 4.6, max: 3.5, baselineWidth: 88, baselineHeight: 20 },
-    price: { min: 1.7, fluid: 10, max: 7.3, baselineWidth: 88, baselineHeight: 18 },
-    unit: { min: 0.58, fluid: 2, max: 1.25, baselineWidth: 88, baselineHeight: 8 },
-    footer: { min: 0.55, fluid: 1.8, max: 1.2, baselineWidth: 88, baselineHeight: 8 },
+    headline: { min: 1.05, fluid: 3, max: 2 },
+    product: { min: 1.3, fluid: 4.6, max: 3.5 },
+    price: { min: 2.8, fluid: 10, max: 7.3 },
+    unit: { min: 0.8, fluid: 2, max: 1.25 },
+    footer: { min: 0.75, fluid: 1.8, max: 1.2 },
   },
   landscape: {
-    headline: { min: 0.72, fluid: 3, max: 2, baselineWidth: 88, baselineHeight: 14 },
-    product: { min: 0.9, fluid: 4.2, max: 4.5, baselineWidth: 88, baselineHeight: 34 },
-    price: { min: 2, fluid: 9, max: 8.5, baselineWidth: 88, baselineHeight: 30 },
-    unit: { min: 0.58, fluid: 2, max: 1.25, baselineWidth: 88, baselineHeight: 12 },
-    footer: { min: 0.55, fluid: 1.8, max: 1.2, baselineWidth: 88, baselineHeight: 12 },
+    headline: { min: 1.05, fluid: 3, max: 2 },
+    product: { min: 1.7, fluid: 4.2, max: 4.5 },
+    price: { min: 3.6, fluid: 9, max: 8.5 },
+    unit: { min: 0.8, fluid: 2, max: 1.25 },
+    footer: { min: 0.75, fluid: 1.8, max: 1.2 },
   },
 }
 
@@ -58,12 +58,10 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-function fittedFontSize(key: ElementKey, orientation: Orientation, width?: number, height?: number) {
-  if (typeof width !== 'number' && typeof height !== 'number') return undefined
+function manualFontSize(key: ElementKey, orientation: Orientation, fontScale?: number) {
+  if (typeof fontScale !== 'number') return undefined
   const rule = fontRules[orientation][key]
-  const widthScale = typeof width === 'number' ? width / rule.baselineWidth : 1
-  const heightScale = typeof height === 'number' ? height / rule.baselineHeight : 1
-  const scale = clamp(Math.min(widthScale, heightScale), 0.36, 1)
+  const scale = clamp(fontScale, 30, 250) / 100
   return `clamp(${(rule.min * scale).toFixed(3)}rem, ${(rule.fluid * scale).toFixed(3)}vw, ${(rule.max * scale).toFixed(3)}rem)`
 }
 
@@ -104,6 +102,7 @@ function normalizeLayoutPositions(value: unknown): LayoutPositions {
       if (typeof item.height === 'number' && Number.isFinite(item.height)) normalized.height = clamp(item.height, 4, 100)
       if (item.align === 'left' || item.align === 'center' || item.align === 'right') normalized.align = item.align
       if (typeof item.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(item.color)) normalized.color = item.color.toLowerCase()
+      if (typeof item.fontScale === 'number' && Number.isFinite(item.fontScale)) normalized.fontScale = clamp(item.fontScale, 30, 250)
       if (Object.keys(normalized).length > 0) layout[key] = normalized
     }
     result[orientation] = layout
@@ -134,6 +133,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
   const selectedElementLayout = layoutPositions[orientation]?.[selectedElement] || {}
   const selectedAlign = selectedElementLayout.align ?? 'center'
   const selectedColor = selectedElementLayout.color ?? templateColor(selectedTemplate?.theme, selectedElement, orientation)
+  const selectedFontScale = selectedElementLayout.fontScale ?? 100
 
   const load = useCallback(async () => {
     const [templateResult, posterResult] = await Promise.all([
@@ -165,6 +165,15 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
       const currentOrientation = current[targetOrientation] || {}
       const nextElement = { ...(currentOrientation[key] || {}) }
       delete nextElement.color
+      return { ...current, [targetOrientation]: { ...currentOrientation, [key]: nextElement } }
+    })
+  }
+
+  function resetElementFontSize(targetOrientation: Orientation, key: ElementKey) {
+    setLayoutPositions((current) => {
+      const currentOrientation = current[targetOrientation] || {}
+      const nextElement = { ...(currentOrientation[key] || {}) }
+      delete nextElement.fontScale
       return { ...current, [targetOrientation]: { ...currentOrientation, [key]: nextElement } }
     })
   }
@@ -308,8 +317,8 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
       if (hasPosition) { style.left = `${item.x}%`; style.top = `${item.y}%` }
       if (typeof item.width === 'number') { style.width = `${item.width}%`; style.maxWidth = `${item.width}%` }
       if (typeof item.height === 'number') { style.height = `${item.height}%`; style.maxHeight = `${item.height}%`; style.overflow = 'hidden' }
-      const fitted = fittedFontSize(key, posterOrientation, item.width, item.height)
-      if (fitted) style.fontSize = fitted
+      const manualSize = manualFontSize(key, posterOrientation, item.fontScale)
+      if (manualSize) style.fontSize = manualSize
       if (item.align) style.textAlign = item.align
       if (item.color) style.color = item.color
       const props = {
@@ -347,14 +356,21 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
           <strong>Ajustar texto selecionado</strong>
           <label>Elemento<select value={selectedElement} onChange={(e) => setSelectedElement(e.target.value as ElementKey)}>{elementKeys.map((key) => <option key={key} value={key}>{elementLabels[key]}</option>)}</select></label>
           <div className="promotion-box-status"><span>Caixa</span><strong>{typeof selectedElementLayout.width === 'number' ? `${Math.round(selectedElementLayout.width)}% × ${Math.round(selectedElementLayout.height ?? 0)}%` : 'automática'}</strong></div>
-          <small>Selecione o texto no cartaz. Arraste os quadradinhos dos cantos para largura + altura ou os quadradinhos laterais para uma dimensão.</small>
+          <small>Arraste os quadradinhos da borda para mudar largura e altura. O tamanho da fonte não muda mais automaticamente.</small>
+          <label>Tamanho da fonte
+            <div className="promotion-font-row">
+              <input type="number" min="30" max="250" step="5" value={Math.round(selectedFontScale)} onChange={(e) => updateElementLayout(orientation, selectedElement, { fontScale: clamp(Number(e.target.value) || 100, 30, 250) })} />
+              <span>%</span>
+              <button className="secondary-button compact" type="button" onClick={() => resetElementFontSize(orientation, selectedElement)}>Usar tamanho do template</button>
+            </div>
+          </label>
           <label>Alinhamento<select value={selectedAlign} onChange={(e) => updateElementLayout(orientation, selectedElement, { align: e.target.value as TextAlign })}><option value="left">Esquerda</option><option value="center">Centro</option><option value="right">Direita</option></select></label>
           <label>Cor da letra<div className="promotion-color-row"><input aria-label="Cor da letra" type="color" value={selectedColor} onChange={(e) => updateElementLayout(orientation, selectedElement, { color: e.target.value.toLowerCase() })} /><code>{selectedColor.toUpperCase()}</code><button className="secondary-button compact" type="button" onClick={() => resetElementColor(orientation, selectedElement)}>Usar cor do template</button></div></label>
           <small>Os ajustes valem somente para {orientation === 'portrait' ? 'Vertical' : 'Horizontal'}.</small>
         </div>}
         {canManage && <div className="promotion-actions"><button className="primary-button" type="submit" disabled={busy}>{editingId ? 'Salvar alterações' : 'Salvar cartaz'}</button><button className="secondary-button" type="button" onClick={() => restoreTemplateLayout(orientation)} disabled={busy}>Restaurar layout</button>{editingId && <button className="secondary-button" type="button" onClick={resetForm} disabled={busy}>Cancelar</button>}</div>}
       </form>
-      <div className="promotion-preview-panel"><span>Pré-visualização · {orientation === 'portrait' ? 'Vertical' : 'Horizontal'}</span>{canManage && <small className="promotion-drag-hint">Clique no texto para selecionar. Arraste pelo centro para mover e pelos quadradinhos da borda para redimensionar.</small>}{posterPreview(selectedTemplate?.theme || 'hot_red', orientation, { product_name: productName || 'NOME DO PRODUTO', price: previewPrice, unit: unit || null, headline: headline || 'OFERTA', footer: footer || null }, layoutPositions, canManage)}</div>
+      <div className="promotion-preview-panel"><span>Pré-visualização · {orientation === 'portrait' ? 'Vertical' : 'Horizontal'}</span>{canManage && <small className="promotion-drag-hint">Clique no texto para selecionar. Arraste pelo centro para mover, use os quadradinhos para redimensionar a caixa e ajuste a fonte manualmente no painel.</small>}{posterPreview(selectedTemplate?.theme || 'hot_red', orientation, { product_name: productName || 'NOME DO PRODUTO', price: previewPrice, unit: unit || null, headline: headline || 'OFERTA', footer: footer || null }, layoutPositions, canManage)}</div>
     </div>
     <div className="section-heading promotion-saved-heading"><div><p className="eyebrow">Salvos</p><h3>{posters.length} cartaz{posters.length === 1 ? '' : 'es'}</h3></div></div>
     <div className="promotion-poster-grid">{posters.length === 0 && <p className="empty-state">Nenhum cartaz salvo.</p>}{posters.map((poster) => { const template = templates.find((item) => item.key === poster.template_key); return <article className={`promotion-poster-card card-${poster.orientation}`} key={poster.id}>{posterPreview(template?.theme || 'hot_red', poster.orientation, poster, poster.layout_positions)}<div className="promotion-card-actions"><strong>{poster.product_name}</strong><small>{template?.name || poster.template_key} · {poster.orientation === 'portrait' ? 'Vertical' : 'Horizontal'}</small>{canManage && <div><button className="secondary-button compact" type="button" onClick={() => editPoster(poster)} disabled={busy}>Editar</button><button className="secondary-button compact" type="button" onClick={() => void duplicatePoster(poster)} disabled={busy}>Duplicar</button><button className="danger-button" type="button" onClick={() => void removePoster(poster.id)} disabled={busy}>Excluir</button></div>}</div></article> })}</div>
