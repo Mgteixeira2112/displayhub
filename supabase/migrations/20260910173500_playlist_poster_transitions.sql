@@ -15,3 +15,5 @@ alter table public.playlists
 alter table public.playlists
   add constraint playlists_transition_duration_ms_check
   check (transition_duration_ms between 0 and 2000);
+
+grant update (transition_type, transition_duration_ms) on public.playlists to authenticated;
