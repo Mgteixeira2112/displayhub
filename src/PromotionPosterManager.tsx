@@ -22,6 +22,8 @@ type Interaction = {
   right?: number
   top?: number
   bottom?: number
+  grabOffsetX?: number
+  grabOffsetY?: number
 }
 
 const elementKeys: ElementKey[] = ['headline', 'product', 'price', 'unit', 'footer']
@@ -203,8 +205,17 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
     if (!poster) return
     event.preventDefault(); event.stopPropagation(); setSelectedElement(key); setSelectionActive(true)
     const posterRect = poster.getBoundingClientRect()
-    ensureMeasuredLayout(event.currentTarget, posterRect, key, targetOrientation)
-    interactionRef.current = { mode: 'drag', key, orientation: targetOrientation, pointerId: event.pointerId, posterRect }
+    const elementRect = event.currentTarget.getBoundingClientRect()
+    const current = layoutPositions[targetOrientation]?.[key] || {}
+    const centerX = typeof current.x === 'number' ? current.x : ((elementRect.left + elementRect.width / 2 - posterRect.left) / posterRect.width) * 100
+    const centerY = typeof current.y === 'number' ? current.y : ((elementRect.top + elementRect.height / 2 - posterRect.top) / posterRect.height) * 100
+    const pointerX = ((event.clientX - posterRect.left) / posterRect.width) * 100
+    const pointerY = ((event.clientY - posterRect.top) / posterRect.height) * 100
+    interactionRef.current = {
+      mode: 'drag', key, orientation: targetOrientation, pointerId: event.pointerId, posterRect,
+      grabOffsetX: pointerX - centerX,
+      grabOffsetY: pointerY - centerY,
+    }
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
@@ -232,7 +243,9 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
     if (!interaction || interaction.key !== key || interaction.orientation !== targetOrientation || interaction.pointerId !== event.pointerId) return
     event.preventDefault()
     if (interaction.mode === 'drag') {
-      setElementPoint(targetOrientation, key, ((event.clientX - interaction.posterRect.left) / interaction.posterRect.width) * 100, ((event.clientY - interaction.posterRect.top) / interaction.posterRect.height) * 100)
+      const pointerX = ((event.clientX - interaction.posterRect.left) / interaction.posterRect.width) * 100
+      const pointerY = ((event.clientY - interaction.posterRect.top) / interaction.posterRect.height) * 100
+      setElementPoint(targetOrientation, key, pointerX - (interaction.grabOffsetX ?? 0), pointerY - (interaction.grabOffsetY ?? 0))
       return
     }
     const direction = interaction.direction
