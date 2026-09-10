@@ -4,13 +4,15 @@ import { supabase } from './lib/supabase'
 type Props = { companyId: string; role: string }
 type Orientation = 'portrait' | 'landscape'
 type ElementKey = 'headline' | 'product' | 'price' | 'unit' | 'footer'
-type Point = { x: number; y: number }
-type OrientationLayout = Partial<Record<ElementKey, Point>>
+type TextAlign = 'left' | 'center' | 'right'
+type ElementLayout = { x?: number; y?: number; width?: number; align?: TextAlign }
+type OrientationLayout = Partial<Record<ElementKey, ElementLayout>>
 type LayoutPositions = Partial<Record<Orientation, OrientationLayout>>
 type Template = { key: string; name: string; description: string | null; theme: 'hot_red' | 'burst_yellow' | 'price_blast'; aspect_ratio: 'portrait' | 'landscape' | 'square' }
 type Poster = { id: string; template_key: string; product_name: string; price: number; unit: string | null; headline: string; footer: string | null; orientation: Orientation; layout_positions: LayoutPositions; created_at: string }
 
 const elementKeys: ElementKey[] = ['headline', 'product', 'price', 'unit', 'footer']
+const elementLabels: Record<ElementKey, string> = { headline: 'Chamada', product: 'Produto', price: 'Preço', unit: 'Unidade', footer: 'Rodapé' }
 
 function moneyInput(value: string) {
   const parsed = Number(value.replace(',', '.'))
@@ -34,12 +36,15 @@ function normalizeLayoutPositions(value: unknown): LayoutPositions {
     if (!rawLayout || typeof rawLayout !== 'object' || Array.isArray(rawLayout)) continue
     const layout: OrientationLayout = {}
     for (const key of elementKeys) {
-      const rawPoint = (rawLayout as Record<string, unknown>)[key]
-      if (!rawPoint || typeof rawPoint !== 'object' || Array.isArray(rawPoint)) continue
-      const point = rawPoint as Record<string, unknown>
-      if (typeof point.x === 'number' && Number.isFinite(point.x) && typeof point.y === 'number' && Number.isFinite(point.y)) {
-        layout[key] = { x: clamp(point.x, 0, 100), y: clamp(point.y, 0, 100) }
-      }
+      const rawElement = (rawLayout as Record<string, unknown>)[key]
+      if (!rawElement || typeof rawElement !== 'object' || Array.isArray(rawElement)) continue
+      const item = rawElement as Record<string, unknown>
+      const normalized: ElementLayout = {}
+      if (typeof item.x === 'number' && Number.isFinite(item.x)) normalized.x = clamp(item.x, 0, 100)
+      if (typeof item.y === 'number' && Number.isFinite(item.y)) normalized.y = clamp(item.y, 0, 100)
+      if (typeof item.width === 'number' && Number.isFinite(item.width)) normalized.width = clamp(item.width, 15, 100)
+      if (item.align === 'left' || item.align === 'center' || item.align === 'right') normalized.align = item.align
+      if (Object.keys(normalized).length > 0) layout[key] = normalized
     }
     result[orientation] = layout
   }
@@ -59,12 +64,16 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
   const [headline, setHeadline] = useState('OFERTA QUENTE!')
   const [footer, setFooter] = useState('Aproveite!')
   const [layoutPositions, setLayoutPositions] = useState<LayoutPositions>({})
+  const [selectedElement, setSelectedElement] = useState<ElementKey>('product')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const dragRef = useRef<{ key: ElementKey; orientation: Orientation; pointerId: number; posterRect: DOMRect } | null>(null)
 
   const selectedTemplate = useMemo(() => templates.find((item) => item.key === templateKey) || null, [templates, templateKey])
   const previewPrice = moneyInput(price) ?? 0
+  const selectedElementLayout = layoutPositions[orientation]?.[selectedElement] || {}
+  const selectedWidth = selectedElementLayout.width ?? 88
+  const selectedAlign = selectedElementLayout.align ?? 'center'
 
   const load = useCallback(async () => {
     const [templateResult, posterResult] = await Promise.all([
@@ -94,16 +103,21 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
     setHeadline('OFERTA QUENTE!')
     setFooter('Aproveite!')
     setLayoutPositions({})
+    setSelectedElement('product')
   }
 
-  function setElementPoint(targetOrientation: Orientation, key: ElementKey, point: Point) {
+  function updateElementLayout(targetOrientation: Orientation, key: ElementKey, changes: Partial<ElementLayout>) {
     setLayoutPositions((current) => ({
       ...current,
       [targetOrientation]: {
         ...(current[targetOrientation] || {}),
-        [key]: { x: clamp(point.x, 2, 98), y: clamp(point.y, 2, 98) },
+        [key]: { ...(current[targetOrientation]?.[key] || {}), ...changes },
       },
     }))
+  }
+
+  function setElementPoint(targetOrientation: Orientation, key: ElementKey, x: number, y: number) {
+    updateElementLayout(targetOrientation, key, { x: clamp(x, 2, 98), y: clamp(y, 2, 98) })
   }
 
   function startDrag(event: ReactPointerEvent<HTMLElement>, key: ElementKey, targetOrientation: Orientation) {
@@ -112,14 +126,17 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
     if (!poster) return
     event.preventDefault()
     event.stopPropagation()
+    setSelectedElement(key)
     const posterRect = poster.getBoundingClientRect()
     const currentPoint = layoutPositions[targetOrientation]?.[key]
-    if (!currentPoint) {
+    if (typeof currentPoint?.x !== 'number' || typeof currentPoint?.y !== 'number') {
       const elementRect = event.currentTarget.getBoundingClientRect()
-      setElementPoint(targetOrientation, key, {
-        x: ((elementRect.left + elementRect.width / 2 - posterRect.left) / posterRect.width) * 100,
-        y: ((elementRect.top + elementRect.height / 2 - posterRect.top) / posterRect.height) * 100,
-      })
+      setElementPoint(
+        targetOrientation,
+        key,
+        ((elementRect.left + elementRect.width / 2 - posterRect.left) / posterRect.width) * 100,
+        ((elementRect.top + elementRect.height / 2 - posterRect.top) / posterRect.height) * 100,
+      )
     }
     dragRef.current = { key, orientation: targetOrientation, pointerId: event.pointerId, posterRect }
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -130,10 +147,12 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
     if (!drag || drag.key !== key || drag.orientation !== targetOrientation || drag.pointerId !== event.pointerId) return
     event.preventDefault()
     const { posterRect } = drag
-    setElementPoint(targetOrientation, key, {
-      x: ((event.clientX - posterRect.left) / posterRect.width) * 100,
-      y: ((event.clientY - posterRect.top) / posterRect.height) * 100,
-    })
+    setElementPoint(
+      targetOrientation,
+      key,
+      ((event.clientX - posterRect.left) / posterRect.width) * 100,
+      ((event.clientY - posterRect.top) / posterRect.height) * 100,
+    )
   }
 
   function endDrag(event: ReactPointerEvent<HTMLElement>) {
@@ -186,6 +205,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
     setHeadline(poster.headline)
     setFooter(poster.footer || '')
     setLayoutPositions(poster.layout_positions || {})
+    setSelectedElement('product')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -227,12 +247,16 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
   ) {
     const currentLayout = positions[posterOrientation] || {}
     const propsFor = (key: ElementKey, baseClass: string) => {
-      const point = currentLayout[key]
-      const className = `${baseClass} promo-element${point ? ' promo-custom-position' : ''}${editable ? ' promo-draggable' : ''}`
-      const style: CSSProperties | undefined = point ? { left: `${point.x}%`, top: `${point.y}%` } : undefined
+      const item = currentLayout[key] || {}
+      const hasPosition = typeof item.x === 'number' && typeof item.y === 'number'
+      const className = `${baseClass} promo-element${hasPosition ? ' promo-custom-position' : ''}${editable ? ' promo-draggable' : ''}${editable && selectedElement === key ? ' promo-selected' : ''}`
+      const style: CSSProperties = {}
+      if (hasPosition) { style.left = `${item.x}%`; style.top = `${item.y}%` }
+      if (typeof item.width === 'number') { style.width = `${item.width}%`; style.maxWidth = `${item.width}%` }
+      if (item.align) style.textAlign = item.align
       return {
         className,
-        style,
+        style: Object.keys(style).length ? style : undefined,
         onPointerDown: editable ? (event: ReactPointerEvent<HTMLElement>) => startDrag(event, key, posterOrientation) : undefined,
         onPointerMove: editable ? (event: ReactPointerEvent<HTMLElement>) => moveDrag(event, key, posterOrientation) : undefined,
         onPointerUp: editable ? endDrag : undefined,
@@ -269,12 +293,23 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
           <label>Produto<input value={productName} onChange={(e) => setProductName(e.target.value)} maxLength={120} required /></label>
           <div className="inline-fields"><label>Preço<input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} required /></label><label>Unidade<input value={unit} onChange={(e) => setUnit(e.target.value)} maxLength={30} placeholder="KG, UN, 2L..." /></label></div>
           <label>Rodapé<input value={footer} onChange={(e) => setFooter(e.target.value)} maxLength={80} placeholder="Aproveite!" /></label>
+
+          {canManage && <div className="promotion-box-controls">
+            <strong>Ajustar caixa de texto</strong>
+            <label>Elemento<select value={selectedElement} onChange={(e) => setSelectedElement(e.target.value as ElementKey)}>{elementKeys.map((key) => <option key={key} value={key}>{elementLabels[key]}</option>)}</select></label>
+            <label>Largura da caixa · {Math.round(selectedWidth)}%
+              <input type="range" min="15" max="100" step="1" value={selectedWidth} onChange={(e) => updateElementLayout(orientation, selectedElement, { width: Number(e.target.value) })} />
+            </label>
+            <label>Alinhamento<select value={selectedAlign} onChange={(e) => updateElementLayout(orientation, selectedElement, { align: e.target.value as TextAlign })}><option value="left">Esquerda</option><option value="center">Centro</option><option value="right">Direita</option></select></label>
+            <small>Os ajustes valem somente para {orientation === 'portrait' ? 'Vertical' : 'Horizontal'}.</small>
+          </div>}
+
           {canManage && <div className="promotion-actions"><button className="primary-button" type="submit" disabled={busy}>{editingId ? 'Salvar alterações' : 'Salvar cartaz'}</button><button className="secondary-button" type="button" onClick={() => restoreTemplateLayout(orientation)} disabled={busy}>Restaurar layout</button>{editingId && <button className="secondary-button" type="button" onClick={resetForm} disabled={busy}>Cancelar</button>}</div>}
         </form>
 
         <div className="promotion-preview-panel">
           <span>Pré-visualização · {orientation === 'portrait' ? 'Vertical' : 'Horizontal'}</span>
-          {canManage && <small className="promotion-drag-hint">Arraste chamada, produto, preço, unidade ou rodapé diretamente sobre o cartaz.</small>}
+          {canManage && <small className="promotion-drag-hint">Arraste os textos no cartaz. O elemento clicado fica selecionado para ajustar largura e alinhamento.</small>}
           {posterPreview(selectedTemplate?.theme || 'hot_red', orientation, { product_name: productName || 'NOME DO PRODUTO', price: previewPrice, unit: unit || null, headline: headline || 'OFERTA', footer: footer || null }, layoutPositions, canManage)}
         </div>
       </div>
