@@ -1,0 +1,17 @@
+.promo-poster {
+  container-type: inline-size;
+}
+
+/* Tipografia padrão escalada pelo próprio cartaz. Isso mantém preview e player
+   proporcionais mesmo quando o navegador/TV têm larguras muito diferentes. */
+.promo-portrait .promo-headline { font-size: 5.926cqw; }
+.promo-portrait .promo-product { font-size: 9.630cqw; }
+.promo-portrait .promo-price { font-size: 17.593cqw; }
+.promo-portrait .promo-unit { font-size: 3.889cqw; }
+.promo-portrait .promo-footer { font-size: 3.333cqw; }
+
+.promo-landscape .promo-headline { font-size: 3.333cqw; }
+.promo-landscape .promo-product { font-size: 5.729cqw; }
+.promo-landscape .promo-price { font-size: 10.417cqw; }
+.promo-landscape .promo-unit { font-size: 2.188cqw; }
+.promo-landscape .promo-footer { font-size: 1.875cqw; }
