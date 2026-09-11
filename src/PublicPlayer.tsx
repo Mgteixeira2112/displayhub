@@ -153,13 +153,20 @@ export default function PublicPlayer({ token }: { token: string }) {
     if (syncSession || !item || !items.length) return
     const timer = window.setTimeout(() => {
       if (items.length === 1) {
+        if (item.content?.type === 'youtube') {
+          const controller = youtubeController.current
+          if (controller) {
+            controller.seekTo(0, true)
+            if (shouldPlay) controller.playVideo()
+          }
+        }
         setLocalCycleSerial((value) => value + 1)
         return
       }
       setItemIndex((value) => (value + 1) % items.length)
     }, item.duration_seconds * 1000)
     return () => window.clearTimeout(timer)
-  }, [item?.id, item?.duration_seconds, items.length, syncSession, localCycleSerial])
+  }, [item?.id, item?.duration_seconds, item?.content?.type, items.length, syncSession, localCycleSerial, shouldPlay])
 
   useEffect(() => {
     if (!item) {
@@ -261,7 +268,7 @@ export default function PublicPlayer({ token }: { token: string }) {
   if (!publication || !item) return <Idle display={program.display} />
 
   const mediaFit = wall?.media_fit || 'cover'
-  const localSyncKey = `${localCycleSerial}:${item.id}`
+  const localSyncKey = item.content?.type === 'youtube' ? item.id : `${localCycleSerial}:${item.id}`
   const currentContent = <ItemView item={item} display={program.display} mediaFit={mediaFit} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : localSyncKey} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} />
   const showPosterTransition = !wall && transitionType !== 'none' && Boolean(previousPosterItem?.poster && item.poster)
   const content = showPosterTransition && previousPosterItem?.poster
