@@ -9,7 +9,7 @@ type Playlist = { id: string; name: string; description: string | null; is_activ
 type Source = { id: string; label: string; sourceType: SourceType }
 type TemplateType = keyof typeof templateLabels
 type DisplayTemplate = { id: string; name: string; template_type: TemplateType; is_active: boolean }
-type PlaylistItem = { id: string; playlist_id: string; source_type: SourceType; content_item_id: string | null; structured_content_id: string | null; promotion_poster_id: string | null; template_id: string | null; position: number; duration_seconds: number }
+type PlaylistItem = { id: string; playlist_id: string; source_type: SourceType; content_item_id: string | null; structured_content_id: string | null; promotion_poster_id: string | null; template_id: string | null; position: number; duration_seconds: number; created_at: string }
 type Display = { id: string; name: string; is_active: boolean; revoked_at: string | null }
 type Publication = { id: string; display_id: string; playlist_id: string; starts_at: string | null; ends_at: string | null; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; is_active: boolean }
 
@@ -27,6 +27,14 @@ function posterPrice(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))
 }
 
+function orderPlaylistItems(rows: PlaylistItem[]) {
+  return [...rows].sort((a, b) => {
+    if (a.position !== b.position) return a.position - b.position
+    const createdDiff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    return createdDiff || a.id.localeCompare(b.id)
+  })
+}
+
 export default function PlaylistManager({ companyId, role }: Props) {
   const canManage = role === 'admin' || role === 'manager'
   const [playlists, setPlaylists] = useState<Playlist[]>([])
@@ -41,7 +49,6 @@ export default function PlaylistManager({ companyId, role }: Props) {
   const [sourceKey, setSourceKey] = useState('')
   const [templateId, setTemplateId] = useState('')
   const [duration, setDuration] = useState(10)
-  const [position, setPosition] = useState(0)
   const [publicationPlaylist, setPublicationPlaylist] = useState('')
   const [displayId, setDisplayId] = useState('')
   const [startsAt, setStartsAt] = useState('')
@@ -63,7 +70,7 @@ export default function PlaylistManager({ companyId, role }: Props) {
   const loadAll = useCallback(async () => {
     const [playlistRes,itemRes,contentRes,structuredRes,posterRes,templateRes,displayRes,publicationRes] = await Promise.all([
       supabase.from('playlists').select('id,name,description,is_active,transition_type,transition_duration_ms').order('created_at'),
-      supabase.from('playlist_items').select('id,playlist_id,source_type,content_item_id,structured_content_id,promotion_poster_id,template_id,position,duration_seconds').order('position'),
+      supabase.from('playlist_items').select('id,playlist_id,source_type,content_item_id,structured_content_id,promotion_poster_id,template_id,position,duration_seconds,created_at').order('position').order('created_at'),
       supabase.from('content_items').select('id,title,type').eq('is_active', true).order('title'),
       supabase.from('structured_contents').select('id,title,kind').eq('is_active', true).order('title'),
       supabase.from('promotion_posters').select('id,product_name,price,orientation,template_key').eq('is_active', true).order('created_at', { ascending: false }),
@@ -97,6 +104,8 @@ export default function PlaylistManager({ companyId, role }: Props) {
   async function addItem(event: FormEvent) {
     event.preventDefault(); if (!canManage || !playlistId || !sourceKey) return
     const [sourceType,id] = sourceKey.split(':') as [SourceType,string]
+    const playlistItems = items.filter((row) => row.playlist_id === playlistId)
+    const nextPosition = playlistItems.reduce((max, row) => Math.max(max, row.position), -1) + 1
     setBusy(true); setMessage('')
     const { error } = await supabase.from('playlist_items').insert({
       playlist_id: playlistId,
@@ -106,10 +115,10 @@ export default function PlaylistManager({ companyId, role }: Props) {
       structured_content_id: sourceType === 'structured_content' ? id : null,
       promotion_poster_id: sourceType === 'promotion_poster' ? id : null,
       template_id: sourceType === 'promotion_poster' ? null : templateId || null,
-      position,
+      position: nextPosition,
       duration_seconds: duration,
     })
-    if (error) setMessage(error.message); else { await loadAll(); setPosition(position + 1); setSourceKey(''); setTemplateId('') }
+    if (error) setMessage(error.message); else { await loadAll(); setSourceKey(''); setTemplateId('') }
     setBusy(false)
   }
 
@@ -133,16 +142,20 @@ export default function PlaylistManager({ companyId, role }: Props) {
 
   async function moveItem(item: PlaylistItem, direction: -1 | 1) {
     if (!canManage) return
-    const ordered = items.filter((row) => row.playlist_id === item.playlist_id).sort((a,b) => a.position - b.position)
+    const ordered = orderPlaylistItems(items.filter((row) => row.playlist_id === item.playlist_id))
     const index = ordered.findIndex((row) => row.id === item.id)
-    const target = ordered[index + direction]
-    if (!target) return
+    const targetIndex = index + direction
+    if (index < 0 || targetIndex < 0 || targetIndex >= ordered.length) return
+    const reordered = [...ordered]
+    ;[reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]]
     setBusy(true); setMessage('')
-    const [first, second] = await Promise.all([
-      supabase.from('playlist_items').update({ position: target.position }).eq('id', item.id),
-      supabase.from('playlist_items').update({ position: item.position }).eq('id', target.id),
-    ])
-    if (first.error || second.error) setMessage(first.error?.message || second.error?.message || 'Não foi possível reordenar a playlist.')
+    const results = await Promise.all(reordered.map((row, nextPosition) =>
+      row.position === nextPosition
+        ? Promise.resolve({ error: null })
+        : supabase.from('playlist_items').update({ position: nextPosition }).eq('id', row.id),
+    ))
+    const reorderError = results.find((result) => result.error)?.error
+    if (reorderError) setMessage(reorderError.message || 'Não foi possível reordenar a playlist.')
     else { setMessage('Ordem da playlist atualizada.'); await loadAll() }
     setBusy(false)
   }
@@ -152,7 +165,7 @@ export default function PlaylistManager({ companyId, role }: Props) {
     setBusy(true); setMessage('')
     const { error } = await supabase.from('playlist_items').delete().eq('id', item.id)
     if (error) { setMessage(error.message); setBusy(false); return }
-    const remaining = items.filter((row) => row.playlist_id === item.playlist_id && row.id !== item.id).sort((a,b) => a.position - b.position)
+    const remaining = orderPlaylistItems(items.filter((row) => row.playlist_id === item.playlist_id && row.id !== item.id))
     const updates = remaining.map((row, index) => row.position === index ? Promise.resolve({ error: null }) : supabase.from('playlist_items').update({ position: index }).eq('id', row.id))
     const results = await Promise.all(updates)
     const reorderError = results.find((result) => result.error)?.error
@@ -205,12 +218,12 @@ export default function PlaylistManager({ companyId, role }: Props) {
         <label>Playlist<select value={playlistId} onChange={(e)=>setPlaylistId(e.target.value)} required><option value="">Selecione</option>{playlists.map((p)=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
         <label>Conteúdo<select value={sourceKey} onChange={(e)=>{setSourceKey(e.target.value); if (e.target.value.startsWith('promotion_poster:')) setTemplateId('')}} required><option value="">Selecione</option>{sources.map((s)=><option key={`${s.sourceType}:${s.id}`} value={`${s.sourceType}:${s.id}`}>{s.label}</option>)}</select></label>
         <label>Template opcional<select value={templateId} onChange={(e)=>setTemplateId(e.target.value)} disabled={selectedSourceType === 'promotion_poster'}><option value="">{selectedSourceType === 'promotion_poster' ? 'O cartaz já possui template' : 'Sem template'}</option>{templates.map((t)=><option key={t.id} value={t.id}>{t.name} · {templateLabels[t.template_type]}</option>)}</select></label>
-        <div className="playlist-inline"><label>Ordem<input type="number" min="0" value={position} onChange={(e)=>setPosition(Number(e.target.value))}/></label><label>Duração (s)<input type="number" min="1" max="3600" value={duration} onChange={(e)=>setDuration(Number(e.target.value))}/></label></div>
+        <div className="playlist-inline"><label>Duração (s)<input type="number" min="1" max="3600" value={duration} onChange={(e)=>setDuration(Number(e.target.value))}/></label></div>
         <button className="primary-button" disabled={busy}>Adicionar</button>
       </form>
     </div></details>}
 
-    <div className="playlist-list">{playlists.length===0 && <p className="empty-state">Nenhuma playlist cadastrada.</p>}{playlists.map((playlist)=>{const playlistItems=items.filter((item)=>item.playlist_id===playlist.id).sort((a,b)=>a.position-b.position);return <article className="playlist-card" key={playlist.id}>
+    <div className="playlist-list">{playlists.length===0 && <p className="empty-state">Nenhuma playlist cadastrada.</p>}{playlists.map((playlist)=>{const playlistItems=orderPlaylistItems(items.filter((item)=>item.playlist_id===playlist.id));return <article className="playlist-card" key={playlist.id}>
       <div className="playlist-card-head"><div><strong>{playlist.name}</strong>{playlist.description&&<p>{playlist.description}</p>}</div>{canManage&&<button className="danger-button" type="button" onClick={()=>void remove('playlists',playlist.id)} disabled={busy}>Excluir playlist</button>}</div>
       <div className="playlist-transition-controls"><div><strong>Transição entre cartazes</strong><small>Aplicada apenas quando dois cartazes aparecem em sequência.</small></div><label>Efeito<select value={playlist.transition_type} onChange={(e)=>void setPlaylistTransition(playlist.id,{transition_type:e.target.value as TransitionType})} disabled={busy}>{transitionOptions.map((option)=><option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label>Duração<select value={playlist.transition_duration_ms} onChange={(e)=>void setPlaylistTransition(playlist.id,{transition_duration_ms:Number(e.target.value)})} disabled={busy||playlist.transition_type==='none'}>{transitionDurations.map((value)=><option key={value} value={value}>{value} ms</option>)}</select></label></div>
       <div className="playlist-items">{playlistItems.map((item,index)=>{const sourceId=item.content_item_id||item.structured_content_id||item.promotion_poster_id||'';const label=sourceMap.get(`${item.source_type}:${sourceId}`)||'Conteúdo';return <div className="playlist-item playlist-item-editable" key={item.id}>
