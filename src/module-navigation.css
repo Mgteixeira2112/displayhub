@@ -1,6 +1,6 @@
 .software-dashboard-panel > .account-grid,
 .software-dashboard-panel > .workspace-section,
-.software-dashboard-panel > .software-module { display: none; }
+.software-dashboard-panel .software-module { display: none; }
 
 .view-overview .module-overview,
 .view-library .module-library,
