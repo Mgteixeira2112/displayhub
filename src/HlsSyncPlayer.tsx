@@ -19,10 +19,11 @@ declare global {
 }
 
 let hlsApiPromise: Promise<void> | null = null
-const VIDEO_WALL_READY_BUFFER_SECONDS = 3
+const VIDEO_WALL_READY_STABILIZATION_MS = 2000
 const VIDEO_WALL_DRIFT_RECOVERY_MS = 500
 const VIDEO_WALL_RECOVERY_COOLDOWN_MS = 1000
 const VIDEO_WALL_SAMPLE_INTERVAL_MS = 500
+const VIDEO_WALL_FORWARD_BUFFER_SECONDS = 20
 
 function loadHlsApi() {
   if (window.Hls?.isSupported) return Promise.resolve()
@@ -87,15 +88,17 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
+
     let disposed = false
     let hls: HlsInstance | null = null
-    let interval = 0
-    let readyInterval = 0
+    let sampleInterval = 0
+    let readyTimer = 0
     let buffering = true
     let readySent = false
     let lastRecoverySeekAt = 0
 
     const updateBuffering = () => { buffering = video.readyState < 3 || video.seeking }
+
     const canSeekTo = (targetSeconds: number) => {
       if (!Number.isFinite(targetSeconds) || targetSeconds < 0) return false
       if (!video.seekable.length) return !Number.isFinite(video.duration) || targetSeconds <= video.duration + 0.25
@@ -104,6 +107,7 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
       }
       return false
     }
+
     const alignToMaster = () => {
       if (!shouldPlayRef.current || video.seeking) return
       const expectedSeconds = getExpectedSecondsRef.current()
@@ -115,69 +119,58 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
       lastRecoverySeekAt = now
       try { video.currentTime = Math.max(0, expectedSeconds) } catch { /* noop */ }
     }
+
     const scheduleStart = () => {
       window.clearTimeout(startTimerRef.current)
       startTimerRef.current = 0
-      if (!shouldPlayRef.current) { video.pause(); return }
+      if (!shouldPlayRef.current) {
+        video.pause()
+        return
+      }
       const targetStartAt = startAtRef.current
       const delay = targetStartAt ? Math.max(0, new Date(targetStartAt).getTime() - Date.now()) : 0
-      const start = () => { if (!disposed) void video.play().catch(() => { buffering = true }) }
+      const start = () => {
+        if (!disposed) void video.play().catch(() => { buffering = true })
+      }
       if (delay <= 20) start()
-      else { video.pause(); startTimerRef.current = window.setTimeout(start, delay) }
-    }
-    const getBufferedAheadSeconds = () => {
-      if (!video.buffered.length) return 0
-      const initialStart = Math.max(0, startSecondsRef.current)
-      const current = Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : initialStart
-      const positions = [initialStart, current]
-
-      for (const position of positions) {
-        for (let index = 0; index < video.buffered.length; index += 1) {
-          const rangeStart = video.buffered.start(index)
-          const rangeEnd = video.buffered.end(index)
-          if (position >= rangeStart - 0.25 && position <= rangeEnd + 0.25) {
-            return Math.max(0, rangeEnd - Math.max(position, rangeStart))
-          }
-        }
+      else {
+        video.pause()
+        startTimerRef.current = window.setTimeout(start, delay)
       }
-
-      if (initialStart === 0) {
-        let longestRange = 0
-        for (let index = 0; index < video.buffered.length; index += 1) {
-          longestRange = Math.max(longestRange, video.buffered.end(index) - video.buffered.start(index))
-        }
-        return longestRange
-      }
-
-      return 0
     }
-    const getReadyBufferTarget = () => {
-      if (shouldPlayRef.current) return 0
-      const initialStart = Math.max(0, startSecondsRef.current)
-      if (Number.isFinite(video.duration) && video.duration > initialStart) {
-        return Math.min(VIDEO_WALL_READY_BUFFER_SECONDS, Math.max(0.25, video.duration - initialStart - 0.25))
-      }
-      return VIDEO_WALL_READY_BUFFER_SECONDS
-    }
+
     const markReady = () => {
       if (readySent || video.readyState < 3) return
-      const requiredBufferSeconds = getReadyBufferTarget()
-      if (requiredBufferSeconds > 0 && getBufferedAheadSeconds() + 0.05 < requiredBufferSeconds) return
-
       readySent = true
-      window.clearInterval(readyInterval)
-      readyInterval = 0
+      window.clearTimeout(readyTimer)
+      readyTimer = 0
       readyRef.current = true
       const initialStartSeconds = Math.max(0, startSecondsRef.current)
-      if (initialStartSeconds > 0) { try { video.currentTime = initialStartSeconds } catch { /* noop */ } }
+      if (initialStartSeconds > 0) {
+        try { video.currentTime = initialStartSeconds } catch { /* noop */ }
+      }
       video.pause()
       onReadyRef.current()
       scheduleStart()
     }
-    const beginSampling = () => {
-      interval = window.setInterval(() => {
-        if (disposed) return
+
+    const scheduleReady = () => {
+      if (readySent || video.readyState < 3) return
+      if (shouldPlayRef.current) {
         markReady()
+        return
+      }
+      if (readyTimer) return
+      readyTimer = window.setTimeout(() => {
+        readyTimer = 0
+        if (!disposed && video.readyState >= 3) markReady()
+      }, VIDEO_WALL_READY_STABILIZATION_MS)
+    }
+
+    const beginSampling = () => {
+      sampleInterval = window.setInterval(() => {
+        if (disposed) return
+        scheduleReady()
         updateBuffering()
         const expectedSeconds = getExpectedSecondsRef.current()
         if (expectedSeconds == null || !Number.isFinite(video.currentTime)) return
@@ -187,51 +180,82 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
         alignToMaster()
       }, VIDEO_WALL_SAMPLE_INTERVAL_MS)
     }
-    const handleCanPlay = () => { markReady(); updateBuffering(); alignToMaster() }
-    const handleWaiting = () => { buffering = true; alignToMaster() }
-    const handlePlaying = () => { buffering = false; alignToMaster() }
+
+    const handleCanPlay = () => {
+      updateBuffering()
+      scheduleReady()
+      alignToMaster()
+    }
+    const handleWaiting = () => {
+      buffering = true
+      if (!readySent && readyTimer) {
+        window.clearTimeout(readyTimer)
+        readyTimer = 0
+      }
+      alignToMaster()
+    }
+    const handlePlaying = () => {
+      buffering = false
+      alignToMaster()
+    }
     const handleSeeking = () => { buffering = true }
-    const handleSeeked = () => { updateBuffering() }
+    const handleSeeked = () => {
+      updateBuffering()
+      alignToMaster()
+    }
 
     readyRef.current = false
     video.muted = true
     video.playsInline = true
     video.addEventListener('canplay', handleCanPlay)
-    video.addEventListener('progress', markReady)
-    video.addEventListener('loadedmetadata', markReady)
+    video.addEventListener('progress', scheduleReady)
+    video.addEventListener('loadedmetadata', scheduleReady)
     video.addEventListener('waiting', handleWaiting)
     video.addEventListener('playing', handlePlaying)
     video.addEventListener('seeking', handleSeeking)
     video.addEventListener('seeked', handleSeeked)
-    readyInterval = window.setInterval(markReady, 500)
 
     void loadHlsApi().then(() => {
       if (disposed) return
       const Hls = window.Hls
       if (Hls?.isSupported()) {
-        hls = new Hls({ enableWorker: true, lowLatencyMode: false })
+        const preparingForSync = !shouldPlayRef.current || Boolean(startAtRef.current)
+        hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          ...(preparingForSync ? {
+            maxBufferLength: VIDEO_WALL_FORWARD_BUFFER_SECONDS,
+            maxMaxBufferLength: VIDEO_WALL_FORWARD_BUFFER_SECONDS + 10,
+            backBufferLength: 0,
+          } : {}),
+        })
         hls.attachMedia(video)
         hls.on(Hls.Events.MEDIA_ATTACHED, () => hls?.loadSource(manifestUrl))
         hls.on(Hls.Events.ERROR, () => { buffering = true })
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = manifestUrl
-      } else throw new Error('hls_not_supported')
+      } else {
+        throw new Error('hls_not_supported')
+      }
       video.load()
       beginSampling()
-    }).catch(() => { buffering = true; onSampleRef.current(null) })
+    }).catch(() => {
+      buffering = true
+      onSampleRef.current(null)
+    })
 
     return () => {
       disposed = true
       readyRef.current = false
-      window.clearInterval(interval)
-      window.clearInterval(readyInterval)
+      window.clearInterval(sampleInterval)
+      window.clearTimeout(readyTimer)
       window.clearTimeout(startTimerRef.current)
       startTimerRef.current = 0
       onSampleRef.current(null)
       video.pause()
       video.removeEventListener('canplay', handleCanPlay)
-      video.removeEventListener('progress', markReady)
-      video.removeEventListener('loadedmetadata', markReady)
+      video.removeEventListener('progress', scheduleReady)
+      video.removeEventListener('loadedmetadata', scheduleReady)
       video.removeEventListener('waiting', handleWaiting)
       video.removeEventListener('playing', handlePlaying)
       video.removeEventListener('seeking', handleSeeking)
