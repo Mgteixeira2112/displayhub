@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import ContentLibraryCore from './ContentLibraryCore'
 import MonitoringPanel from './MonitoringPanel'
 import PlaylistManager from './PlaylistManager'
@@ -37,7 +37,7 @@ export default function ContentLibrary(props: Props) {
         <MonitoringPanel companyId={props.companyId} />
       </div>
 
-      <div key={dataVersion}>
+      <Fragment key={dataVersion}>
         <div className="software-module module-library">
           <ContentLibraryCore {...props} />
           <StructuredContent {...props} />
@@ -58,7 +58,7 @@ export default function ContentLibrary(props: Props) {
         <div className="software-module module-templates">
           <TemplateManager {...props} />
         </div>
-      </div>
+      </Fragment>
 
       <div className="software-module module-history">
         <MonitoringPanel companyId={props.companyId} />
