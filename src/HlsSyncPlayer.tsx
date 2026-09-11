@@ -113,6 +113,7 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
     const beginSampling = () => {
       interval = window.setInterval(() => {
         if (disposed) return
+        if (readyRef.current && !shouldPlayRef.current) onReadyRef.current()
         updateBuffering()
         const expectedSeconds = getExpectedSecondsRef.current()
         if (expectedSeconds == null || !Number.isFinite(video.currentTime)) return
