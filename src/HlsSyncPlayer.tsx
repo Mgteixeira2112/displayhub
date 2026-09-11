@@ -20,6 +20,9 @@ declare global {
 
 let hlsApiPromise: Promise<void> | null = null
 const VIDEO_WALL_READY_BUFFER_SECONDS = 8
+const VIDEO_WALL_DRIFT_RECOVERY_MS = 500
+const VIDEO_WALL_RECOVERY_COOLDOWN_MS = 1000
+const VIDEO_WALL_SAMPLE_INTERVAL_MS = 500
 
 function loadHlsApi() {
   if (window.Hls?.isSupported) return Promise.resolve()
@@ -90,8 +93,28 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
     let readyInterval = 0
     let buffering = true
     let readySent = false
+    let lastRecoverySeekAt = 0
 
     const updateBuffering = () => { buffering = video.readyState < 3 || video.seeking }
+    const canSeekTo = (targetSeconds: number) => {
+      if (!Number.isFinite(targetSeconds) || targetSeconds < 0) return false
+      if (!video.seekable.length) return !Number.isFinite(video.duration) || targetSeconds <= video.duration + 0.25
+      for (let index = 0; index < video.seekable.length; index += 1) {
+        if (targetSeconds >= video.seekable.start(index) - 0.25 && targetSeconds <= video.seekable.end(index) + 0.25) return true
+      }
+      return false
+    }
+    const alignToMaster = () => {
+      if (!shouldPlayRef.current || video.seeking) return
+      const expectedSeconds = getExpectedSecondsRef.current()
+      if (expectedSeconds == null || !Number.isFinite(video.currentTime)) return
+      const driftMs = Math.round((video.currentTime - expectedSeconds) * 1000)
+      if (Math.abs(driftMs) <= VIDEO_WALL_DRIFT_RECOVERY_MS) return
+      const now = Date.now()
+      if (now - lastRecoverySeekAt < VIDEO_WALL_RECOVERY_COOLDOWN_MS || !canSeekTo(expectedSeconds)) return
+      lastRecoverySeekAt = now
+      try { video.currentTime = Math.max(0, expectedSeconds) } catch { /* noop */ }
+    }
     const scheduleStart = () => {
       window.clearTimeout(startTimerRef.current)
       startTimerRef.current = 0
@@ -160,20 +183,20 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
         if (expectedSeconds == null || !Number.isFinite(video.currentTime)) return
         const expectedPositionMs = Math.max(0, Math.round(expectedSeconds * 1000))
         const actualPositionMs = Math.max(0, Math.round(video.currentTime * 1000))
-        const driftMs = actualPositionMs - expectedPositionMs
         onSampleRef.current({ expectedPositionMs, actualPositionMs, buffering, measurementKind: 'media', sampledAt: Date.now() })
-        if (shouldPlayRef.current && !buffering && !video.paused && Math.abs(driftMs) > 400) video.currentTime = expectedSeconds
-      }, 1000)
+        alignToMaster()
+      }, VIDEO_WALL_SAMPLE_INTERVAL_MS)
     }
-    const handleWaiting = () => { buffering = true }
-    const handlePlaying = () => { buffering = false }
+    const handleCanPlay = () => { markReady(); updateBuffering(); alignToMaster() }
+    const handleWaiting = () => { buffering = true; alignToMaster() }
+    const handlePlaying = () => { buffering = false; alignToMaster() }
     const handleSeeking = () => { buffering = true }
-    const handleSeeked = () => { buffering = false }
+    const handleSeeked = () => { updateBuffering() }
 
     readyRef.current = false
     video.muted = true
     video.playsInline = true
-    video.addEventListener('canplay', markReady)
+    video.addEventListener('canplay', handleCanPlay)
     video.addEventListener('progress', markReady)
     video.addEventListener('loadedmetadata', markReady)
     video.addEventListener('waiting', handleWaiting)
@@ -206,7 +229,7 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
       startTimerRef.current = 0
       onSampleRef.current(null)
       video.pause()
-      video.removeEventListener('canplay', markReady)
+      video.removeEventListener('canplay', handleCanPlay)
       video.removeEventListener('progress', markReady)
       video.removeEventListener('loadedmetadata', markReady)
       video.removeEventListener('waiting', handleWaiting)
