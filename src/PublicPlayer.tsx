@@ -198,7 +198,7 @@ export default function PublicPlayer({ token }: { token: string }) {
 
   const reportReady = useCallback((provider: string) => {
     if (!launch || !['preparing', 'armed'].includes(launch.status) || !item) return
-    const key = `${launch.id}:${item.id}:${provider}`
+    const key = `${launch.id}:${launch.sequence}:${item.id}:${provider}`
     if (readyKey.current === key) return
     readyKey.current = key
     void publicSupabase.functions.invoke('display-group-ready', { body: { token, launch_id: launch.id, ready: true, provider, detail: `item:${item.id}` } })
