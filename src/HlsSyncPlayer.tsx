@@ -19,6 +19,7 @@ declare global {
 }
 
 let hlsApiPromise: Promise<void> | null = null
+const VIDEO_WALL_READY_BUFFER_SECONDS = 8
 
 function loadHlsApi() {
   if (window.Hls?.isSupported) return Promise.resolve()
@@ -86,6 +87,7 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
     let disposed = false
     let hls: HlsInstance | null = null
     let interval = 0
+    let readyInterval = 0
     let buffering = true
     let readySent = false
 
@@ -100,9 +102,48 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
       if (delay <= 20) start()
       else { video.pause(); startTimerRef.current = window.setTimeout(start, delay) }
     }
+    const getBufferedAheadSeconds = () => {
+      if (!video.buffered.length) return 0
+      const initialStart = Math.max(0, startSecondsRef.current)
+      const current = Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : initialStart
+      const positions = [initialStart, current]
+
+      for (const position of positions) {
+        for (let index = 0; index < video.buffered.length; index += 1) {
+          const rangeStart = video.buffered.start(index)
+          const rangeEnd = video.buffered.end(index)
+          if (position >= rangeStart - 0.25 && position <= rangeEnd + 0.25) {
+            return Math.max(0, rangeEnd - Math.max(position, rangeStart))
+          }
+        }
+      }
+
+      if (initialStart === 0) {
+        let longestRange = 0
+        for (let index = 0; index < video.buffered.length; index += 1) {
+          longestRange = Math.max(longestRange, video.buffered.end(index) - video.buffered.start(index))
+        }
+        return longestRange
+      }
+
+      return 0
+    }
+    const getReadyBufferTarget = () => {
+      if (shouldPlayRef.current) return 0
+      const initialStart = Math.max(0, startSecondsRef.current)
+      if (Number.isFinite(video.duration) && video.duration > initialStart) {
+        return Math.min(VIDEO_WALL_READY_BUFFER_SECONDS, Math.max(0.25, video.duration - initialStart - 0.25))
+      }
+      return VIDEO_WALL_READY_BUFFER_SECONDS
+    }
     const markReady = () => {
-      if (readySent) return
+      if (readySent || video.readyState < 3) return
+      const requiredBufferSeconds = getReadyBufferTarget()
+      if (requiredBufferSeconds > 0 && getBufferedAheadSeconds() + 0.05 < requiredBufferSeconds) return
+
       readySent = true
+      window.clearInterval(readyInterval)
+      readyInterval = 0
       readyRef.current = true
       const initialStartSeconds = Math.max(0, startSecondsRef.current)
       if (initialStartSeconds > 0) { try { video.currentTime = initialStartSeconds } catch { /* noop */ } }
@@ -113,6 +154,7 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
     const beginSampling = () => {
       interval = window.setInterval(() => {
         if (disposed) return
+        markReady()
         updateBuffering()
         const expectedSeconds = getExpectedSecondsRef.current()
         if (expectedSeconds == null || !Number.isFinite(video.currentTime)) return
@@ -132,10 +174,13 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
     video.muted = true
     video.playsInline = true
     video.addEventListener('canplay', markReady)
+    video.addEventListener('progress', markReady)
+    video.addEventListener('loadedmetadata', markReady)
     video.addEventListener('waiting', handleWaiting)
     video.addEventListener('playing', handlePlaying)
     video.addEventListener('seeking', handleSeeking)
     video.addEventListener('seeked', handleSeeked)
+    readyInterval = window.setInterval(markReady, 500)
 
     void loadHlsApi().then(() => {
       if (disposed) return
@@ -156,11 +201,14 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
       disposed = true
       readyRef.current = false
       window.clearInterval(interval)
+      window.clearInterval(readyInterval)
       window.clearTimeout(startTimerRef.current)
       startTimerRef.current = 0
       onSampleRef.current(null)
       video.pause()
       video.removeEventListener('canplay', markReady)
+      video.removeEventListener('progress', markReady)
+      video.removeEventListener('loadedmetadata', markReady)
       video.removeEventListener('waiting', handleWaiting)
       video.removeEventListener('playing', handlePlaying)
       video.removeEventListener('seeking', handleSeeking)
