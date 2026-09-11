@@ -291,7 +291,7 @@ function Idle({ display }: { display: Display }) {
 }
 
 function ItemView({ item, display, mediaFit, startSeconds, syncKey, shouldPlay, startAt, onReady, onYouTubeController, onYouTubeBuffering, getExpectedMediaSeconds, onHlsSample }: {
-  item: Item; display: Display; mediaFit: MediaFit; startSeconds: number; syncKey: string; shouldPlay: boolean; startAt: string | null; onReady: (provider: string) => void; onYouTubeController: (controller: YouTubeController | null) => void; onBufferingChange: (buffering: boolean) => void; getExpectedMediaSeconds: () => number | null; onHlsSample: (sample: HlsMediaSample | null) => void
+  item: Item; display: Display; mediaFit: MediaFit; startSeconds: number; syncKey: string; shouldPlay: boolean; startAt: string | null; onReady: (provider: string) => void; onYouTubeController: (controller: YouTubeController | null) => void; onYouTubeBuffering: (buffering: boolean) => void; getExpectedMediaSeconds: () => number | null; onHlsSample: (sample: HlsMediaSample | null) => void
 }) {
   useEffect(() => {
     if (item.structured) onReady('structured')
