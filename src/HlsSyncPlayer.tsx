@@ -64,6 +64,21 @@ type Props = {
 
 export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKey, shouldPlay, startAt, fitMode = 'cover', getExpectedSeconds, onReady, onSample }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const startTimerRef = useRef(0)
+  const readyRef = useRef(false)
+  const startSecondsRef = useRef(startSeconds)
+  const shouldPlayRef = useRef(shouldPlay)
+  const startAtRef = useRef(startAt)
+  const getExpectedSecondsRef = useRef(getExpectedSeconds)
+  const onReadyRef = useRef(onReady)
+  const onSampleRef = useRef(onSample)
+
+  startSecondsRef.current = startSeconds
+  shouldPlayRef.current = shouldPlay
+  startAtRef.current = startAt
+  getExpectedSecondsRef.current = getExpectedSeconds
+  onReadyRef.current = onReady
+  onSampleRef.current = onSample
 
   useEffect(() => {
     const video = videoRef.current
@@ -71,48 +86,56 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
     let disposed = false
     let hls: HlsInstance | null = null
     let interval = 0
-    let startTimer = 0
     let buffering = true
     let readySent = false
 
     const updateBuffering = () => { buffering = video.readyState < 3 || video.seeking }
     const scheduleStart = () => {
-      window.clearTimeout(startTimer)
-      if (!shouldPlay) { video.pause(); return }
-      const delay = startAt ? Math.max(0, new Date(startAt).getTime() - Date.now()) : 0
+      window.clearTimeout(startTimerRef.current)
+      startTimerRef.current = 0
+      if (!shouldPlayRef.current) { video.pause(); return }
+      const targetStartAt = startAtRef.current
+      const delay = targetStartAt ? Math.max(0, new Date(targetStartAt).getTime() - Date.now()) : 0
       const start = () => { if (!disposed) void video.play().catch(() => { buffering = true }) }
       if (delay <= 20) start()
-      else { video.pause(); startTimer = window.setTimeout(start, delay) }
+      else { video.pause(); startTimerRef.current = window.setTimeout(start, delay) }
     }
     const markReady = () => {
       if (readySent) return
       readySent = true
-      if (startSeconds > 0) { try { video.currentTime = startSeconds } catch { /* noop */ } }
+      readyRef.current = true
+      const initialStartSeconds = Math.max(0, startSecondsRef.current)
+      if (initialStartSeconds > 0) { try { video.currentTime = initialStartSeconds } catch { /* noop */ } }
       video.pause()
-      onReady()
+      onReadyRef.current()
       scheduleStart()
     }
     const beginSampling = () => {
       interval = window.setInterval(() => {
         if (disposed) return
         updateBuffering()
-        const expectedSeconds = getExpectedSeconds()
+        const expectedSeconds = getExpectedSecondsRef.current()
         if (expectedSeconds == null || !Number.isFinite(video.currentTime)) return
         const expectedPositionMs = Math.max(0, Math.round(expectedSeconds * 1000))
         const actualPositionMs = Math.max(0, Math.round(video.currentTime * 1000))
         const driftMs = actualPositionMs - expectedPositionMs
-        onSample({ expectedPositionMs, actualPositionMs, buffering, measurementKind: 'media', sampledAt: Date.now() })
-        if (shouldPlay && !buffering && !video.paused && Math.abs(driftMs) > 400) video.currentTime = expectedSeconds
+        onSampleRef.current({ expectedPositionMs, actualPositionMs, buffering, measurementKind: 'media', sampledAt: Date.now() })
+        if (shouldPlayRef.current && !buffering && !video.paused && Math.abs(driftMs) > 400) video.currentTime = expectedSeconds
       }, 1000)
     }
+    const handleWaiting = () => { buffering = true }
+    const handlePlaying = () => { buffering = false }
+    const handleSeeking = () => { buffering = true }
+    const handleSeeked = () => { buffering = false }
 
+    readyRef.current = false
     video.muted = true
     video.playsInline = true
     video.addEventListener('canplay', markReady)
-    video.addEventListener('waiting', () => { buffering = true })
-    video.addEventListener('playing', () => { buffering = false })
-    video.addEventListener('seeking', () => { buffering = true })
-    video.addEventListener('seeked', () => { buffering = false })
+    video.addEventListener('waiting', handleWaiting)
+    video.addEventListener('playing', handlePlaying)
+    video.addEventListener('seeking', handleSeeking)
+    video.addEventListener('seeked', handleSeeked)
 
     void loadHlsApi().then(() => {
       if (disposed) return
@@ -127,20 +150,50 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
       } else throw new Error('hls_not_supported')
       video.load()
       beginSampling()
-    }).catch(() => { buffering = true; onSample(null) })
+    }).catch(() => { buffering = true; onSampleRef.current(null) })
 
     return () => {
       disposed = true
+      readyRef.current = false
       window.clearInterval(interval)
-      window.clearTimeout(startTimer)
-      onSample(null)
+      window.clearTimeout(startTimerRef.current)
+      startTimerRef.current = 0
+      onSampleRef.current(null)
       video.pause()
       video.removeEventListener('canplay', markReady)
+      video.removeEventListener('waiting', handleWaiting)
+      video.removeEventListener('playing', handlePlaying)
+      video.removeEventListener('seeking', handleSeeking)
+      video.removeEventListener('seeked', handleSeeked)
       video.removeAttribute('src')
       video.load()
       hls?.destroy()
     }
-  }, [manifestUrl, startSeconds, syncKey, shouldPlay, startAt, getExpectedSeconds, onReady, onSample])
+  }, [manifestUrl, syncKey])
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !readyRef.current) return
+
+    window.clearTimeout(startTimerRef.current)
+    startTimerRef.current = 0
+    if (!shouldPlay) {
+      video.pause()
+      return
+    }
+
+    const delay = startAt ? Math.max(0, new Date(startAt).getTime() - Date.now()) : 0
+    if (delay <= 20) {
+      void video.play().catch(() => { /* buffering state is reported by media events */ })
+      return
+    }
+
+    video.pause()
+    startTimerRef.current = window.setTimeout(() => {
+      void video.play().catch(() => { /* buffering state is reported by media events */ })
+    }, delay)
+    return () => window.clearTimeout(startTimerRef.current)
+  }, [shouldPlay, startAt])
 
   const objectFit = fitMode === 'native' ? 'fill' : fitMode
   return <video ref={videoRef} className={`hls-sync-player fit-${fitMode}`} style={{ objectFit }} aria-label={title} muted playsInline preload="auto" />
