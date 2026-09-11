@@ -121,6 +121,47 @@ export default function PlaylistManager({ companyId, role }: Props) {
     setBusy(false)
   }
 
+  async function setItemDuration(itemId: string, seconds: number) {
+    if (!canManage) return
+    const nextDuration = Math.max(1, Math.min(3600, Math.round(seconds || 1)))
+    setBusy(true); setMessage('')
+    const { error } = await supabase.from('playlist_items').update({ duration_seconds: nextDuration }).eq('id', itemId)
+    if (error) setMessage(error.message)
+    else { setMessage('Duração do item atualizada.'); await loadAll() }
+    setBusy(false)
+  }
+
+  async function moveItem(item: PlaylistItem, direction: -1 | 1) {
+    if (!canManage) return
+    const ordered = items.filter((row) => row.playlist_id === item.playlist_id).sort((a,b) => a.position - b.position)
+    const index = ordered.findIndex((row) => row.id === item.id)
+    const target = ordered[index + direction]
+    if (!target) return
+    setBusy(true); setMessage('')
+    const [first, second] = await Promise.all([
+      supabase.from('playlist_items').update({ position: target.position }).eq('id', item.id),
+      supabase.from('playlist_items').update({ position: item.position }).eq('id', target.id),
+    ])
+    if (first.error || second.error) setMessage(first.error?.message || second.error?.message || 'Não foi possível reordenar a playlist.')
+    else { setMessage('Ordem da playlist atualizada.'); await loadAll() }
+    setBusy(false)
+  }
+
+  async function removePlaylistItem(item: PlaylistItem) {
+    if (!canManage) return
+    setBusy(true); setMessage('')
+    const { error } = await supabase.from('playlist_items').delete().eq('id', item.id)
+    if (error) { setMessage(error.message); setBusy(false); return }
+    const remaining = items.filter((row) => row.playlist_id === item.playlist_id && row.id !== item.id).sort((a,b) => a.position - b.position)
+    const updates = remaining.map((row, index) => row.position === index ? Promise.resolve({ error: null }) : supabase.from('playlist_items').update({ position: index }).eq('id', row.id))
+    const results = await Promise.all(updates)
+    const reorderError = results.find((result) => result.error)?.error
+    if (reorderError) setMessage(reorderError.message)
+    else setMessage('Item removido da playlist.')
+    await loadAll()
+    setBusy(false)
+  }
+
   async function setPlaylistTransition(playlistIdToUpdate: string, changes: Partial<Pick<Playlist, 'transition_type' | 'transition_duration_ms'>>) {
     if (!canManage) return
     setBusy(true); setMessage('')
@@ -146,7 +187,7 @@ export default function PlaylistManager({ companyId, role }: Props) {
     setBusy(false)
   }
 
-  async function remove(table: 'playlists'|'playlist_items'|'display_publications', id: string) {
+  async function remove(table: 'playlists'|'display_publications', id: string) {
     if (!canManage) return
     setBusy(true); setMessage('')
     const { error } = await supabase.from(table).delete().eq('id', id)
@@ -169,11 +210,16 @@ export default function PlaylistManager({ companyId, role }: Props) {
       </form>
     </div></details>}
 
-    <div className="playlist-list">{playlists.length===0 && <p className="empty-state">Nenhuma playlist cadastrada.</p>}{playlists.map((playlist)=><article className="playlist-card" key={playlist.id}>
+    <div className="playlist-list">{playlists.length===0 && <p className="empty-state">Nenhuma playlist cadastrada.</p>}{playlists.map((playlist)=>{const playlistItems=items.filter((item)=>item.playlist_id===playlist.id).sort((a,b)=>a.position-b.position);return <article className="playlist-card" key={playlist.id}>
       <div className="playlist-card-head"><div><strong>{playlist.name}</strong>{playlist.description&&<p>{playlist.description}</p>}</div>{canManage&&<button className="danger-button" type="button" onClick={()=>void remove('playlists',playlist.id)} disabled={busy}>Excluir playlist</button>}</div>
       <div className="playlist-transition-controls"><div><strong>Transição entre cartazes</strong><small>Aplicada apenas quando dois cartazes aparecem em sequência.</small></div><label>Efeito<select value={playlist.transition_type} onChange={(e)=>void setPlaylistTransition(playlist.id,{transition_type:e.target.value as TransitionType})} disabled={busy}>{transitionOptions.map((option)=><option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label>Duração<select value={playlist.transition_duration_ms} onChange={(e)=>void setPlaylistTransition(playlist.id,{transition_duration_ms:Number(e.target.value)})} disabled={busy||playlist.transition_type==='none'}>{transitionDurations.map((value)=><option key={value} value={value}>{value} ms</option>)}</select></label></div>
-      <div className="playlist-items">{items.filter((item)=>item.playlist_id===playlist.id).map((item)=>{const sourceId=item.content_item_id||item.structured_content_id||item.promotion_poster_id||'';const label=sourceMap.get(`${item.source_type}:${sourceId}`)||'Conteúdo';return <div className="playlist-item" key={item.id}><span>#{item.position} · {label}</span><small>{item.duration_seconds}s</small><small>{item.source_type === 'promotion_poster' ? 'Template do próprio cartaz' : item.template_id ? templateMap.get(item.template_id) || 'Template' : 'Sem template'}</small>{canManage&&item.source_type!=='promotion_poster'&&<select value={item.template_id || ''} onChange={(e)=>void setItemTemplate(item.id,e.target.value)} disabled={busy}><option value="">Sem template</option>{templates.map((t)=><option key={t.id} value={t.id}>{t.name}</option>)}</select>}{canManage&&<button type="button" onClick={()=>void remove('playlist_items',item.id)}>Remover</button>}</div>})}{items.every((item)=>item.playlist_id!==playlist.id)&&<small className="empty-state">Playlist vazia.</small>}</div>
-    </article>)}</div>
+      <div className="playlist-items">{playlistItems.map((item,index)=>{const sourceId=item.content_item_id||item.structured_content_id||item.promotion_poster_id||'';const label=sourceMap.get(`${item.source_type}:${sourceId}`)||'Conteúdo';return <div className="playlist-item playlist-item-editable" key={item.id}>
+        <div className="playlist-item-main"><strong>{index+1}. {label}</strong><small>{item.source_type === 'promotion_poster' ? 'Template do próprio cartaz' : item.template_id ? templateMap.get(item.template_id) || 'Template' : 'Sem template'}</small></div>
+        {canManage&&<div className="playlist-item-duration"><label>Duração <input type="number" min="1" max="3600" defaultValue={item.duration_seconds} onBlur={(e)=>{const next=Number(e.target.value); if(next!==item.duration_seconds) void setItemDuration(item.id,next)}} disabled={busy}/><span>s</span></label></div>}
+        {canManage&&item.source_type!=='promotion_poster'&&<select className="playlist-item-template" value={item.template_id || ''} onChange={(e)=>void setItemTemplate(item.id,e.target.value)} disabled={busy}><option value="">Sem template</option>{templates.map((t)=><option key={t.id} value={t.id}>{t.name}</option>)}</select>}
+        {canManage&&<div className="playlist-item-actions"><button type="button" title="Subir item" onClick={()=>void moveItem(item,-1)} disabled={busy||index===0}>↑</button><button type="button" title="Descer item" onClick={()=>void moveItem(item,1)} disabled={busy||index===playlistItems.length-1}>↓</button><button className="playlist-remove-button" type="button" onClick={()=>void removePlaylistItem(item)} disabled={busy}>Excluir</button></div>}
+      </div>})}{playlistItems.length===0&&<small className="empty-state">Playlist vazia.</small>}</div>
+    </article>})}</div>
 
     {canManage && <details className="create-panel schedule-create-panel"><summary>+ Nova programação</summary><form className="content-form publication-form" onSubmit={createPublication}><h3>Publicar / agendar em display</h3><div className="publication-grid"><label>Playlist<select value={publicationPlaylist} onChange={(e)=>setPublicationPlaylist(e.target.value)} required><option value="">Selecione</option>{playlists.filter((p)=>p.is_active).map((p)=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>Display<select value={displayId} onChange={(e)=>setDisplayId(e.target.value)} required disabled={activeDisplays.length===0}><option value="">{activeDisplays.length===0 ? 'Nenhum display ativo disponível' : 'Selecione'}</option>{activeDisplays.map((d)=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Início opcional<input type="datetime-local" value={startsAt} onChange={(e)=>setStartsAt(e.target.value)}/></label><label>Fim opcional<input type="datetime-local" value={endsAt} onChange={(e)=>setEndsAt(e.target.value)}/></label><label>Repetição<select value={repeatMode} onChange={(e)=>setRepeatMode(e.target.value as 'always'|'daily')}><option value="always">Contínua</option><option value="daily">Horário diário</option></select></label>{repeatMode==='daily'&&<><label>De<input type="time" value={dailyStart} onChange={(e)=>setDailyStart(e.target.value)} required/></label><label>Até<input type="time" value={dailyEnd} onChange={(e)=>setDailyEnd(e.target.value)} required/></label></>}</div>{repeatMode==='daily'&&<div className="weekday-row">{week.map(([value,label])=><label key={value}><input type="checkbox" checked={weekdays.includes(value)} onChange={(e)=>setWeekdays(e.target.checked?[...weekdays,value].sort():weekdays.filter((day)=>day!==value))}/>{label}</label>)}</div>}<button className="primary-button" disabled={busy||activeDisplays.length===0||(repeatMode==='daily'&&weekdays.length===0)}>Criar programação</button></form></details>}
 
