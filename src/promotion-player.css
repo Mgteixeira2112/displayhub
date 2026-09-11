@@ -12,54 +12,175 @@
 .promotion-player:has(.promo-theme-burst_yellow) { background: #ffe600; }
 .promotion-player:has(.promo-theme-price_blast) { background: #f5efe4; }
 
-/* Backdrop: existe apenas para preencher a sobra da viewport quando a janela
-   não tem a mesma proporção do cartaz. Mantém 16:9/9:16 e usa cover sem
-   deformar a arte. O cartaz real continua por cima, em contain. */
+/*
+ * Backdrop adaptativo dos templates animados.
+ * IMPORTANTE: ele NÃO reutiliza .promo-theme-* nem .promo-poster-shape.
+ * Assim formas estruturais do cartaz (círculos, molduras, faixas centrais,
+ * raios etc.) existem somente na superfície 16:9/9:16 do primeiro plano.
+ * A camada abaixo ocupa a viewport inteira e contém apenas efeitos que podem
+ * ser cortados livremente sem mudar a composição criada no preview.
+ */
 .promotion-player .promo-poster-backdrop {
   position: absolute;
-  left: 50%;
-  top: 50%;
+  inset: 0;
   z-index: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   isolation: isolate;
-  max-width: none;
-  max-height: none;
+  pointer-events: none;
   border-radius: 0;
   box-shadow: none;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
 }
 
-.promotion-player .promo-poster-backdrop > .promo-poster-shape {
-  z-index: 0;
+.promotion-player .promo-backdrop-effect,
+.promotion-player .promo-backdrop-effect::before,
+.promotion-player .promo-backdrop-effect::after {
+  position: absolute;
+  inset: 0;
+  content: '';
 }
 
-.promotion-player .promo-poster-backdrop.promo-landscape {
-  width: max(100vw, calc(100vh * 16 / 9));
-  height: max(100vh, calc(100vw * 9 / 16));
-  aspect-ratio: 16 / 9;
+/* 1. Oferta Quente: somente gradiente quente respirando. */
+.promotion-player .promo-backdrop-animated_hot {
+  background: linear-gradient(145deg, #d80d2f 0%, #b90825 58%, #8f061d 100%);
+}
+.promotion-player .promo-backdrop-animated_hot .promo-backdrop-effect {
+  background: linear-gradient(115deg, transparent 15%, rgba(255,229,0,.16) 48%, transparent 78%);
+  animation: promoBackdropDrift 8s ease-in-out infinite alternate;
 }
 
-.promotion-player .promo-poster-backdrop.promo-portrait {
-  width: max(100vw, calc(100vh * 9 / 16));
-  height: max(100vh, calc(100vw * 16 / 9));
-  aspect-ratio: 9 / 16;
+/* 2. Preço Explosivo: sem círculo e sem raios no backdrop. */
+.promotion-player .promo-backdrop-animated_burst {
+  background: linear-gradient(135deg, #ff9f0a 0%, #ff7a18 58%, #ef233c 100%);
+}
+.promotion-player .promo-backdrop-animated_burst .promo-backdrop-effect {
+  background: linear-gradient(110deg, rgba(255,229,0,.12), transparent 35%, rgba(225,29,72,.13));
+  animation: promoBackdropBreath 4.8s ease-in-out infinite alternate;
 }
 
-/* O primeiro plano é o cartaz completo e opaco. Assim toda a área segura usa
-   exatamente o mesmo fundo, shapes e enquadramento do preview. O backdrop só
-   aparece fora da área 16:9/9:16 e nunca substitui a arte principal. */
+/* 3. Faixa Deslizante: padrão contínuo, sem painel central duplicado. */
+.promotion-player .promo-backdrop-animated_bands {
+  background: #0f172a;
+}
+.promotion-player .promo-backdrop-animated_bands .promo-backdrop-effect::before {
+  inset: -35%;
+  background: repeating-linear-gradient(-28deg, #0f172a 0 84px, #1d4ed8 84px 132px, #0891b2 132px 170px, #0f172a 170px 220px);
+  opacity: .54;
+  animation: promoBackdropBands 10s linear infinite;
+}
+
+/* 4. Liquidação Pulsante: apenas variação luminosa, sem halo circular. */
+.promotion-player .promo-backdrop-animated_pulse {
+  background: linear-gradient(145deg, #8a001b 0%, #6d0015 55%, #4a0010 100%);
+}
+.promotion-player .promo-backdrop-animated_pulse .promo-backdrop-effect {
+  background: linear-gradient(120deg, transparent 10%, rgba(255,229,0,.14) 50%, transparent 90%);
+  animation: promoBackdropBreath 3.8s ease-in-out infinite alternate;
+}
+
+/* 5. Neon: glow ambiente, sem moldura e sem scans estruturais. */
+.promotion-player .promo-backdrop-animated_neon {
+  background: linear-gradient(145deg, #070711 0%, #151535 48%, #09090f 100%);
+}
+.promotion-player .promo-backdrop-animated_neon .promo-backdrop-effect {
+  background: linear-gradient(120deg, rgba(46,242,255,.10), transparent 42%, rgba(217,70,239,.12));
+  animation: promoBackdropBreath 5s ease-in-out infinite alternate;
+}
+
+/* 6. Confete: partículas podem atravessar/cortar a viewport sem afetar layout. */
+.promotion-player .promo-backdrop-animated_confetti {
+  background: linear-gradient(145deg, #7c3aed 0%, #db2777 55%, #f97316 100%);
+}
+.promotion-player .promo-backdrop-animated_confetti .promo-backdrop-effect::before,
+.promotion-player .promo-backdrop-animated_confetti .promo-backdrop-effect::after {
+  inset: -25% -10%;
+  background-image:
+    radial-gradient(circle, rgba(255,229,0,.7) 0 4px, transparent 5px),
+    radial-gradient(circle, rgba(34,211,238,.65) 0 3px, transparent 4px),
+    radial-gradient(circle, rgba(255,255,255,.7) 0 3px, transparent 4px);
+  background-size: 130px 170px, 175px 210px, 145px 195px;
+  opacity: .42;
+  animation: promoBackdropConfetti 12s linear infinite;
+}
+.promotion-player .promo-backdrop-animated_confetti .promo-backdrop-effect::after {
+  opacity: .24;
+  animation-duration: 17s;
+  animation-delay: -6s;
+}
+
+/* 7. Chevron: padrão infinito próprio, sem painel central. */
+.promotion-player .promo-backdrop-animated_chevron {
+  background: #111827;
+}
+.promotion-player .promo-backdrop-animated_chevron .promo-backdrop-effect::before {
+  inset: -30% -45%;
+  background: repeating-linear-gradient(135deg, rgba(245,158,11,.40) 0 65px, rgba(239,68,68,.38) 65px 130px, rgba(17,24,39,.15) 130px 195px);
+  opacity: .56;
+  animation: promoBackdropChevron 11s linear infinite;
+}
+
+/* 8. Glow Premium: luz ambiente difusa, sem geometria rígida. */
+.promotion-player .promo-backdrop-animated_glow {
+  background: linear-gradient(145deg, #07111f 0%, #111827 50%, #1e1b4b 100%);
+}
+.promotion-player .promo-backdrop-animated_glow .promo-backdrop-effect {
+  background: linear-gradient(120deg, rgba(14,165,233,.18), transparent 40%, rgba(168,85,247,.20));
+  animation: promoBackdropBreath 5.6s ease-in-out infinite alternate;
+}
+
+/* 9. Flash: somente feixe de luz ambiente. */
+.promotion-player .promo-backdrop-animated_flash {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 52%, #7f1d1d 100%);
+}
+.promotion-player .promo-backdrop-animated_flash .promo-backdrop-effect::after {
+  top: -40%;
+  bottom: -40%;
+  left: -45%;
+  right: auto;
+  width: 28%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.30), rgba(255,229,0,.24), transparent);
+  filter: blur(8px);
+  transform: skewX(-18deg);
+  animation: promoBackdropFlash 5.4s ease-in-out infinite;
+}
+
+@keyframes promoBackdropDrift {
+  from { transform: translate3d(-5%, 0, 0); opacity: .55; }
+  to { transform: translate3d(5%, 0, 0); opacity: .9; }
+}
+@keyframes promoBackdropBreath {
+  from { opacity: .45; }
+  to { opacity: .9; }
+}
+@keyframes promoBackdropBands {
+  from { transform: translate3d(-6%, -4%, 0); }
+  to { transform: translate3d(6%, 4%, 0); }
+}
+@keyframes promoBackdropConfetti {
+  from { transform: translate3d(0, -8%, 0); }
+  to { transform: translate3d(0, 8%, 0); }
+}
+@keyframes promoBackdropChevron {
+  from { transform: translate3d(-5%, 0, 0) skewX(-10deg); }
+  to { transform: translate3d(5%, 0, 0) skewX(-10deg); }
+}
+@keyframes promoBackdropFlash {
+  0%, 15% { left: -45%; opacity: 0; }
+  35% { opacity: .75; }
+  60%, 100% { left: 125%; opacity: 0; }
+}
+
+/* A superfície principal é a fonte da verdade visual do preview. */
 .promotion-player .promo-player-foreground {
   z-index: 1;
 }
-
 .promotion-player .promo-player-foreground > .promo-poster-shape {
   display: block;
 }
 
-/* Mantém as animações escolhidas pelo usuário ativas no player, inclusive
-   quando o dispositivo solicita reduced motion. Os seletores refletem a
-   estrutura atual dos nove templates animados. */
+/* Mantém as animações da ARTE DO CARTAZ ativas no player, inclusive quando
+   o dispositivo solicita reduced motion. */
 .promotion-player .promo-theme-animated_hot .promo-poster-shape::before { animation: promoHotWave 5.6s ease-in-out infinite alternate !important; }
 .promotion-player .promo-theme-animated_hot .promo-poster-shape::after { animation: promoHotRing 3.8s ease-in-out infinite !important; }
 .promotion-player .promo-theme-animated_burst .promo-poster-shape::after { animation: promoBurstSpin 16s linear infinite !important; }
@@ -87,14 +208,12 @@
   container-type: inline-size;
 }
 
-/* O cartaz principal sempre usa contain: posição, caixas e tipografia são
-   calculadas dentro desta mesma superfície proporcional do preview. */
+/* contain: o player nunca recalcula/corta a composição do cartaz. */
 .promotion-player .promo-poster.promo-landscape {
   width: min(100vw, calc(100vh * 16 / 9));
   height: auto;
   aspect-ratio: 16 / 9;
 }
-
 .promotion-player .promo-poster.promo-portrait {
   width: min(100vw, calc(100vh * 9 / 16));
   height: auto;
