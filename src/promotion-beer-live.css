@@ -1,0 +1,149 @@
+/* Template experimental isolado: Fundo Vivo — Cerveja.
+   Não altera os templates animados homologados nem promotion-animated-backgrounds.css. */
+
+.promo-theme-animated_beer {
+  color: #fff;
+  background:
+    radial-gradient(circle at 77% 28%, rgba(255, 218, 102, .22), transparent 27%),
+    radial-gradient(circle at 22% 76%, rgba(255, 176, 30, .16), transparent 30%),
+    linear-gradient(118deg, #160b04 0%, #4a2106 30%, #9a4f08 58%, #3a1704 82%, #130904 100%);
+}
+
+.promo-theme-animated_beer .promo-poster-shape {
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(7, 4, 2, .62) 0%, rgba(16, 8, 2, .34) 44%, rgba(9, 5, 2, .48) 100%);
+}
+
+/* Bolhas em subida: o conteúdo textual permanece completamente fixo. */
+.promo-theme-animated_beer .promo-poster-shape::before {
+  content: '';
+  position: absolute;
+  inset: -22% -10%;
+  opacity: .78;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,.72) 0 5%, rgba(255,214,122,.32) 6% 11%, transparent 12%),
+    radial-gradient(circle, rgba(255,244,214,.62) 0 4%, rgba(255,183,56,.28) 5% 10%, transparent 11%),
+    radial-gradient(circle, rgba(255,255,255,.42) 0 3%, rgba(255,198,76,.24) 4% 9%, transparent 10%);
+  background-size: 86px 86px, 126px 126px, 168px 168px;
+  background-position: 0 0, 43px 62px, 91px 21px;
+  filter: blur(.15px) drop-shadow(0 0 5px rgba(255,188,54,.28));
+  animation: promoBeerBubbles 8.5s linear infinite;
+}
+
+/* Reflexo âmbar e faixa de espuma/luz que atravessam lentamente o fundo. */
+.promo-theme-animated_beer .promo-poster-shape::after {
+  content: '';
+  position: absolute;
+  inset: -28% -18%;
+  background:
+    radial-gradient(ellipse at 72% 47%, rgba(255,224,143,.28) 0 11%, transparent 36%),
+    linear-gradient(102deg, transparent 29%, rgba(255,214,112,.08) 42%, rgba(255,244,211,.25) 49%, rgba(255,183,48,.08) 57%, transparent 70%);
+  mix-blend-mode: screen;
+  filter: blur(2px);
+  transform: translate3d(-5%, 0, 0) rotate(-4deg);
+  animation: promoBeerGlow 5.6s ease-in-out infinite alternate;
+}
+
+.promo-theme-animated_beer .promo-headline {
+  color: #fff;
+  text-shadow: 0 3px 18px rgba(0,0,0,.62);
+  letter-spacing: -.025em;
+}
+
+.promo-theme-animated_beer .promo-product {
+  color: #ffd34f;
+  text-shadow: 0 3px 18px rgba(0,0,0,.7);
+  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+}
+
+.promo-theme-animated_beer .promo-price {
+  color: #ffc928;
+  text-shadow:
+    0 4px 0 #6e2b00,
+    0 8px 25px rgba(0,0,0,.62),
+    0 0 24px rgba(255,193,36,.24);
+  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+}
+
+.promo-theme-animated_beer .promo-unit {
+  color: #fff4d6;
+  text-shadow: 0 2px 12px rgba(0,0,0,.72);
+}
+
+.promo-theme-animated_beer .promo-footer {
+  color: #241000;
+  background: linear-gradient(90deg, #ffc928, #ffe59b, #ffc928);
+  border: 1px solid rgba(255,255,255,.55);
+  border-radius: 999px;
+  padding: .45em .85em;
+  box-shadow: 0 6px 18px rgba(0,0,0,.28);
+  text-shadow: none;
+}
+
+/* O modelo nasce horizontal: leitura à esquerda e preço forte à direita. */
+.promo-theme-animated_beer.promo-landscape .promo-poster-content {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+  grid-template-rows: auto 1fr auto;
+  gap: 3% 5%;
+  padding: 7% 7.5%;
+}
+
+.promo-theme-animated_beer.promo-landscape .promo-headline {
+  grid-column: 1 / -1;
+  font-size: 3.4cqw;
+  color: #fff;
+}
+
+.promo-theme-animated_beer.promo-landscape .promo-product {
+  grid-column: 1;
+  grid-row: 2 / 4;
+  align-self: center;
+  max-width: 92%;
+  font-size: 5.3cqw;
+  line-height: .88;
+}
+
+.promo-theme-animated_beer.promo-landscape .promo-price {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: center;
+  align-self: end;
+  font-size: 10.2cqw;
+}
+
+.promo-theme-animated_beer.promo-landscape .promo-unit {
+  grid-column: 2;
+  grid-row: 3;
+  justify-self: center;
+  align-self: start;
+  font-size: 2.1cqw;
+}
+
+.promo-theme-animated_beer.promo-landscape .promo-footer {
+  right: 4.5%;
+  bottom: 4.5%;
+  font-size: 1.55cqw;
+}
+
+.promotion-player:has(.promo-theme-animated_beer) {
+  background: linear-gradient(125deg, #160b04 0%, #6b3205 48%, #130904 100%);
+}
+
+@keyframes promoBeerBubbles {
+  0% { transform: translate3d(0, 18%, 0) scale(1); background-position: 0 0, 43px 62px, 91px 21px; }
+  50% { transform: translate3d(1.5%, -2%, 0) scale(1.025); background-position: 18px -74px, 62px -38px, 118px -94px; }
+  100% { transform: translate3d(-1%, -23%, 0) scale(1.04); background-position: 35px -148px, 81px -138px, 145px -209px; }
+}
+
+@keyframes promoBeerGlow {
+  0% { transform: translate3d(-8%, 0, 0) rotate(-4deg) scale(1); opacity: .55; }
+  100% { transform: translate3d(8%, 2%, 0) rotate(2deg) scale(1.08); opacity: .95; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-theme-animated_beer .promo-poster-shape::before,
+  .promo-theme-animated_beer .promo-poster-shape::after {
+    animation: none !important;
+  }
+}
