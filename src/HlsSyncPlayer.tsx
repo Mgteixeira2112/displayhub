@@ -169,11 +169,15 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
       video.load()
       hls?.destroy()
     }
-  }, [manifestUrl, syncKey])
+  }, [manifestUrl])
 
   useEffect(() => {
     const video = videoRef.current
     if (!video || !readyRef.current) return
+
+    const targetSeconds = Math.max(0, startSeconds)
+    try { video.currentTime = targetSeconds } catch { /* noop */ }
+    onReadyRef.current()
 
     window.clearTimeout(startTimerRef.current)
     startTimerRef.current = 0
@@ -193,7 +197,7 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
       void video.play().catch(() => { /* buffering state is reported by media events */ })
     }, delay)
     return () => window.clearTimeout(startTimerRef.current)
-  }, [shouldPlay, startAt])
+  }, [syncKey, startSeconds, shouldPlay, startAt])
 
   const objectFit = fitMode === 'native' ? 'fill' : fitMode
   return <video ref={videoRef} className={`hls-sync-player fit-${fitMode}`} style={{ objectFit }} aria-label={title} muted playsInline preload="auto" />
