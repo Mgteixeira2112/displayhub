@@ -21,10 +21,10 @@ export default function PromotionPosterBackdrop({ theme, orientation }: { theme:
 
   return (
     <div
-      className={`promo-poster-backdrop promo-${orientation} promo-theme-${theme}`}
+      className={`promo-poster-backdrop promo-${orientation} promo-backdrop-${theme}`}
       aria-hidden="true"
     >
-      <div className="promo-poster-shape" />
+      <div className="promo-backdrop-effect" />
     </div>
   )
 }
