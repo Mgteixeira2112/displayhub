@@ -52,6 +52,11 @@ const designFontSizes: Record<Orientation, Record<ElementKey, number>> = {
   landscape: { headline: 64, product: 110, price: 200, unit: 42, footer: 36 },
 }
 
+const previewWidths: Record<Orientation, number> = {
+  portrait: 430,
+  landscape: 720,
+}
+
 function moneyInput(value: string) {
   const parsed = Number(value.replace(',', '.'))
   return Number.isFinite(parsed) ? parsed : null
@@ -68,8 +73,14 @@ function clamp(value: number, min: number, max: number) {
 function manualFontSize(key: ElementKey, orientation: Orientation, fontSize?: number) {
   if (typeof fontSize !== 'number') return undefined
   const rule = fontRules[orientation][key]
+  const basePreviewPx = clamp(
+    previewWidths[orientation] * rule.fluid / 100,
+    rule.min * 16,
+    rule.max * 16,
+  )
   const scale = clamp(fontSize, 8, 400) / designFontSizes[orientation][key]
-  return `clamp(${(rule.min * scale).toFixed(3)}rem, ${(rule.fluid * scale).toFixed(3)}vw, ${(rule.max * scale).toFixed(3)}rem)`
+  const previewPx = basePreviewPx * scale
+  return `${((previewPx / previewWidths[orientation]) * 100).toFixed(4)}cqw`
 }
 
 function templateColor(theme: Template['theme'] | undefined, key: ElementKey, orientation: Orientation) {
