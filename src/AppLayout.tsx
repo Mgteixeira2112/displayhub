@@ -90,7 +90,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           </div>
           <span>{companyName}</span>
         </header>
-        <main className="software-content">{view === 'groups' ? <DisplayGroupsManager /> : children}</main>
+        <main key={view} className="software-content">{view === 'groups' ? <DisplayGroupsManager /> : children}</main>
       </div>
     </div>
   )
