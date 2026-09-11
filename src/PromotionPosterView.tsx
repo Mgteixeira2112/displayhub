@@ -76,6 +76,7 @@ export default function PromotionPosterView({ poster, className = '' }: { poster
   const orientation = poster.orientation || 'portrait'
   const layout = poster.layout_positions?.[orientation] || {}
   const theme = poster.theme || 'hot_red'
+  const renderKey = `${poster.id}:${theme}:${orientation}`
 
   const renderElement = (key: ElementKey, baseClass: string, tag: 'span' | 'strong' | 'div' | 'em', text: string) => {
     const item = layout[key] || {}
@@ -99,7 +100,7 @@ export default function PromotionPosterView({ poster, className = '' }: { poster
   }
 
   return (
-    <div className={`promo-poster promo-${orientation} promo-theme-${theme} ${className}`.trim()}>
+    <div key={renderKey} className={`promo-poster promo-${orientation} promo-theme-${theme} ${className}`.trim()} data-poster-theme={theme}>
       <div className="promo-poster-shape" aria-hidden="true" />
       <div className="promo-poster-content">
         {renderElement('headline', 'promo-headline', 'span', poster.headline)}
