@@ -100,7 +100,7 @@ export default function PromotionPosterView({ poster, className = '' }: { poster
   }
 
   return (
-    <div key={renderKey} className={`promo-poster promo-${orientation} promo-theme-${theme} ${className}`.trim()} data-poster-theme={theme}>
+    <div key={renderKey} className={`promo-poster promo-editable promo-${orientation} promo-theme-${theme} ${className}`.trim()} data-poster-theme={theme}>
       <div className="promo-poster-shape" aria-hidden="true" />
       <div className="promo-poster-content">
         {renderElement('headline', 'promo-headline', 'span', poster.headline)}
