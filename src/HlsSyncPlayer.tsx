@@ -9,7 +9,7 @@ type HlsInstance = {
 }
 
 type HlsConstructor = {
-  new (config?: Record<string, unknown>) => HlsInstance
+  new (config?: Record<string, unknown>): HlsInstance
   isSupported: () => boolean
   Events: { MEDIA_ATTACHED: string; ERROR: string }
 }
