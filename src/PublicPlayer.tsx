@@ -54,6 +54,7 @@ export default function PublicPlayer({ token }: { token: string }) {
   const [wall, setWall] = useState<WallContext | null>(null)
   const [invalid, setInvalid] = useState(false)
   const [itemIndex, setItemIndex] = useState(0)
+  const [localCycleSerial, setLocalCycleSerial] = useState(0)
   const [syncCursor, setSyncCursor] = useState<SyncCursor | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [previousPosterItem, setPreviousPosterItem] = useState<Item | null>(null)
@@ -91,6 +92,7 @@ export default function PublicPlayer({ token }: { token: string }) {
     if (activePlaylistIdRef.current !== nextPlaylistId) {
       activePlaylistIdRef.current = nextPlaylistId
       setItemIndex(0)
+      setLocalCycleSerial(0)
       lastItemRef.current = null
       setPreviousPosterItem(null)
       if (transitionTimerRef.current != null) {
@@ -148,10 +150,16 @@ export default function PublicPlayer({ token }: { token: string }) {
   const transitionDurationMs = item ? Math.min(configuredTransitionMs, Math.max(100, item.duration_seconds * 1000 - 100)) : configuredTransitionMs
 
   useEffect(() => {
-    if (syncSession || !item || items.length < 2) return
-    const timer = window.setTimeout(() => setItemIndex((value) => (value + 1) % items.length), item.duration_seconds * 1000)
+    if (syncSession || !item || !items.length) return
+    const timer = window.setTimeout(() => {
+      if (items.length === 1) {
+        setLocalCycleSerial((value) => value + 1)
+        return
+      }
+      setItemIndex((value) => (value + 1) % items.length)
+    }, item.duration_seconds * 1000)
     return () => window.clearTimeout(timer)
-  }, [item?.id, item?.duration_seconds, items.length, syncSession])
+  }, [item?.id, item?.duration_seconds, items.length, syncSession, localCycleSerial])
 
   useEffect(() => {
     if (!item) {
@@ -253,7 +261,8 @@ export default function PublicPlayer({ token }: { token: string }) {
   if (!publication || !item) return <Idle display={program.display} />
 
   const mediaFit = wall?.media_fit || 'cover'
-  const currentContent = <ItemView item={item} display={program.display} mediaFit={mediaFit} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : item.id} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} />
+  const localSyncKey = `${localCycleSerial}:${item.id}`
+  const currentContent = <ItemView item={item} display={program.display} mediaFit={mediaFit} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : localSyncKey} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} />
   const showPosterTransition = !wall && transitionType !== 'none' && Boolean(previousPosterItem?.poster && item.poster)
   const content = showPosterTransition && previousPosterItem?.poster
     ? <div className={`poster-transition-stage poster-transition-${transitionType}`} key={`poster-transition-${transitionSerial}-${item.id}`}>
@@ -265,7 +274,7 @@ export default function PublicPlayer({ token }: { token: string }) {
 
   return <main className={`public-display player-screen player-${item.template?.template_type || 'default'} ${wall ? 'video-wall-screen' : ''}`}>
     {wall ? <WallViewport wall={wall}>{content}</WallViewport> : content}
-    {!launchHolding && <div className="player-progress" key={`${item.id}:${syncCursor?.sequence || 0}:${Math.floor(offsetSeconds * 10)}`} style={{ animationDuration: `${progressDuration}s` }} />}
+    {!launchHolding && <div className="player-progress" key={`${item.id}:${syncCursor?.sequence || 0}:${localCycleSerial}:${Math.floor(offsetSeconds * 10)}`} style={{ animationDuration: `${progressDuration}s` }} />}
   </main>
 }
 
@@ -282,7 +291,7 @@ function Idle({ display }: { display: Display }) {
 }
 
 function ItemView({ item, display, mediaFit, startSeconds, syncKey, shouldPlay, startAt, onReady, onYouTubeController, onYouTubeBuffering, getExpectedMediaSeconds, onHlsSample }: {
-  item: Item; display: Display; mediaFit: MediaFit; startSeconds: number; syncKey: string; shouldPlay: boolean; startAt: string | null; onReady: (provider: string) => void; onYouTubeController: (controller: YouTubeController | null) => void; onYouTubeBuffering: (buffering: boolean) => void; getExpectedMediaSeconds: () => number | null; onHlsSample: (sample: HlsMediaSample | null) => void
+  item: Item; display: Display; mediaFit: MediaFit; startSeconds: number; syncKey: string; shouldPlay: boolean; startAt: string | null; onReady: (provider: string) => void; onYouTubeController: (controller: YouTubeController | null) => void; onBufferingChange: (buffering: boolean) => void; getExpectedMediaSeconds: () => number | null; onHlsSample: (sample: HlsMediaSample | null) => void
 }) {
   useEffect(() => {
     if (item.structured) onReady('structured')
