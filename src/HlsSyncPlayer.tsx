@@ -179,14 +179,14 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
     try { video.currentTime = targetSeconds } catch { /* noop */ }
     onReadyRef.current()
 
+    window.clearTimeout(startTimerRef.current)
+    startTimerRef.current = 0
     if (!shouldPlay) {
       video.pause()
       return
     }
 
     const delay = startAt ? Math.max(0, new Date(startAt).getTime() - Date.now()) : 0
-    window.clearTimeout(startTimerRef.current)
-    startTimerRef.current = 0
     if (delay <= 20) {
       void video.play().catch(() => { /* buffering state is reported by media events */ })
       return
@@ -198,30 +198,6 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
     }, delay)
     return () => window.clearTimeout(startTimerRef.current)
   }, [syncKey, startSeconds, shouldPlay, startAt])
-
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !readyRef.current) return
-
-    window.clearTimeout(startTimerRef.current)
-    startTimerRef.current = 0
-    if (!shouldPlay) {
-      video.pause()
-      return
-    }
-
-    const delay = startAt ? Math.max(0, new Date(startAt).getTime() - Date.now()) : 0
-    if (delay <= 20) {
-      void video.play().catch(() => { /* buffering state is reported by media events */ })
-      return
-    }
-
-    video.pause()
-    startTimerRef.current = window.setTimeout(() => {
-      void video.play().catch(() => { /* buffering state is reported by media events */ })
-    }, delay)
-    return () => window.clearTimeout(startTimerRef.current)
-  }, [shouldPlay, startAt])
 
   const objectFit = fitMode === 'native' ? 'fill' : fitMode
   return <video ref={videoRef} className={`hls-sync-player fit-${fitMode}`} style={{ objectFit }} aria-label={title} muted playsInline preload="auto" />
