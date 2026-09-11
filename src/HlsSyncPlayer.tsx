@@ -19,7 +19,7 @@ declare global {
 }
 
 let hlsApiPromise: Promise<void> | null = null
-const VIDEO_WALL_READY_BUFFER_SECONDS = 8
+const VIDEO_WALL_READY_BUFFER_SECONDS = 3
 const VIDEO_WALL_DRIFT_RECOVERY_MS = 500
 const VIDEO_WALL_RECOVERY_COOLDOWN_MS = 1000
 const VIDEO_WALL_SAMPLE_INTERVAL_MS = 500
