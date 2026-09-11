@@ -24,12 +24,12 @@
 .promotion-player:has(.promo-theme-animated_flash) { background: linear-gradient(135deg, #b91c1c 0%, #dc2626 52%, #7f1d1d 100%); }
 
 /* Displays de sinalização devem manter as animações ativas mesmo quando o
-   dispositivo/navegador solicita reduced motion. As regras abaixo usam os
-   mesmos keyframes dos templates; só o centro amarelo do Preço Explosivo é
-   mantido totalmente estático, deixando apenas os raios girarem. */
+   dispositivo/navegador solicita reduced motion. O Preço Explosivo é a única
+   exceção visual: centro amarelo e raios ficam estáticos no player para manter
+   o mesmo enquadramento percebido no preview. */
 .promotion-player .promo-theme-animated_hot .promo-poster-shape::before { animation: promoHotWave 5.6s ease-in-out infinite alternate !important; }
 .promotion-player .promo-theme-animated_hot .promo-poster-shape::after { animation: promoHotRing 3.8s ease-in-out infinite !important; }
-.promotion-player .promo-theme-animated_burst .promo-poster-shape::after { animation: promoBurstSpin 16s linear infinite !important; }
+.promotion-player .promo-theme-animated_burst .promo-poster-shape::after { animation: none !important; transform: none !important; }
 .promotion-player .promo-theme-animated_burst .promo-poster-shape::before { animation: none !important; transform: none !important; }
 .promotion-player .promo-theme-animated_bands .promo-poster-shape::before { animation: promoBandsSlide 8s linear infinite !important; }
 .promotion-player .promo-theme-animated_pulse .promo-poster-shape::before { animation: promoPulseHalo 3.4s ease-in-out infinite !important; }
