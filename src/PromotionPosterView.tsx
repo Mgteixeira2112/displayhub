@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react'
-import PromotionPosterBackdrop, { isAnimatedPosterTheme } from './PromotionPosterBackdrop'
 
 type Orientation = 'portrait' | 'landscape'
 type ElementKey = 'headline' | 'product' | 'price' | 'unit' | 'footer'
@@ -77,7 +76,6 @@ export default function PromotionPosterView({ poster, className = '' }: { poster
   const orientation = poster.orientation || 'portrait'
   const layout = poster.layout_positions?.[orientation] || {}
   const theme = poster.theme || 'hot_red'
-  const animated = isAnimatedPosterTheme(theme)
 
   const renderElement = (key: ElementKey, baseClass: string, tag: 'span' | 'strong' | 'div' | 'em', text: string) => {
     const item = layout[key] || {}
@@ -100,9 +98,8 @@ export default function PromotionPosterView({ poster, className = '' }: { poster
     return <span {...props}>{text}</span>
   }
 
-  return <>
-    <PromotionPosterBackdrop theme={theme} orientation={orientation} />
-    <div className={`promo-poster promo-${orientation} promo-theme-${theme}${animated ? ' promo-player-foreground' : ''} ${className}`.trim()}>
+  return (
+    <div className={`promo-poster promo-${orientation} promo-theme-${theme} ${className}`.trim()}>
       <div className="promo-poster-shape" aria-hidden="true" />
       <div className="promo-poster-content">
         {renderElement('headline', 'promo-headline', 'span', poster.headline)}
@@ -112,5 +109,5 @@ export default function PromotionPosterView({ poster, className = '' }: { poster
         {poster.footer && renderElement('footer', 'promo-footer', 'em', poster.footer)}
       </div>
     </div>
-  </>
+  )
 }
