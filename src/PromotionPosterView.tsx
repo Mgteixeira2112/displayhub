@@ -31,9 +31,21 @@ const previewWidths: Record<Orientation, number> = {
   landscape: 720,
 }
 
-const previewMaxRem: Record<Orientation, Record<ElementKey, number>> = {
-  portrait: { headline: 2, product: 3.5, price: 7.3, unit: 1.25, footer: 1.2 },
-  landscape: { headline: 2, product: 4.5, price: 8.5, unit: 1.25, footer: 1.2 },
+const fontRules: Record<Orientation, Record<ElementKey, { min: number; fluid: number; max: number }>> = {
+  portrait: {
+    headline: { min: 1.05, fluid: 3, max: 2 },
+    product: { min: 1.3, fluid: 4.6, max: 3.5 },
+    price: { min: 2.8, fluid: 10, max: 7.3 },
+    unit: { min: 0.8, fluid: 2, max: 1.25 },
+    footer: { min: 0.75, fluid: 1.8, max: 1.2 },
+  },
+  landscape: {
+    headline: { min: 1.05, fluid: 3, max: 2 },
+    product: { min: 1.7, fluid: 4.2, max: 4.5 },
+    price: { min: 3.6, fluid: 9, max: 8.5 },
+    unit: { min: 0.8, fluid: 2, max: 1.25 },
+    footer: { min: 0.75, fluid: 1.8, max: 1.2 },
+  },
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -46,8 +58,14 @@ function manualFontSize(key: ElementKey, orientation: Orientation, item: Element
   const fontSize = direct ?? legacy
   if (fontSize == null) return undefined
 
+  const rule = fontRules[orientation][key]
+  const basePreviewPx = clamp(
+    previewWidths[orientation] * rule.fluid / 100,
+    rule.min * 16,
+    rule.max * 16,
+  )
   const scale = clamp(fontSize, 8, 400) / designFontSizes[orientation][key]
-  const previewPx = previewMaxRem[orientation][key] * 16 * scale
+  const previewPx = basePreviewPx * scale
   return `${((previewPx / previewWidths[orientation]) * 100).toFixed(4)}cqw`
 }
 
