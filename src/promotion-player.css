@@ -23,8 +23,26 @@
 .promotion-player:has(.promo-theme-animated_glow) { background: linear-gradient(145deg, #07111f 0%, #111827 50%, #1e1b4b 100%); }
 .promotion-player:has(.promo-theme-animated_flash) { background: linear-gradient(135deg, #b91c1c 0%, #dc2626 52%, #7f1d1d 100%); }
 
-/* Fonte única de animação: o player usa exatamente as regras declaradas em
-   promotion-animated-backgrounds.css, as mesmas usadas pelo preview. */
+/* Displays de sinalização devem manter as animações ativas mesmo quando o
+   dispositivo/navegador solicita reduced motion. As regras abaixo usam os
+   mesmos keyframes dos templates; só o centro amarelo do Preço Explosivo é
+   mantido totalmente estático, deixando apenas os raios girarem. */
+.promotion-player .promo-theme-animated_hot .promo-poster-shape::before { animation: promoHotWave 5.6s ease-in-out infinite alternate !important; }
+.promotion-player .promo-theme-animated_hot .promo-poster-shape::after { animation: promoHotRing 3.8s ease-in-out infinite !important; }
+.promotion-player .promo-theme-animated_burst .promo-poster-shape::after { animation: promoBurstSpin 16s linear infinite !important; }
+.promotion-player .promo-theme-animated_burst .promo-poster-shape::before { animation: none !important; transform: none !important; }
+.promotion-player .promo-theme-animated_bands .promo-poster-shape::before { animation: promoBandsSlide 8s linear infinite !important; }
+.promotion-player .promo-theme-animated_pulse .promo-poster-shape::before { animation: promoPulseHalo 3.4s ease-in-out infinite !important; }
+.promotion-player .promo-theme-animated_pulse .promo-poster-shape::after { animation: promoPulseBand 4s ease-in-out infinite alternate !important; }
+.promotion-player .promo-theme-animated_neon .promo-poster-shape { animation: promoNeonFlicker 4.4s steps(1,end) infinite !important; }
+.promotion-player .promo-theme-animated_neon .promo-poster-shape::before,
+.promotion-player .promo-theme-animated_neon .promo-poster-shape::after { animation: promoNeonScan 4.8s ease-in-out infinite alternate !important; }
+.promotion-player .promo-theme-animated_confetti .promo-poster-shape::before { animation: promoConfettiFall 9s linear infinite !important; }
+.promotion-player .promo-theme-animated_confetti .promo-poster-shape::after { animation: promoConfettiFall 13s linear infinite -5s !important; }
+.promotion-player .promo-theme-animated_chevron .promo-poster-shape::before { animation: promoChevronMove 8s linear infinite !important; }
+.promotion-player .promo-theme-animated_glow .promo-poster-shape::before,
+.promotion-player .promo-theme-animated_glow .promo-poster-shape::after { animation: promoGlowBreath 5.2s ease-in-out infinite alternate !important; }
+.promotion-player .promo-theme-animated_flash .promo-poster-shape::after { animation: promoFlashSweep 4.6s ease-in-out infinite !important; }
 
 /* Stage único em COVER proporcional.
    A composição nunca é esticada: preserva 16:9/9:16 e, quando a viewport
