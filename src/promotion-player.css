@@ -42,27 +42,31 @@
 .promotion-player .promo-theme-animated_glow .promo-poster-shape::after { animation: promoGlowBreath 5.2s ease-in-out infinite alternate !important; }
 .promotion-player .promo-theme-animated_flash .promo-poster-shape::after { animation: promoFlashSweep 4.6s ease-in-out infinite !important; }
 
-/* Stage único: o player somente redimensiona a mesma superfície proporcional
-   usada no editor. Nenhum elemento interno é recalculado em função da
-   viewport. */
+/* Stage único em COVER proporcional.
+   A composição nunca é esticada: preserva 16:9/9:16 e, quando a viewport
+   tem outra proporção, apenas recorta a menor sobra possível nas bordas.
+   Isso elimina faixas laterais sem recalcular nenhum elemento interno. */
 .promotion-player .promo-poster {
   position: relative;
   z-index: 1;
-  max-width: 100vw;
-  max-height: 100vh;
+  flex: none;
   border-radius: 0;
   box-shadow: none;
   container-type: inline-size;
 }
 
 .promotion-player .promo-poster.promo-landscape {
-  width: min(100vw, calc(100vh * 16 / 9));
-  height: auto;
+  width: max(100vw, calc(100vh * 16 / 9));
+  height: max(100vh, calc(100vw * 9 / 16));
+  max-width: none;
+  max-height: none;
   aspect-ratio: 16 / 9;
 }
 
 .promotion-player .promo-poster.promo-portrait {
-  width: min(100vw, calc(100vh * 9 / 16));
-  height: auto;
+  width: max(100vw, calc(100vh * 9 / 16));
+  height: max(100vh, calc(100vw * 16 / 9));
+  max-width: none;
+  max-height: none;
   aspect-ratio: 9 / 16;
 }
