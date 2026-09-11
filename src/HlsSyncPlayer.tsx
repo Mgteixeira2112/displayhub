@@ -71,6 +71,7 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
   const videoRef = useRef<HTMLVideoElement>(null)
   const startTimerRef = useRef(0)
   const readyRef = useRef(false)
+  const resetReadyForPreparationRef = useRef<(() => void) | null>(null)
   const startSecondsRef = useRef(startSeconds)
   const shouldPlayRef = useRef(shouldPlay)
   const startAtRef = useRef(startAt)
@@ -167,6 +168,17 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
       }, VIDEO_WALL_READY_STABILIZATION_MS)
     }
 
+    const resetReadyForPreparation = () => {
+      readySent = false
+      readyRef.current = false
+      if (readyTimer) {
+        window.clearTimeout(readyTimer)
+        readyTimer = 0
+      }
+      scheduleReady()
+    }
+    resetReadyForPreparationRef.current = resetReadyForPreparation
+
     const beginSampling = () => {
       sampleInterval = window.setInterval(() => {
         if (disposed) return
@@ -247,6 +259,7 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
     return () => {
       disposed = true
       readyRef.current = false
+      if (resetReadyForPreparationRef.current === resetReadyForPreparation) resetReadyForPreparationRef.current = null
       window.clearInterval(sampleInterval)
       window.clearTimeout(readyTimer)
       window.clearTimeout(startTimerRef.current)
@@ -265,6 +278,10 @@ export default function HlsSyncPlayer({ manifestUrl, title, startSeconds, syncKe
       hls?.destroy()
     }
   }, [manifestUrl])
+
+  useEffect(() => {
+    if (!shouldPlay) resetReadyForPreparationRef.current?.()
+  }, [shouldPlay])
 
   useEffect(() => {
     const video = videoRef.current
