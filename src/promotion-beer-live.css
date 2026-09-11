@@ -147,3 +147,15 @@
     animation: none !important;
   }
 }
+
+/* Como nos templates animados homologados, preview e player precisam exibir
+   a animação escolhida mesmo quando o sistema operacional pede movimento reduzido. */
+.promo-editable.promo-theme-animated_beer .promo-poster-shape::before,
+.promotion-player .promo-theme-animated_beer .promo-poster-shape::before {
+  animation: promoBeerBubbles 8.5s linear infinite !important;
+}
+
+.promo-editable.promo-theme-animated_beer .promo-poster-shape::after,
+.promotion-player .promo-theme-animated_beer .promo-poster-shape::after {
+  animation: promoBeerGlow 5.6s ease-in-out infinite alternate !important;
+}
