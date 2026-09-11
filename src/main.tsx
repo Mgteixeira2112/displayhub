@@ -18,7 +18,6 @@ import './promotion-animated-backgrounds.css'
 import './promotion-player.css'
 import './playlist-transitions.css'
 import './promotion-render-scale.css'
-import './promotion-player-animation.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
