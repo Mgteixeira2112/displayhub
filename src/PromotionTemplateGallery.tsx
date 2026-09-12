@@ -87,7 +87,7 @@ export default function PromotionTemplateGallery() {
     })
   }, [filter, query, templates])
 
-  function useTemplate(template: Template) {
+  function selectTemplate(template: Template) {
     window.dispatchEvent(new CustomEvent('displayhub:use-promotion-template', { detail: { key: template.key } }))
   }
 
@@ -142,7 +142,7 @@ export default function PromotionTemplateGallery() {
                 <div className="promotion-gallery-meta"><span>{orientationLabel(template)}</span><span>{typeLabel(template)}</span></div>
                 <div className="promotion-gallery-actions">
                   <button type="button" className="secondary-button" onClick={() => setPreview(template)}>Pré-visualizar</button>
-                  <button type="button" className="primary-button" onClick={() => useTemplate(template)}>Usar template</button>
+                  <button type="button" className="primary-button" onClick={() => selectTemplate(template)}>Usar template</button>
                 </div>
               </div>
             </article>
@@ -160,7 +160,7 @@ export default function PromotionTemplateGallery() {
             <div className="promotion-gallery-modal-preview"><PromotionPosterView poster={samplePoster(preview)} /></div>
             <footer>
               <p>{preview.description || 'Template promocional pronto para personalização.'}</p>
-              <div><button type="button" className="secondary-button" onClick={() => setPreview(null)}>Voltar</button><button type="button" className="primary-button" onClick={() => { setPreview(null); useTemplate(preview) }}>Usar este template</button></div>
+              <div><button type="button" className="secondary-button" onClick={() => setPreview(null)}>Voltar</button><button type="button" className="primary-button" onClick={() => { setPreview(null); selectTemplate(preview) }}>Usar este template</button></div>
             </footer>
           </section>
         </div>
