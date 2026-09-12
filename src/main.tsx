@@ -27,6 +27,7 @@ import './promotion-player.css'
 import './playlist-transitions.css'
 import './promotion-render-scale.css'
 import './promotion-editor-tools.css'
+import './promotion-creator-workspace.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
