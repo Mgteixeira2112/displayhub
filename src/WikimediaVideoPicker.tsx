@@ -164,6 +164,18 @@ async function searchCommonsVideos(searchTerm: string) {
     .filter((item): item is VideoResult => Boolean(item))
 }
 
+function withCommonsAttribution(item: VideoResult) {
+  const url = new URL(item.videoUrl)
+  const metadata = JSON.stringify({
+    p: item.pageUrl,
+    a: item.author || '',
+    l: item.license || '',
+    u: item.licenseUrl || '',
+  })
+  url.hash = `dhcommons=${encodeURIComponent(metadata)}`
+  return url.toString()
+}
+
 function updateReactUrlInput(container: HTMLElement, url: string) {
   const input = container.querySelector<HTMLInputElement>('input[type="url"]')
   if (!input) return false
@@ -204,7 +216,7 @@ function WikimediaVideoPicker({ container }: { container: HTMLElement }) {
   }
 
   function useVideo(item: VideoResult) {
-    const changed = updateReactUrlInput(container, item.videoUrl)
+    const changed = updateReactUrlInput(container, withCommonsAttribution(item))
     setMessage(changed ? `Selecionado: ${item.fileTitle} · ${item.quality}${item.bitrate ? ` · ${item.bitrate}` : ''}` : 'Não foi possível atualizar a URL do cartaz.')
   }
 
@@ -249,6 +261,7 @@ function WikimediaVideoPicker({ container }: { container: HTMLElement }) {
           <div>
             <strong>{preview.title}</strong>
             <small>{preview.quality}{preview.bitrate ? ` · ${preview.bitrate}` : ''}</small>
+            {(preview.author || preview.license) && <small>{preview.author || 'Autor não informado'}{preview.license ? ` · ${preview.license}` : ''}</small>}
             <div className="wikimedia-picker-actions">
               <button className="primary-button compact" type="button" onClick={() => useVideo(preview)}>Usar este vídeo</button>
               <a href={preview.pageUrl} target="_blank" rel="noreferrer">Abrir no Wikimedia</a>
@@ -275,17 +288,14 @@ function WikimediaVideoPicker({ container }: { container: HTMLElement }) {
           </article>)}
         </div>
 
-        <small className="wikimedia-picker-footnote">O DisplayHub prefere automaticamente uma transcodificação próxima de 720p. Confirme a licença e a atribuição indicadas pelo Wikimedia antes do uso comercial.</small>
+        <small className="wikimedia-picker-footnote">O DisplayHub prefere automaticamente uma transcodificação próxima de 720p e mantém a origem/licença junto da URL salva. Confirme os termos do arquivo antes do uso comercial.</small>
       </div>}
     </div>
   )
 }
 
-const mountedControls = new WeakSet<HTMLElement>()
-
 function mountPicker(control: HTMLElement) {
-  if (mountedControls.has(control)) return
-  mountedControls.add(control)
+  if (control.querySelector(':scope > .wikimedia-picker-host')) return
   const host = document.createElement('div')
   host.className = 'wikimedia-picker-host'
   control.appendChild(host)
