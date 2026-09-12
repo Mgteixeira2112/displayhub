@@ -102,9 +102,7 @@ export default function DisplayGroupsManager() {
       members.filter((member) => member.group_id === selectedGroup.id).forEach((member) => { next[`${member.row_index}:${member.column_index}`] = member.display_id })
       setDraftSlots(next)
     }
-    if (!playlistDirty) {
-      setGroupPlaylistId(groupPublications.find((publication) => publication.group_id === selectedGroup.id && publication.is_active)?.playlist_id || '')
-    }
+    if (!playlistDirty) setGroupPlaylistId(groupPublications.find((publication) => publication.group_id === selectedGroup.id && publication.is_active)?.playlist_id || '')
     if (!coordinatedDirty) {
       const next: Record<string, string> = {}
       coordinatedPublications.filter((publication) => publication.group_id === selectedGroup.id && publication.is_active).forEach((publication) => { next[publication.display_id] = publication.playlist_id })
@@ -126,6 +124,19 @@ export default function DisplayGroupsManager() {
       if (error) throw error
       setName(''); await load(); setSelectedGroupId(data.id); setMessage('Grupo criado. Agora posicione as TVs na grade.')
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível criar o grupo.') } finally { setBusy(false) }
+  }
+
+  async function deleteGroup() {
+    if (!selectedGroup || profile?.role !== 'admin' || busy) return
+    if (!window.confirm(`Excluir o grupo "${selectedGroup.name}"? Essa ação removerá o layout e as publicações vinculadas a ele.`)) return
+    setBusy(true); setMessage('')
+    try {
+      const { error } = await supabase.from('display_groups').delete().eq('id', selectedGroup.id)
+      if (error) throw error
+      setSelectedGroupId('')
+      await load()
+      setMessage('Grupo excluído com sucesso.')
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível excluir o grupo.') } finally { setBusy(false) }
   }
 
   async function saveLayout() {
@@ -178,13 +189,9 @@ export default function DisplayGroupsManager() {
       const { data, error } = await supabase.from('display_groups').update({ media_fit: mediaFit }).eq('id', selectedGroup.id).select('media_fit').single()
       if (error) throw error
       if (data?.media_fit !== mediaFit) throw new Error('O banco não confirmou o modo de encaixe selecionado.')
-      await load()
-      setMediaFitDirty(false)
-      setMessage(`Encaixe salvo: ${fitLabels[mediaFit]}.`)
+      await load(); setMediaFitDirty(false); setMessage(`Encaixe salvo: ${fitLabels[mediaFit]}.`)
     } catch (error) {
-      setMediaFitDraft(selectedGroup.media_fit || 'cover')
-      setMediaFitDirty(false)
-      setMessage(error instanceof Error ? error.message : 'Não foi possível salvar o modo de encaixe.')
+      setMediaFitDraft(selectedGroup.media_fit || 'cover'); setMediaFitDirty(false); setMessage(error instanceof Error ? error.message : 'Não foi possível salvar o modo de encaixe.')
     } finally { setBusy(false) }
   }
 
@@ -218,7 +225,7 @@ export default function DisplayGroupsManager() {
     {canManage && <section className="create-panel display-group-create"><div className="display-group-create-title">Novo grupo</div><form className="display-group-form" onSubmit={createGroup}><label>Nome<input value={name} onChange={(event) => setName(event.target.value)} minLength={2} required placeholder="Painel Principal" /></label><label>Modo<select value={mode} onChange={(event) => setMode(event.target.value as Mode)}><option value="video_wall">Video Wall</option><option value="coordinated">Conteúdo coordenado</option><option value="mirror">Espelhamento</option></select></label><label>Linhas<input type="number" min="1" max="16" value={rows} onChange={(event) => setRows(Number(event.target.value))} /></label><label>Colunas<input type="number" min="1" max="16" value={columns} onChange={(event) => setColumns(Number(event.target.value))} /></label><label>Largura virtual<input type="number" min="320" max="65536" value={virtualWidth} onChange={(event) => setVirtualWidth(event.target.value)} placeholder="Automática" /></label><label>Altura virtual<input type="number" min="320" max="65536" value={virtualHeight} onChange={(event) => setVirtualHeight(event.target.value)} placeholder="Automática" /></label><button className="primary-button" type="submit" disabled={busy}>Criar grupo</button></form></section>}
     <div className="display-group-list">{groups.length === 0 && <p className="empty-state">Nenhum grupo cadastrado.</p>}{groups.map((group) => { const count = members.filter((member) => member.group_id === group.id).length; return <button key={group.id} type="button" className={`display-group-card ${selectedGroupId === group.id ? 'selected' : ''}`} onClick={() => setSelectedGroupId(group.id)}><strong>{group.name}</strong><span>{modeLabels[group.mode]} · {group.rows}×{group.columns}</span><small>{count} TV{count === 1 ? '' : 's'} posicionada{count === 1 ? '' : 's'}</small></button> })}</div>
     {selectedGroup && <section className="display-group-editor">
-      <div className="section-heading"><div><p className="eyebrow">Layout</p><h3>{selectedGroup.name}</h3><p>{modeLabels[selectedGroup.mode]} · {selectedGroup.rows}×{selectedGroup.columns}</p></div><div className="display-group-heading-actions">{canManage && <button className="primary-button compact" type="button" onClick={() => void saveLayout()} disabled={busy}>Salvar layout</button>}{canManage && selectedGroup.mode === 'coordinated' && <button className="secondary-button compact" type="button" onClick={() => void saveCoordinatedContent()} disabled={busy || draftDirty || selectedMemberIds.length === 0}>Salvar conteúdo</button>}</div></div>
+      <div className="section-heading"><div><p className="eyebrow">Layout</p><h3>{selectedGroup.name}</h3><p>{modeLabels[selectedGroup.mode]} · {selectedGroup.rows}×{selectedGroup.columns}</p></div><div className="display-group-heading-actions">{profile?.role === 'admin' && <button className="secondary-button compact" type="button" onClick={() => void deleteGroup()} disabled={busy}>Excluir grupo</button>}{canManage && <button className="primary-button compact" type="button" onClick={() => void saveLayout()} disabled={busy}>Salvar layout</button>}{canManage && selectedGroup.mode === 'coordinated' && <button className="secondary-button compact" type="button" onClick={() => void saveCoordinatedContent()} disabled={busy || draftDirty || selectedMemberIds.length === 0}>Salvar conteúdo</button>}</div></div>
       {(selectedGroup.mode === 'mirror' || selectedGroup.mode === 'video_wall') && <div className="display-group-mirror-config"><div><p className="eyebrow">Conteúdo</p><h4>Playlist do grupo</h4></div><label>Playlist<select value={groupPlaylistId} onChange={(event) => { setGroupPlaylistId(event.target.value); setPlaylistDirty(true) }} disabled={!canManage}><option value="">Nenhuma playlist</option>{playlists.map((playlist) => <option key={playlist.id} value={playlist.id}>{playlist.name}</option>)}</select></label>{canManage && <button className="primary-button compact" type="button" onClick={() => void saveGroupPlaylist()} disabled={busy}>Salvar playlist</button>}</div>}
       {selectedGroup.mode === 'video_wall' && <div className="display-group-mirror-config"><div><p className="eyebrow">Exibição</p><h4>Encaixe da mídia</h4></div><label>Modo<select value={mediaFitDraft} onChange={(event) => void saveMediaFit(event.target.value as MediaFit)} disabled={!canManage || busy}><option value="contain">Vídeo inteiro</option><option value="cover">Preencher telas</option><option value="native">Conteúdo preparado</option></select></label></div>}
       {selectedGroup.mode === 'video_wall' && <div className="display-group-mirror-config"><div><p className="eyebrow">Sincronização</p><h4>{selectedReady.length}/{selectedMemberIds.length} telas prontas</h4>{selectedLaunch && <p>{launchStatusLabels[selectedLaunch.status]}</p>}</div>{canManage && <button className="secondary-button compact" type="button" onClick={() => void prepareVideoWall()} disabled={busy || !groupPlaylistId || selectedMemberIds.length === 0}>Preparar exibição</button>}{canManage && <button className="primary-button compact" type="button" onClick={() => void startVideoWall()} disabled={busy || !selectedLaunch || selectedReady.length !== selectedMemberIds.length}>Iniciar exibição</button>}</div>}
