@@ -1,0 +1,7 @@
+.promotion-workspace .section-heading > div > p:not(.eyebrow),
+.promotion-workspace .promotion-template-help,
+.promotion-workspace .promotion-video-controls > small,
+.promotion-workspace .promotion-box-controls > small,
+.promotion-workspace .promotion-drag-hint {
+  display: none !important;
+}
