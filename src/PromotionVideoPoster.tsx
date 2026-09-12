@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import PromotionPosterView, { type PromotionPosterData } from './PromotionPosterView'
 
 export const DEMO_BEER_VIDEO_URL = 'https://upload.wikimedia.org/wikipedia/commons/2/2b/Jane_pouring_beer_fast.webm'
@@ -7,6 +7,13 @@ export type PromotionVideoMetadata = {
   background_video_url?: string
   background_overlay_opacity?: number
 }
+
+type CachedVideo = {
+  promise: Promise<string>
+  objectUrl?: string
+}
+
+const cachedPromotionVideos = new Map<string, CachedVideo>()
 
 export function readPromotionVideoMetadata(layoutPositions: unknown): PromotionVideoMetadata {
   if (!layoutPositions || typeof layoutPositions !== 'object' || Array.isArray(layoutPositions)) return {}
@@ -21,98 +28,58 @@ export function readPromotionVideoMetadata(layoutPositions: unknown): PromotionV
   }
 }
 
-export function SeamlessPromotionVideo({ src }: { src: string }) {
-  const firstRef = useRef<HTMLVideoElement | null>(null)
-  const secondRef = useRef<HTMLVideoElement | null>(null)
-  const activeRef = useRef<0 | 1>(0)
-  const switchingRef = useRef(false)
-  const cleanupTimerRef = useRef<number | null>(null)
-  const [active, setActive] = useState<0 | 1>(0)
+export function getCachedPromotionVideoUrl(src: string) {
+  return cachedPromotionVideos.get(src)?.objectUrl || null
+}
 
-  useEffect(() => {
-    const first = firstRef.current
-    const second = secondRef.current
-    if (!first || !second) return
+export function preloadPromotionVideoToMemory(src: string) {
+  const existing = cachedPromotionVideos.get(src)
+  if (existing) return existing.promise
 
-    activeRef.current = 0
-    switchingRef.current = false
-    setActive(0)
-    first.currentTime = 0
-    second.currentTime = 0
-    second.pause()
-    first.load()
-    second.load()
-    void first.play().catch(() => undefined)
-
-    return () => {
-      if (cleanupTimerRef.current != null) window.clearTimeout(cleanupTimerRef.current)
-      first.pause()
-      second.pause()
-    }
-  }, [src])
-
-  function handoff(index: 0 | 1, force = false) {
-    if (activeRef.current !== index || switchingRef.current) return
-    const current = index === 0 ? firstRef.current : secondRef.current
-    const next = index === 0 ? secondRef.current : firstRef.current
-    if (!current || !next) return
-
-    const remaining = Number.isFinite(current.duration) ? current.duration - current.currentTime : Number.POSITIVE_INFINITY
-    if (!force && remaining > 0.55) return
-
-    const activateNext = () => {
-      if (switchingRef.current) return
-      switchingRef.current = true
-      try { next.currentTime = 0 } catch { /* metadata may still be loading */ }
-      void next.play().then(() => {
-        const nextIndex: 0 | 1 = index === 0 ? 1 : 0
-        activeRef.current = nextIndex
-        setActive(nextIndex)
-        cleanupTimerRef.current = window.setTimeout(() => {
-          current.pause()
-          try { current.currentTime = 0 } catch { /* no-op */ }
-          switchingRef.current = false
-          cleanupTimerRef.current = null
-        }, 340)
-      }).catch(() => {
-        switchingRef.current = false
+  const entry: CachedVideo = {
+    promise: fetch(src, { mode: 'cors', cache: 'force-cache' })
+      .then((response) => {
+        if (!response.ok) throw new Error(`video_download_${response.status}`)
+        return response.blob()
       })
-    }
-
-    if (next.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) activateNext()
-    else {
-      const onCanPlay = () => activateNext()
-      next.addEventListener('canplay', onCanPlay, { once: true })
-      next.load()
-    }
+      .then((blob) => {
+        if (!blob.size) throw new Error('video_download_empty')
+        const objectUrl = URL.createObjectURL(blob)
+        entry.objectUrl = objectUrl
+        return objectUrl
+      })
+      .catch((error) => {
+        cachedPromotionVideos.delete(src)
+        throw error
+      }),
   }
 
+  cachedPromotionVideos.set(src, entry)
+  return entry.promise
+}
+
+function BufferedPromotionVideo({ src }: { src: string }) {
+  const [playbackSrc, setPlaybackSrc] = useState(() => getCachedPromotionVideoUrl(src) || src)
+
+  useEffect(() => {
+    // Se o arquivo já estiver integralmente em memória, a nova exibição usa o
+    // blob local. Caso contrário, esta passagem continua usando a URL remota
+    // enquanto o download completo é aquecido para a próxima passagem.
+    setPlaybackSrc(getCachedPromotionVideoUrl(src) || src)
+    void preloadPromotionVideoToMemory(src).catch(() => undefined)
+  }, [src])
+
   return (
-    <>
-      <video
-        ref={firstRef}
-        className={`promo-video-background promo-video-loop-layer${active === 0 ? ' is-active' : ''}`}
-        src={src}
-        autoPlay
-        muted
-        playsInline
-        preload="auto"
-        aria-hidden="true"
-        onTimeUpdate={() => handoff(0)}
-        onEnded={() => handoff(0, true)}
-      />
-      <video
-        ref={secondRef}
-        className={`promo-video-background promo-video-loop-layer${active === 1 ? ' is-active' : ''}`}
-        src={src}
-        muted
-        playsInline
-        preload="auto"
-        aria-hidden="true"
-        onTimeUpdate={() => handoff(1)}
-        onEnded={() => handoff(1, true)}
-      />
-    </>
+    <video
+      className="promo-video-background"
+      src={playbackSrc}
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="auto"
+      aria-hidden="true"
+    />
   )
 }
 
@@ -127,7 +94,7 @@ export default function PromotionVideoPoster({ poster, className = '' }: { poste
 
   return (
     <div className="promo-video-stage">
-      <SeamlessPromotionVideo src={videoUrl} />
+      <BufferedPromotionVideo key={videoUrl} src={videoUrl} />
       <div className="promo-video-overlay" style={{ opacity: overlayOpacity }} aria-hidden="true" />
       <PromotionPosterView poster={poster} className={`${className} promo-video-poster`.trim()} />
       {videoUrl === DEMO_BEER_VIDEO_URL && <small className="promo-video-credit">Vídeo de demonstração: Angulidayaaluta / Wikimedia Commons · CC BY-SA 4.0</small>}
