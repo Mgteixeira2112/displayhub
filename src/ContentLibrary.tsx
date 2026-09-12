@@ -7,7 +7,6 @@ import PromotionPosterManager from './PromotionPosterManager'
 import PromotionTemplateGallery from './PromotionTemplateGallery'
 import StructuredContent from './StructuredContent'
 import TemplateManager from './TemplateManager'
-import WikimediaVideoPickerPortal from './WikimediaVideoPickerPortal'
 import { subscribeDataChanged } from './lib/dataRefresh'
 
 type Props = {
@@ -48,7 +47,6 @@ export default function ContentLibrary(props: Props) {
 
         <div className="software-module module-posters">
           <PromotionPosterManager {...props} />
-          <WikimediaVideoPickerPortal />
         </div>
 
         <div className="software-module module-gallery">
