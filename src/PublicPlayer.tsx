@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { publicSupabase } from './lib/supabase'
 import YouTubeSyncPlayer, { type MediaFit, type YouTubeController } from './YouTubeSyncPlayer'
 import HlsSyncPlayer, { type HlsMediaSample } from './HlsSyncPlayer'
-import PromotionPosterView, { type PromotionPosterData } from './PromotionPosterView'
+import { type PromotionPosterData } from './PromotionPosterView'
+import PromotionVideoPoster from './PromotionVideoPoster'
 
 type Display = { id: string; name: string; location: string | null; orientation: string; resolution_width: number; resolution_height: number }
 type Template = { name: string; template_type: string }
@@ -273,7 +274,7 @@ export default function PublicPlayer({ token }: { token: string }) {
   const showPosterTransition = !wall && transitionType !== 'none' && Boolean(previousPosterItem?.poster && item.poster)
   const content = showPosterTransition && previousPosterItem?.poster
     ? <div className={`poster-transition-stage poster-transition-${transitionType}`} key={`poster-transition-${transitionSerial}-${item.id}`}>
-        <div className="poster-transition-layer poster-transition-old" style={{ animationDuration: `${transitionDurationMs}ms` }}><div className="promotion-player"><PromotionPosterView poster={previousPosterItem.poster} /></div></div>
+        <div className="poster-transition-layer poster-transition-old" style={{ animationDuration: `${transitionDurationMs}ms` }}><div className="promotion-player"><PromotionVideoPoster poster={previousPosterItem.poster} /></div></div>
         <div className="poster-transition-layer poster-transition-new" style={{ animationDuration: `${transitionDurationMs}ms` }}>{currentContent}</div>
       </div>
     : currentContent
@@ -305,7 +306,7 @@ function ItemView({ item, display, mediaFit, startSeconds, syncKey, shouldPlay, 
     if (item.poster) onReady('promotion_poster')
   }, [item.id, item.structured, item.poster, onReady])
 
-  if (item.poster) return <div className="promotion-player"><PromotionPosterView poster={item.poster} className="promotion-player-poster" /></div>
+  if (item.poster) return <div className="promotion-player"><PromotionVideoPoster poster={item.poster} className="promotion-player-poster" /></div>
 
   if (item.content?.type === 'image' && item.content.signed_url) {
     const objectFit = mediaFit === 'native' ? 'fill' : mediaFit
