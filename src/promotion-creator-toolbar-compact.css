@@ -1,0 +1,104 @@
+/* Barra de propriedades compacta no editor desktop.
+   Mantém as mesmas funções e reduz apenas a ocupação vertical. */
+
+@media (min-width: 900px) {
+  .promotion-workspace .promotion-editor-tools {
+    gap: 6px;
+    padding-top: 6px;
+  }
+
+  .promotion-workspace .promotion-editor-tools-head {
+    gap: 6px;
+  }
+
+  .promotion-workspace .promotion-element-tabs {
+    min-height: 30px;
+    padding: 2px;
+  }
+
+  .promotion-workspace .promotion-element-tab {
+    min-height: 28px;
+    padding: 3px 6px;
+  }
+
+  .promotion-workspace .promotion-toolbox-status {
+    min-height: 32px;
+    padding: 3px 7px;
+  }
+
+  .promotion-workspace .promotion-toolbox-grid {
+    min-height: 44px;
+  }
+
+  .promotion-workspace .promotion-tool-card,
+  .promotion-workspace .promotion-tool-card:nth-child(odd),
+  .promotion-workspace .promotion-tool-card:nth-child(-n+2) {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    align-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 5px 8px;
+  }
+
+  .promotion-workspace .promotion-tool-heading {
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .promotion-workspace .promotion-tool-heading strong {
+    font-size: .6875rem;
+    line-height: 1.2;
+  }
+
+  .promotion-workspace .promotion-tool-heading span {
+    display: none;
+  }
+
+  .promotion-workspace .promotion-tool-row {
+    grid-template-columns: minmax(54px, 1fr) 44px auto;
+    gap: 4px;
+  }
+
+  .promotion-workspace .promotion-tool-number {
+    width: 44px !important;
+    min-height: 28px !important;
+    padding-inline: 5px !important;
+    font-size: .6875rem !important;
+  }
+
+  .promotion-workspace .promotion-tool-row .secondary-button,
+  .promotion-workspace .promotion-color-tools .secondary-button {
+    min-height: 26px;
+    padding: 2px 4px;
+    font-size: .625rem;
+  }
+
+  .promotion-workspace .promotion-align-buttons {
+    gap: 2px;
+    padding: 2px;
+  }
+
+  .promotion-workspace .promotion-align-button {
+    min-height: 26px;
+    padding: 3px 4px;
+    font-size: .625rem;
+  }
+
+  .promotion-workspace .promotion-color-tools {
+    grid-template-columns: 30px minmax(46px, 1fr) auto;
+    gap: 4px;
+  }
+
+  .promotion-workspace .promotion-color-tools input[type='color'] {
+    width: 30px !important;
+    height: 28px;
+  }
+
+  .promotion-workspace .promotion-color-tools code {
+    font-size: .625rem;
+  }
+}
