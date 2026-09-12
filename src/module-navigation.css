@@ -1,3 +1,5 @@
+@import './displays-visual.css';
+
 .software-dashboard-panel > .account-grid,
 .software-dashboard-panel > .workspace-section,
 .software-dashboard-panel .software-module { display: none; }
