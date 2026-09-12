@@ -1,32 +1,32 @@
 .view-groups .display-groups-module {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .view-groups .display-groups-module > .section-heading {
-  min-height: 56px;
+  min-height: 60px;
   align-items: center;
   margin: 0;
-  padding: 0 0 12px;
+  padding: 0 0 13px;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .view-groups .display-groups-module > .section-heading > div {
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 
 .view-groups .display-groups-module > .section-heading h2 {
   margin: 0;
   color: #0f172a;
-  font-size: 1rem;
+  font-size: 1.08rem;
   letter-spacing: -.015em;
 }
 
 .view-groups .display-groups-module > .section-heading p:last-child {
   margin: 0;
   color: #64748b;
-  font-size: .7rem;
+  font-size: .76rem;
 }
 
 /* A tela já recarrega o estado automaticamente a cada 3 segundos. */
@@ -44,13 +44,13 @@
 }
 
 .view-groups .display-group-create > summary {
-  min-height: 38px;
+  min-height: 42px;
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 13px;
   color: #334155;
   cursor: pointer;
-  font-size: .68rem;
+  font-size: .74rem;
   font-weight: 800;
   list-style: none;
 }
@@ -79,52 +79,52 @@
 .view-groups .display-group-form {
   display: grid;
   grid-template-columns: minmax(180px, 1.45fr) minmax(155px, 1fr) 86px 86px minmax(120px, .8fr) minmax(120px, .8fr) auto;
-  gap: 8px;
+  gap: 9px;
   align-items: end;
-  padding: 10px 12px 12px;
+  padding: 12px 13px 14px;
 }
 
 .view-groups .display-group-form label {
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 5px;
   color: #64748b;
-  font-size: .58rem;
+  font-size: .64rem;
   font-weight: 750;
 }
 
 .view-groups .display-group-form input,
 .view-groups .display-group-form select {
   width: 100%;
-  height: 32px;
+  height: 36px;
   min-width: 0;
-  padding: 0 9px;
+  padding: 0 10px;
   border: 1px solid #dbe3ec;
   border-radius: 8px;
   background: #fff;
   color: #1e293b;
-  font-size: .65rem;
+  font-size: .7rem;
 }
 
 .view-groups .display-group-form .primary-button {
-  min-height: 32px;
-  height: 32px;
-  padding-inline: 12px;
+  min-height: 36px;
+  height: 36px;
+  padding-inline: 13px;
   white-space: nowrap;
-  font-size: .62rem;
+  font-size: .67rem;
 }
 
 .view-groups .form-message {
   margin: 0;
-  padding: 8px 10px;
+  padding: 9px 11px;
   border-radius: 8px;
-  font-size: .64rem;
+  font-size: .68rem;
 }
 
 .view-groups .display-group-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 9px;
 }
 
 .view-groups .display-group-list > .empty-state {
@@ -134,11 +134,11 @@
 
 .view-groups .display-group-card {
   min-width: 0;
-  min-height: 78px;
+  min-height: 86px;
   display: grid;
   align-content: center;
-  gap: 3px;
-  padding: 10px 11px;
+  gap: 4px;
+  padding: 12px 13px;
   border: 1px solid #dfe6ee;
   border-radius: 10px;
   background: #fff;
@@ -165,7 +165,7 @@
 .view-groups .display-group-card strong {
   overflow: hidden;
   color: #0f172a;
-  font-size: .7rem;
+  font-size: .77rem;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -174,7 +174,7 @@
 .view-groups .display-group-card span {
   overflow: hidden;
   color: #475569;
-  font-size: .59rem;
+  font-size: .65rem;
   opacity: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -182,75 +182,75 @@
 
 .view-groups .display-group-card small {
   color: #94a3b8;
-  font-size: .55rem;
+  font-size: .59rem;
   opacity: 1;
 }
 
 .view-groups .display-group-editor {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   margin-top: 2px;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid #dfe6ee;
   border-radius: 12px;
   background: #fff;
 }
 
 .view-groups .display-group-editor > .section-heading {
-  min-height: 44px;
+  min-height: 50px;
   align-items: center;
   margin: 0;
-  padding: 0 0 10px;
+  padding: 0 0 11px;
   border-bottom: 1px solid #edf1f5;
 }
 
 .view-groups .display-group-editor > .section-heading h3 {
   margin: 0;
   color: #0f172a;
-  font-size: .86rem;
+  font-size: .95rem;
 }
 
 .view-groups .display-group-editor > .section-heading p:last-child {
-  margin: 1px 0 0;
+  margin: 2px 0 0;
   color: #64748b;
-  font-size: .61rem;
+  font-size: .67rem;
 }
 
 .view-groups .display-group-editor > .section-heading .primary-button {
-  min-height: 31px;
-  height: 31px;
-  padding-inline: 11px;
-  font-size: .59rem;
+  min-height: 34px;
+  height: 34px;
+  padding-inline: 12px;
+  font-size: .64rem;
 }
 
 .view-groups .display-group-mirror-config {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) minmax(210px, .65fr) auto;
-  gap: 10px;
+  gap: 12px;
   align-items: end;
-  padding: 10px 11px;
-  border: 1px solid #e5eaf0;
+  padding: 12px 13px;
+  border: 1px solid #e1e7ee;
   border-radius: 10px;
-  background: #fafbfd;
+  background: #f8fafc;
 }
 
 .view-groups .display-group-mirror-config > div {
   min-width: 0;
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 
 .view-groups .display-group-mirror-config h4 {
   margin: 0;
   color: #1e293b;
-  font-size: .7rem;
+  font-size: .78rem;
 }
 
 .view-groups .display-group-mirror-config p {
   margin: 0;
   color: #64748b;
-  font-size: .58rem;
-  line-height: 1.4;
+  font-size: .64rem;
+  line-height: 1.45;
 }
 
 .view-groups .display-group-mirror-config p strong {
@@ -259,30 +259,30 @@
 
 .view-groups .display-group-mirror-config > label {
   display: grid;
-  gap: 4px;
+  gap: 5px;
   color: #64748b;
-  font-size: .58rem;
+  font-size: .63rem;
   font-weight: 750;
 }
 
 .view-groups .display-group-mirror-config select {
   width: 100%;
-  height: 31px;
-  padding: 0 9px;
+  height: 34px;
+  padding: 0 10px;
   border: 1px solid #dbe3ec;
   border-radius: 8px;
   background: #fff;
   color: #1e293b;
-  font-size: .62rem;
+  font-size: .67rem;
 }
 
 .view-groups .display-group-mirror-config .primary-button,
 .view-groups .display-group-mirror-config .secondary-button {
-  min-height: 31px;
-  height: 31px;
-  padding-inline: 10px;
+  min-height: 34px;
+  height: 34px;
+  padding-inline: 11px;
   white-space: nowrap;
-  font-size: .58rem;
+  font-size: .63rem;
 }
 
 .view-groups .display-group-mirror-config:has(.secondary-button + .primary-button) {
@@ -291,18 +291,18 @@
 
 .view-groups .display-wall-grid {
   display: grid;
-  gap: 7px;
+  gap: 8px;
   overflow: auto;
   padding-top: 2px;
 }
 
 .view-groups .display-wall-slot {
   min-width: 145px;
-  min-height: 96px;
+  min-height: 110px;
   display: grid;
   align-content: center;
-  gap: 4px;
-  padding: 9px;
+  gap: 5px;
+  padding: 11px;
   border: 1px dashed #cbd5e1;
   border-radius: 9px;
   background: #fbfcfe;
@@ -310,25 +310,25 @@
 
 .view-groups .display-wall-slot > span {
   color: #334155;
-  font-size: .62rem;
+  font-size: .69rem;
   font-weight: 800;
 }
 
 .view-groups .display-wall-slot small {
   color: #94a3b8;
-  font-size: .53rem;
+  font-size: .58rem;
   opacity: 1;
 }
 
 .view-groups .display-wall-slot select {
   width: 100%;
-  height: 30px;
-  padding: 0 7px;
+  height: 34px;
+  padding: 0 8px;
   border: 1px solid #dbe3ec;
   border-radius: 7px;
   background: #fff;
   color: #334155;
-  font-size: .57rem;
+  font-size: .63rem;
 }
 
 @media (max-width: 1180px) {
@@ -368,7 +368,7 @@
   }
 
   .view-groups .display-group-editor {
-    padding: 10px;
+    padding: 11px;
   }
 
   .view-groups .display-wall-grid {
