@@ -1,0 +1,161 @@
+/* Programação de exibição integrada à playlist expandida em Campanhas. */
+
+.view-campaigns .module-playlists .playlist-card.is-expanded > .campaign-inline-schedule {
+  display: block !important;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid #dbe5f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.view-campaigns .module-playlists .campaign-inline-schedule > summary {
+  display: none;
+}
+
+.view-campaigns .module-playlists .campaign-inline-schedule .publication-form {
+  display: grid;
+  gap: 6px;
+}
+
+.view-campaigns .module-playlists .campaign-inline-schedule .publication-form > h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.view-campaigns .module-playlists .campaign-inline-schedule .publication-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(150px, .9fr) minmax(150px, .9fr) minmax(135px, .8fr);
+  gap: 6px;
+}
+
+.view-campaigns .module-playlists .campaign-inline-schedule .publication-grid > label:first-child {
+  display: none;
+}
+
+.view-campaigns .module-playlists .campaign-inline-schedule label {
+  gap: 2px;
+  font-size: .61rem;
+  font-weight: 700;
+}
+
+.view-campaigns .module-playlists .campaign-inline-schedule input,
+.view-campaigns .module-playlists .campaign-inline-schedule select {
+  min-height: 28px;
+  height: 28px;
+  padding: 3px 8px;
+  border-radius: 8px;
+}
+
+.view-campaigns .module-playlists .campaign-inline-schedule .weekday-row {
+  gap: 4px;
+  margin: 0;
+}
+
+.view-campaigns .module-playlists .campaign-inline-schedule .weekday-row label {
+  min-height: 26px;
+  padding: 3px 7px;
+  border-radius: 7px;
+}
+
+.view-campaigns .module-playlists .campaign-inline-schedule > .publication-form > .primary-button {
+  justify-self: end;
+  min-height: 30px;
+  height: 30px;
+  min-width: 150px;
+  padding-inline: 14px;
+  border-radius: 8px;
+  font-size: .66rem;
+}
+
+.view-campaigns .module-playlists .playlist-card.is-expanded > .campaign-inline-publications {
+  display: grid !important;
+  gap: 5px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.view-campaigns .module-playlists .campaign-inline-publications > h3 {
+  margin: 0 0 1px;
+  color: #475569;
+  font-size: .66rem;
+  font-weight: 800;
+}
+
+.view-campaigns .module-playlists .campaign-inline-publications > .empty-state {
+  display: none !important;
+}
+
+.view-campaigns .module-playlists .campaign-inline-publications .publication-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.view-campaigns .module-playlists .campaign-inline-publications .publication-card[hidden] {
+  display: none !important;
+}
+
+.view-campaigns .module-playlists .campaign-inline-publications .publication-card strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .68rem;
+}
+
+.view-campaigns .module-playlists .campaign-inline-publications .publication-card span {
+  color: #64748b;
+  font-size: .61rem;
+  white-space: nowrap;
+}
+
+.view-campaigns .module-playlists .campaign-inline-publications .publication-card small {
+  display: none;
+}
+
+.view-campaigns .module-playlists .campaign-inline-publications .publication-card .danger-button {
+  min-height: 26px;
+  height: 26px;
+  padding-inline: 8px;
+  border-radius: 7px;
+  font-size: .61rem;
+}
+
+.view-campaigns .module-playlists .campaign-inline-publications[data-campaign-has-publications='false']::after {
+  content: 'Nenhuma exibição configurada para esta playlist.';
+  display: block;
+  padding: 6px 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  background: #fff;
+  font-size: .63rem;
+}
+
+@media (max-width: 980px) {
+  .view-campaigns .module-playlists .campaign-inline-schedule .publication-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .view-campaigns .module-playlists .campaign-inline-schedule .publication-grid,
+  .view-campaigns .module-playlists .campaign-inline-publications .publication-card {
+    grid-template-columns: 1fr;
+  }
+
+  .view-campaigns .module-playlists .campaign-inline-schedule > .publication-form > .primary-button {
+    justify-self: stretch;
+    width: 100%;
+  }
+}
