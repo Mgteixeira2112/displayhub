@@ -38,6 +38,19 @@ function getPublicToken() {
   return redirectedMatch[1]
 }
 
+function resetAppScroll() {
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  })
+}
+
+window.addEventListener('displayhub:navigate', resetAppScroll)
+window.addEventListener('displayhub:use-promotion-template', resetAppScroll)
+document.addEventListener('click', (event) => {
+  const target = event.target instanceof Element ? event.target : null
+  if (target?.closest('.software-nav-item:not(.software-nav-advanced-toggle), .software-topbar-create')) resetAppScroll()
+})
+
 const publicToken = getPublicToken()
 
 createRoot(document.getElementById('root')!).render(
