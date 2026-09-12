@@ -10,7 +10,7 @@ type Template = { name: string; template_type: string }
 type Content = { type: string; title: string; signed_url?: string; external_url?: string; external_id?: string }
 type StructuredRow = { id: string; title: string; category: string | null; description: string | null; price: number | null; promo_price: number | null; position: number }
 type Structured = { kind: string; title: string; category: string | null; description: string | null; price: number | null; promo_price: number | null; qr_value: string | null; rows: StructuredRow[] }
-type Item = { id: string; position: number; duration_seconds: number; template: Template | null; content: Content | null; structured: Structured | null; poster: PromotionPosterData | null }
+type Item = { id: string; position: number; duration_seconds: number; duration_mode?: 'fixed' | 'media'; template: Template | null; content: Content | null; structured: Structured | null; poster: PromotionPosterData | null }
 type TransitionType = 'none' | 'fade' | 'slide_left' | 'slide_up' | 'zoom'
 type Playlist = { id: string; name: string; transition_type: TransitionType; transition_duration_ms: number; items: Item[] }
 type Publication = { id: string; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; playlist: Playlist }
@@ -162,25 +162,35 @@ export default function PublicPlayer({ token }: { token: string }) {
   const transitionType = publication?.playlist.transition_type || 'fade'
   const configuredTransitionMs = Math.max(0, Math.min(2000, Number(publication?.playlist.transition_duration_ms ?? 600)))
   const transitionDurationMs = item ? Math.min(configuredTransitionMs, Math.max(100, item.duration_seconds * 1000 - 100)) : configuredTransitionMs
+  const usesMediaEndedAdvance = !syncSession && item?.duration_mode === 'media' && item.poster?.theme === 'animated_beer_video'
+
+  const advanceLocalItem = useCallback(() => {
+    if (!item || !items.length || syncSession) return
+    if (items.length === 1) {
+      if (item.content?.type === 'youtube') {
+        const controller = youtubeController.current
+        if (controller) {
+          controller.seekTo(0, true)
+          if (shouldPlay) controller.playVideo()
+        }
+      }
+      setLocalCycleSerial((value) => value + 1)
+      return
+    }
+    setItemIndex((value) => (value + 1) % items.length)
+  }, [item, items.length, syncSession, shouldPlay])
 
   useEffect(() => {
     if (syncSession || !item || !items.length) return
-    const timer = window.setTimeout(() => {
-      if (items.length === 1) {
-        if (item.content?.type === 'youtube') {
-          const controller = youtubeController.current
-          if (controller) {
-            controller.seekTo(0, true)
-            if (shouldPlay) controller.playVideo()
-          }
-        }
-        setLocalCycleSerial((value) => value + 1)
-        return
-      }
-      setItemIndex((value) => (value + 1) % items.length)
-    }, item.duration_seconds * 1000)
+    const delayMs = (item.duration_seconds + (usesMediaEndedAdvance ? 2 : 0)) * 1000
+    const timer = window.setTimeout(advanceLocalItem, delayMs)
     return () => window.clearTimeout(timer)
-  }, [item?.id, item?.duration_seconds, item?.content?.type, items.length, syncSession, localCycleSerial, shouldPlay])
+  }, [item?.id, item?.duration_seconds, item?.duration_mode, items.length, syncSession, localCycleSerial, usesMediaEndedAdvance, advanceLocalItem])
+
+  const handlePosterVideoEnded = useCallback(() => {
+    if (!usesMediaEndedAdvance) return
+    advanceLocalItem()
+  }, [usesMediaEndedAdvance, advanceLocalItem])
 
   useEffect(() => {
     if (!item) {
@@ -283,7 +293,8 @@ export default function PublicPlayer({ token }: { token: string }) {
 
   const mediaFit = wall?.media_fit || 'cover'
   const localSyncKey = item.content?.type === 'youtube' ? item.id : `${localCycleSerial}:${item.id}`
-  const currentContent = <ItemView item={item} display={program.display} mediaFit={mediaFit} startSeconds={offsetSeconds} syncKey={syncCursor ? `${syncCursor.sequence}:${item.id}` : localSyncKey} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} />
+  const itemSyncKey = syncCursor ? `${syncCursor.sequence}:${item.id}` : localSyncKey
+  const currentContent = <ItemView item={item} display={program.display} mediaFit={mediaFit} startSeconds={offsetSeconds} syncKey={itemSyncKey} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} posterVideoLoop={!usesMediaEndedAdvance} onPosterVideoEnded={handlePosterVideoEnded} />
   const showPosterTransition = !wall && transitionType !== 'none' && Boolean(previousPosterItem?.poster && item.poster)
   const content = showPosterTransition && previousPosterItem?.poster
     ? <div className={`poster-transition-stage poster-transition-${transitionType}`} key={`poster-transition-${transitionSerial}-${item.id}`}>
@@ -319,15 +330,15 @@ function Idle({ display }: { display: Display }) {
   return <main className="public-display"><div className="display-idle-card"><div className="brand-mark">DH</div><p className="eyebrow">DisplayHub</p><h1>{display.name}</h1><p>{display.location || 'Local não informado'}</p><strong>Nenhuma programação ativa neste horário</strong></div></main>
 }
 
-function ItemView({ item, display, mediaFit, startSeconds, syncKey, shouldPlay, startAt, onReady, onYouTubeController, onYouTubeBuffering, getExpectedMediaSeconds, onHlsSample }: {
-  item: Item; display: Display; mediaFit: MediaFit; startSeconds: number; syncKey: string; shouldPlay: boolean; startAt: string | null; onReady: (provider: string) => void; onYouTubeController: (controller: YouTubeController | null) => void; onYouTubeBuffering: (buffering: boolean) => void; getExpectedMediaSeconds: () => number | null; onHlsSample: (sample: HlsMediaSample | null) => void
+function ItemView({ item, display, mediaFit, startSeconds, syncKey, shouldPlay, startAt, onReady, onYouTubeController, onYouTubeBuffering, getExpectedMediaSeconds, onHlsSample, posterVideoLoop, onPosterVideoEnded }: {
+  item: Item; display: Display; mediaFit: MediaFit; startSeconds: number; syncKey: string; shouldPlay: boolean; startAt: string | null; onReady: (provider: string) => void; onYouTubeController: (controller: YouTubeController | null) => void; onYouTubeBuffering: (buffering: boolean) => void; getExpectedMediaSeconds: () => number | null; onHlsSample: (sample: HlsMediaSample | null) => void; posterVideoLoop: boolean; onPosterVideoEnded: () => void
 }) {
   useEffect(() => {
     if (item.structured) onReady('structured')
     if (item.poster) onReady('promotion_poster')
   }, [item.id, item.structured, item.poster, onReady])
 
-  if (item.poster) return <div className="promotion-player"><PromotionVideoPoster poster={item.poster} className="promotion-player-poster" /></div>
+  if (item.poster) return <div className="promotion-player"><PromotionVideoPoster key={`${item.id}:${syncKey}`} poster={item.poster} className="promotion-player-poster" loop={posterVideoLoop} onVideoEnded={onPosterVideoEnded} /></div>
 
   if (item.content?.type === 'image' && item.content.signed_url) {
     const objectFit = mediaFit === 'native' ? 'fill' : mediaFit

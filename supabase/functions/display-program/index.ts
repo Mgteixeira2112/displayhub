@@ -53,7 +53,7 @@ Deno.serve(async (req: Request) => {
     const playlistIds = [...new Set(publications.map((row) => String(row.playlist_id)))]
     const [{ data: playlists, error: playlistError }, { data: items, error: itemError }] = await Promise.all([
       db.from('playlists').select('id,name,is_active,transition_type,transition_duration_ms').in('id', playlistIds).eq('is_active', true),
-      db.from('playlist_items').select('id,playlist_id,source_type,content_item_id,structured_content_id,promotion_poster_id,template_id,position,duration_seconds').in('playlist_id', playlistIds).order('position'),
+      db.from('playlist_items').select('id,playlist_id,source_type,content_item_id,structured_content_id,promotion_poster_id,template_id,position,duration_seconds,duration_mode').in('playlist_id', playlistIds).order('position'),
     ])
     if (playlistError) throw playlistError
     if (itemError) throw itemError
@@ -107,6 +107,7 @@ Deno.serve(async (req: Request) => {
         id: item.id,
         position: item.position,
         duration_seconds: item.duration_seconds,
+        duration_mode: item.duration_mode || 'fixed',
         source_type: item.source_type,
         template: item.template_id ? templateMap.get(item.template_id) || null : null,
         content: item.content_item_id ? contentMap.get(item.content_item_id) || null : null,
