@@ -13,6 +13,7 @@
 .promotion-preview-panel > span { justify-self: start; color: var(--dh-muted); font-size: .76rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .promotion-drag-hint { justify-self: start; color: var(--dh-muted); line-height: 1.4; }
 .promotion-box-controls { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--dh-border); border-radius: 14px; background: rgba(148,163,184,.08); }
+.promotion-box-controls > summary { cursor: pointer; font-size: .86rem; font-weight: 850; color: var(--dh-text); }
 .promotion-box-controls > strong { font-size: .86rem; }
 .promotion-box-controls > small { color: var(--dh-muted); line-height: 1.4; }
 .promotion-box-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 11px; border: 1px solid var(--dh-border); border-radius: 10px; background: var(--dh-panel); font-size: .78rem; }
@@ -23,6 +24,33 @@
 .promotion-font-row { display: grid; grid-template-columns: minmax(80px, 110px) auto 1fr; gap: 8px; align-items: center; }
 .promotion-font-row input[type='number'] { min-width: 80px; }
 .promotion-font-row > span { color: var(--dh-muted); font-weight: 800; }
+
+/* Em telas grandes, os controles avançados passam a ocupar uma faixa ao lado
+   da pré-visualização. A lógica continua no mesmo formulário; apenas a posição
+   visual muda para que o usuário ajuste o cartaz vendo o resultado ao mesmo tempo. */
+@media (min-width: 1280px) {
+  .promotion-editor-grid { grid-template-columns: minmax(300px, .72fr) minmax(580px, 1.28fr); }
+  .promotion-form { position: relative; }
+  .promotion-form > .promotion-box-controls {
+    position: absolute;
+    top: 20px;
+    left: calc(100% + 42px);
+    width: 260px;
+    max-height: calc(100vh - 80px);
+    overflow: auto;
+    z-index: 3;
+    box-shadow: 0 12px 28px rgba(15,23,42,.1);
+  }
+  .promotion-preview-panel {
+    padding-left: 300px;
+    min-height: 460px;
+    align-content: start;
+  }
+  .promotion-form > .promotion-box-controls .promotion-font-row,
+  .promotion-form > .promotion-box-controls .promotion-color-row { grid-template-columns: minmax(72px, 88px) 1fr; }
+  .promotion-form > .promotion-box-controls .promotion-font-row > span { justify-self: start; }
+  .promotion-form > .promotion-box-controls .secondary-button { grid-column: 1 / -1; }
+}
 
 /* A superfície do cartaz é a unidade geométrica. Toda tipografia responde ao
    próprio cartaz (cqw), nunca ao viewport do navegador. Os valores abaixo
