@@ -3,7 +3,7 @@ import { publicSupabase } from './lib/supabase'
 import YouTubeSyncPlayer, { type MediaFit, type YouTubeController } from './YouTubeSyncPlayer'
 import HlsSyncPlayer, { type HlsMediaSample } from './HlsSyncPlayer'
 import { type PromotionPosterData } from './PromotionPosterView'
-import PromotionVideoPoster from './PromotionVideoPoster'
+import PromotionVideoPoster, { readPromotionVideoMetadata } from './PromotionVideoPoster'
 
 type Display = { id: string; name: string; location: string | null; orientation: string; resolution_width: number; resolution_height: number }
 type Template = { name: string; template_type: string }
@@ -48,6 +48,18 @@ function resolveSyncCursor(items: Item[], session: SyncSession): SyncCursor | nu
 
 function money(value: number | null) {
   return value == null ? null : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))
+}
+
+function promotionVideoUrls(items: Item[]) {
+  const urls: string[] = []
+  for (const playlistItem of items) {
+    const poster = playlistItem.poster
+    if (!poster || poster.theme !== 'animated_beer_video') continue
+    const url = readPromotionVideoMetadata(poster.layout_positions).background_video_url
+    if (url && !urls.includes(url)) urls.push(url)
+    if (urls.length >= 3) break
+  }
+  return urls
 }
 
 export default function PublicPlayer({ token }: { token: string }) {
@@ -125,6 +137,7 @@ export default function PublicPlayer({ token }: { token: string }) {
 
   const publication = useMemo(() => program?.publications.find((row) => publicationMatches(row)) || null, [program])
   const items = publication?.playlist.items || []
+  const preloadVideoUrls = useMemo(() => promotionVideoUrls(items), [items])
   const syncSession = program?.group_mode === 'video_wall' ? program.sync_session || null : null
   const launch = program?.group_mode === 'video_wall' ? program.group_launch || null : null
   const launchHolding = launch?.status === 'preparing'
@@ -281,9 +294,17 @@ export default function PublicPlayer({ token }: { token: string }) {
   const progressDuration = syncCursor ? Math.max(0.05, syncCursor.remainingMs / 1000) : item.duration_seconds
 
   return <main className={`public-display player-screen player-${item.template?.template_type || 'default'} ${wall ? 'video-wall-screen' : ''}`}>
+    <PromotionVideoPreloader urls={preloadVideoUrls} />
     {wall ? <WallViewport wall={wall}>{content}</WallViewport> : content}
     {!launchHolding && <div className="player-progress" key={`${item.id}:${syncCursor?.sequence || 0}:${localCycleSerial}:${Math.floor(offsetSeconds * 10)}`} style={{ animationDuration: `${progressDuration}s` }} />}
   </main>
+}
+
+function PromotionVideoPreloader({ urls }: { urls: string[] }) {
+  if (!urls.length) return null
+  return <div aria-hidden="true" style={{ position: 'fixed', left: '-10000px', top: '-10000px', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }}>
+    {urls.map((url) => <video key={url} src={url} preload="auto" muted playsInline />)}
+  </div>
 }
 
 function WallViewport({ wall, children }: { wall: WallContext; children: ReactNode }) {
