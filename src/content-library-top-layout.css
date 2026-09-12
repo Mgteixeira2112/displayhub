@@ -28,6 +28,12 @@
   border-top: 0 !important;
 }
 
+/* Os dados já são carregados ao abrir e após criar/excluir.
+   Evita dois controles manuais redundantes no topo da página. */
+.view-library .content-controls-section .section-heading .secondary-button {
+  display: none;
+}
+
 .view-library .content-controls-commercial {
   margin-top: 2px !important;
   padding-top: 10px !important;
@@ -71,13 +77,16 @@
   font-weight: 750;
 }
 
-/* Biblioteca preparada para volume alto: 7 posições reais por linha no desktop. */
-.view-library .content-list {
+/* Mídia e conteúdo comercial preparados para volume alto:
+   7 posições reais por linha no desktop. */
+.view-library .content-list,
+.view-library .structured-list {
   grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
   gap: 8px;
 }
 
-.view-library .content-card {
+.view-library .content-card,
+.view-library .structured-card {
   min-width: 0;
   border-radius: 9px;
 }
@@ -109,20 +118,97 @@
   font-size: .56rem;
 }
 
+/* Compactação equivalente para cards comerciais em 7 colunas. */
+.view-library .structured-card {
+  gap: 5px;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.view-library .structured-card-header {
+  min-width: 0;
+  gap: 2px;
+}
+
+.view-library .structured-card-header span,
+.view-library .structured-rows small,
+.view-library .structured-row span,
+.view-library .structured-row small {
+  font-size: .55rem;
+}
+
+.view-library .structured-card-header strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: .69rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-library .structured-card > p,
+.view-library .qr-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: .58rem;
+}
+
+.view-library .price-line strong {
+  font-size: .78rem;
+}
+
+.view-library .price-line del,
+.view-library .row-price del,
+.view-library .structured-row > div:first-child strong,
+.view-library .row-price > strong {
+  font-size: .58rem;
+}
+
+.view-library .structured-row {
+  min-width: 0;
+  gap: 5px;
+  padding: 5px 0;
+}
+
+.view-library .structured-row > div:first-child,
+.view-library .row-price {
+  min-width: 0;
+}
+
+.view-library .row-price {
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.view-library .row-price button {
+  width: 22px;
+  height: 22px;
+}
+
+.view-library .structured-card > .danger-button {
+  min-height: 23px;
+  height: 23px;
+  padding-inline: 7px;
+  font-size: .56rem;
+}
+
 @media (max-width: 860px) {
-  .view-library .content-list {
+  .view-library .content-list,
+  .view-library .structured-list {
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   }
 }
 
 @media (max-width: 680px) {
-  .view-library .content-list {
+  .view-library .content-list,
+  .view-library .structured-list {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 
 @media (max-width: 520px) {
-  .view-library .content-list {
+  .view-library .content-list,
+  .view-library .structured-list {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
