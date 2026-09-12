@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { createRoot } from 'react-dom/client'
 
 type CommonsMetadataValue = { value?: string }
 type CommonsDerivative = {
@@ -40,6 +39,10 @@ type VideoResult = {
   author?: string
   license?: string
   licenseUrl?: string
+}
+
+type Props = {
+  onSelect: (url: string) => boolean
 }
 
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php'
@@ -176,18 +179,7 @@ function withCommonsAttribution(item: VideoResult) {
   return url.toString()
 }
 
-function updateReactUrlInput(container: HTMLElement, url: string) {
-  const input = container.querySelector<HTMLInputElement>('input[type="url"]')
-  if (!input) return false
-  const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
-  nativeSetter?.call(input, url)
-  input.dispatchEvent(new Event('input', { bubbles: true }))
-  input.dispatchEvent(new Event('change', { bubbles: true }))
-  input.focus()
-  return true
-}
-
-function WikimediaVideoPicker({ container }: { container: HTMLElement }) {
+export default function WikimediaVideoPicker({ onSelect }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('beer')
   const [results, setResults] = useState<VideoResult[]>([])
@@ -216,7 +208,7 @@ function WikimediaVideoPicker({ container }: { container: HTMLElement }) {
   }
 
   function selectVideo(item: VideoResult) {
-    const changed = updateReactUrlInput(container, withCommonsAttribution(item))
+    const changed = onSelect(withCommonsAttribution(item))
     setMessage(changed ? `Selecionado: ${item.fileTitle} · ${item.quality}${item.bitrate ? ` · ${item.bitrate}` : ''}` : 'Não foi possível atualizar a URL do cartaz.')
   }
 
@@ -292,23 +284,4 @@ function WikimediaVideoPicker({ container }: { container: HTMLElement }) {
       </div>}
     </div>
   )
-}
-
-function mountPicker(control: HTMLElement) {
-  if (control.querySelector(':scope > .wikimedia-picker-host')) return
-  const host = document.createElement('div')
-  host.className = 'wikimedia-picker-host'
-  control.appendChild(host)
-  createRoot(host).render(<WikimediaVideoPicker container={control} />)
-}
-
-export function installWikimediaVideoPicker() {
-  const scan = () => {
-    document.querySelectorAll<HTMLElement>('.promotion-video-controls').forEach(mountPicker)
-  }
-
-  scan()
-  const observer = new MutationObserver(scan)
-  observer.observe(document.documentElement, { childList: true, subtree: true })
-  return () => observer.disconnect()
 }
