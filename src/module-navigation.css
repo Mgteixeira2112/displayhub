@@ -1,4 +1,5 @@
 @import './displays-visual.css';
+@import './content-library-visual.css';
 
 .software-dashboard-panel > .account-grid,
 .software-dashboard-panel > .workspace-section,
