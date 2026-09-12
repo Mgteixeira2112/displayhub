@@ -1,18 +1,19 @@
-/* Compactação exclusiva do accordion de criação em Campanhas.
-   Mantém a funcionalidade existente e reduz a altura quando expandido. */
+/* Painel fixo e compacto de criação em Campanhas.
+   Mantém os formulários sempre visíveis e preserva toda a funcionalidade existente. */
 
-.view-campaigns .playlist-create-panel > summary {
-  min-height: 36px;
-  padding: 0 11px;
-  justify-content: flex-start;
+.view-campaigns .playlist-create-panel {
+  overflow: visible;
 }
 
-.view-campaigns .playlist-create-panel > summary::after {
-  margin-left: auto;
+.view-campaigns .playlist-create-panel > summary {
+  display: none !important;
+}
+
+.view-campaigns .playlist-create-panel > .playlist-create-grid {
+  display: grid !important;
 }
 
 .view-campaigns .playlist-create-grid {
-  display: grid;
   grid-template-columns: 1fr;
   gap: 7px;
   padding: 8px;
