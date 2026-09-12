@@ -39,6 +39,7 @@ import './promotion-creator-inline-actions.css'
 import './promotion-creator-saved-cards.css'
 import './promotion-creator-saved-grid-compact.css'
 import './promotion-creator-controls-polish.css'
+import './campaigns-visual.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
