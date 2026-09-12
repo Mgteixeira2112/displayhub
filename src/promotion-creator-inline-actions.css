@@ -12,7 +12,7 @@
     align-self: end;
     display: flex !important;
     flex-wrap: nowrap !important;
-    align-items: center !important;
+    align-items: flex-end !important;
     justify-content: stretch !important;
     gap: 6px !important;
     min-height: 30px;
@@ -23,7 +23,13 @@
     flex: 1 1 0;
     min-width: 0 !important;
     width: auto !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 4px 9px !important;
+    margin: 0 !important;
+    align-self: flex-end !important;
     white-space: nowrap;
+    line-height: 1.2;
   }
 
   .promotion-workspace .promotion-actions > .primary-button + .secondary-button {
