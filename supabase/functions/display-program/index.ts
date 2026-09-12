@@ -151,7 +151,7 @@ async function getGroupPublication(db: ReturnType<typeof createClient>, displayI
     .from('display_groups')
     .select('id,mode,updated_at')
     .in('id', groupIds)
-    .in('mode', ['mirror', 'video_wall'])
+    .in('mode', ['mirror', 'coordinated', 'video_wall'])
     .eq('is_active', true)
     .order('updated_at', { ascending: false })
 
@@ -159,6 +159,27 @@ async function getGroupPublication(db: ReturnType<typeof createClient>, displayI
   if (!groups?.length) return null
 
   for (const group of groups) {
+    if (group.mode === 'coordinated') {
+      const { data: publication, error: publicationError } = await db
+        .from('display_publications')
+        .select('id,playlist_id,starts_at,ends_at,repeat_mode,daily_start,daily_end,weekdays,created_at')
+        .eq('group_id', group.id)
+        .eq('display_id', displayId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (publicationError) throw publicationError
+      if (!publication) continue
+
+      return {
+        groupId: group.id,
+        mode: group.mode,
+        publication: { ...publication, group_id: group.id },
+      }
+    }
+
     const { data: publication, error: publicationError } = await db
       .from('display_group_publications')
       .select('id,playlist_id,created_at')
