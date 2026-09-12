@@ -1,0 +1,121 @@
+/* Adição de conteúdo contextual dentro da playlist expandida em Campanhas. */
+
+/* No topo, Campanhas fica responsável apenas por criar uma nova playlist. */
+.view-campaigns .playlist-create-panel .playlist-create-grid > form.content-form:nth-of-type(2) {
+  display: none !important;
+}
+
+/* O formulário real de adicionar conteúdo é reutilizado dentro do card aberto. */
+.view-campaigns .playlist-card > .campaign-inline-add-content {
+  display: none !important;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content {
+  display: grid !important;
+  grid-template-columns: 112px minmax(220px, 1.45fr) minmax(165px, .9fr) minmax(145px, .8fr) 92px;
+  align-items: end;
+  gap: 6px;
+  margin-top: 7px;
+  padding: 7px 8px;
+  border: 1px solid #dbe5f0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content > h3 {
+  align-self: center;
+  margin: 0;
+  color: #0f172a;
+  font-size: .7rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+/* A playlist já é definida pelo próprio card, então esse seletor não precisa aparecer. */
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content > label:first-of-type {
+  display: none !important;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content label {
+  min-width: 0;
+  gap: 2px;
+  font-size: .61rem;
+  font-weight: 700;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content input,
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content select {
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  height: 28px;
+  padding: 3px 8px;
+  border-radius: 8px;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content .playlist-inline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 5px;
+  min-width: 0;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content .playlist-inline > label:only-of-type {
+  grid-column: 1 / -1;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content .playlist-inline small {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #94a3b8;
+  font-size: .58rem;
+  line-height: 1.15;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content > .primary-button {
+  width: 100%;
+  min-height: 28px;
+  height: 28px;
+  padding-inline: 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-size: .65rem;
+}
+
+@media (max-width: 1080px) {
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content {
+    grid-template-columns: 100px minmax(180px, 1.25fr) minmax(145px, .9fr) minmax(130px, .8fr) 86px;
+  }
+}
+
+@media (max-width: 900px) {
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content > h3 {
+    grid-column: 1 / -1;
+  }
+
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content > .primary-button {
+    width: auto;
+    min-width: 110px;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 640px) {
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content {
+    grid-template-columns: 1fr;
+  }
+
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content > h3,
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content > .primary-button {
+    grid-column: auto;
+  }
+
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content > .primary-button {
+    width: 100%;
+  }
+}
