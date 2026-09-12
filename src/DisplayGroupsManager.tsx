@@ -9,6 +9,7 @@ type Group = { id: string; name: string; mode: Mode; rows: number; columns: numb
 type Member = { id: string; group_id: string; display_id: string; row_index: number; column_index: number }
 type Playlist = { id: string; name: string }
 type GroupPublication = { id: string; group_id: string; playlist_id: string; is_active: boolean }
+type CoordinatedPublication = { id: string; group_id: string; display_id: string; playlist_id: string; is_active: boolean }
 type Launch = { id: string; group_id: string; playlist_id: string; status: 'preparing' | 'armed' | 'started' | 'cancelled'; sequence: number; start_at: string | null }
 type ReadyState = { launch_id: string; display_id: string; ready: boolean; provider: string | null; reported_at: string }
 
@@ -23,6 +24,7 @@ export default function DisplayGroupsManager() {
   const [members, setMembers] = useState<Member[]>([])
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [groupPublications, setGroupPublications] = useState<GroupPublication[]>([])
+  const [coordinatedPublications, setCoordinatedPublications] = useState<CoordinatedPublication[]>([])
   const [launches, setLaunches] = useState<Launch[]>([])
   const [readyStates, setReadyStates] = useState<ReadyState[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState('')
@@ -34,9 +36,11 @@ export default function DisplayGroupsManager() {
   const [virtualHeight, setVirtualHeight] = useState('')
   const [draftSlots, setDraftSlots] = useState<Record<string, string>>({})
   const [groupPlaylistId, setGroupPlaylistId] = useState('')
+  const [coordinatedPlaylistDraft, setCoordinatedPlaylistDraft] = useState<Record<string, string>>({})
   const [mediaFitDraft, setMediaFitDraft] = useState<MediaFit>('cover')
   const [draftDirty, setDraftDirty] = useState(false)
   const [playlistDirty, setPlaylistDirty] = useState(false)
+  const [coordinatedDirty, setCoordinatedDirty] = useState(false)
   const [mediaFitDirty, setMediaFitDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -57,6 +61,7 @@ export default function DisplayGroupsManager() {
       supabase.from('display_group_members').select('id, group_id, display_id, row_index, column_index'),
       supabase.from('playlists').select('id, name').eq('is_active', true).order('name'),
       supabase.from('display_group_publications').select('id, group_id, playlist_id, is_active'),
+      supabase.from('display_publications').select('id, group_id, display_id, playlist_id, is_active').not('group_id', 'is', null),
       supabase.from('display_group_launches').select('id, group_id, playlist_id, status, sequence, start_at'),
       supabase.from('display_group_ready_states').select('launch_id, display_id, ready, provider, reported_at'),
     ])
@@ -66,8 +71,9 @@ export default function DisplayGroupsManager() {
     setMembers((results[2].data || []) as Member[])
     setPlaylists((results[3].data || []) as Playlist[])
     setGroupPublications((results[4].data || []) as GroupPublication[])
-    setLaunches((results[5].data || []) as Launch[])
-    setReadyStates((results[6].data || []) as ReadyState[])
+    setCoordinatedPublications((results[5].data || []) as CoordinatedPublication[])
+    setLaunches((results[6].data || []) as Launch[])
+    setReadyStates((results[7].data || []) as ReadyState[])
   }, [])
 
   useEffect(() => { void load().catch((error) => setMessage(error instanceof Error ? error.message : 'Não foi possível carregar os grupos.')) }, [load])
@@ -79,6 +85,7 @@ export default function DisplayGroupsManager() {
   useEffect(() => {
     setDraftDirty(false)
     setPlaylistDirty(false)
+    setCoordinatedDirty(false)
     setMediaFitDirty(false)
   }, [selectedGroupId])
 
@@ -86,6 +93,7 @@ export default function DisplayGroupsManager() {
     if (!selectedGroup) {
       if (!draftDirty) setDraftSlots({})
       if (!playlistDirty) setGroupPlaylistId('')
+      if (!coordinatedDirty) setCoordinatedPlaylistDraft({})
       if (!mediaFitDirty) setMediaFitDraft('cover')
       return
     }
@@ -97,8 +105,13 @@ export default function DisplayGroupsManager() {
     if (!playlistDirty) {
       setGroupPlaylistId(groupPublications.find((publication) => publication.group_id === selectedGroup.id && publication.is_active)?.playlist_id || '')
     }
+    if (!coordinatedDirty) {
+      const next: Record<string, string> = {}
+      coordinatedPublications.filter((publication) => publication.group_id === selectedGroup.id && publication.is_active).forEach((publication) => { next[publication.display_id] = publication.playlist_id })
+      setCoordinatedPlaylistDraft(next)
+    }
     if (!mediaFitDirty) setMediaFitDraft(selectedGroup.media_fit || 'cover')
-  }, [selectedGroup, members, groupPublications, draftDirty, playlistDirty, mediaFitDirty])
+  }, [selectedGroup, members, groupPublications, coordinatedPublications, draftDirty, playlistDirty, coordinatedDirty, mediaFitDirty])
 
   const activeDisplays = useMemo(() => displays.filter((display) => display.is_active && !display.revoked_at), [displays])
   const selectedLaunch = selectedGroup ? launches.find((launch) => launch.group_id === selectedGroup.id) || null : null
@@ -139,6 +152,21 @@ export default function DisplayGroupsManager() {
       if (groupPlaylistId) { const { error } = await supabase.from('display_group_publications').insert({ company_id: profile.company_id, group_id: selectedGroup.id, playlist_id: groupPlaylistId, is_active: true }); if (error) throw error }
       await load(); setPlaylistDirty(false); setMessage(groupPlaylistId ? 'Playlist do grupo salva.' : 'Grupo sem playlist ativa.')
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível salvar a playlist do grupo.') } finally { setBusy(false) }
+  }
+
+  async function saveCoordinatedContent() {
+    if (!profile || !selectedGroup || selectedGroup.mode !== 'coordinated' || !canManage || draftDirty) return
+    setBusy(true); setMessage('')
+    try {
+      const { error: deleteError } = await supabase.from('display_publications').delete().eq('group_id', selectedGroup.id)
+      if (deleteError) throw deleteError
+      const rowsToInsert = selectedMemberIds.map((displayId) => ({ displayId, playlistId: coordinatedPlaylistDraft[displayId] || '' })).filter((row) => row.playlistId).map((row) => ({ company_id: profile.company_id, group_id: selectedGroup.id, display_id: row.displayId, playlist_id: row.playlistId, repeat_mode: 'always', weekdays: [0, 1, 2, 3, 4, 5, 6], is_active: true }))
+      if (rowsToInsert.length) {
+        const { error } = await supabase.from('display_publications').insert(rowsToInsert)
+        if (error) throw error
+      }
+      await load(); setCoordinatedDirty(false); setMessage('Conteúdo coordenado salvo.')
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível salvar o conteúdo coordenado.') } finally { setBusy(false) }
   }
 
   async function saveMediaFit(mediaFit: MediaFit) {
@@ -190,11 +218,11 @@ export default function DisplayGroupsManager() {
     {canManage && <section className="create-panel display-group-create"><div className="display-group-create-title">Novo grupo</div><form className="display-group-form" onSubmit={createGroup}><label>Nome<input value={name} onChange={(event) => setName(event.target.value)} minLength={2} required placeholder="Painel Principal" /></label><label>Modo<select value={mode} onChange={(event) => setMode(event.target.value as Mode)}><option value="video_wall">Video Wall</option><option value="coordinated">Conteúdo coordenado</option><option value="mirror">Espelhamento</option></select></label><label>Linhas<input type="number" min="1" max="16" value={rows} onChange={(event) => setRows(Number(event.target.value))} /></label><label>Colunas<input type="number" min="1" max="16" value={columns} onChange={(event) => setColumns(Number(event.target.value))} /></label><label>Largura virtual<input type="number" min="320" max="65536" value={virtualWidth} onChange={(event) => setVirtualWidth(event.target.value)} placeholder="Automática" /></label><label>Altura virtual<input type="number" min="320" max="65536" value={virtualHeight} onChange={(event) => setVirtualHeight(event.target.value)} placeholder="Automática" /></label><button className="primary-button" type="submit" disabled={busy}>Criar grupo</button></form></section>}
     <div className="display-group-list">{groups.length === 0 && <p className="empty-state">Nenhum grupo cadastrado.</p>}{groups.map((group) => { const count = members.filter((member) => member.group_id === group.id).length; return <button key={group.id} type="button" className={`display-group-card ${selectedGroupId === group.id ? 'selected' : ''}`} onClick={() => setSelectedGroupId(group.id)}><strong>{group.name}</strong><span>{modeLabels[group.mode]} · {group.rows}×{group.columns}</span><small>{count} TV{count === 1 ? '' : 's'} posicionada{count === 1 ? '' : 's'}</small></button> })}</div>
     {selectedGroup && <section className="display-group-editor">
-      <div className="section-heading"><div><p className="eyebrow">Layout</p><h3>{selectedGroup.name}</h3><p>{modeLabels[selectedGroup.mode]} · {selectedGroup.rows}×{selectedGroup.columns}</p></div>{canManage && <button className="primary-button compact" type="button" onClick={() => void saveLayout()} disabled={busy}>Salvar layout</button>}</div>
+      <div className="section-heading"><div><p className="eyebrow">Layout</p><h3>{selectedGroup.name}</h3><p>{modeLabels[selectedGroup.mode]} · {selectedGroup.rows}×{selectedGroup.columns}</p></div><div className="display-group-heading-actions">{canManage && <button className="primary-button compact" type="button" onClick={() => void saveLayout()} disabled={busy}>Salvar layout</button>}{canManage && selectedGroup.mode === 'coordinated' && <button className="secondary-button compact" type="button" onClick={() => void saveCoordinatedContent()} disabled={busy || draftDirty || selectedMemberIds.length === 0}>Salvar conteúdo</button>}</div></div>
       {(selectedGroup.mode === 'mirror' || selectedGroup.mode === 'video_wall') && <div className="display-group-mirror-config"><div><p className="eyebrow">Conteúdo</p><h4>Playlist do grupo</h4></div><label>Playlist<select value={groupPlaylistId} onChange={(event) => { setGroupPlaylistId(event.target.value); setPlaylistDirty(true) }} disabled={!canManage}><option value="">Nenhuma playlist</option>{playlists.map((playlist) => <option key={playlist.id} value={playlist.id}>{playlist.name}</option>)}</select></label>{canManage && <button className="primary-button compact" type="button" onClick={() => void saveGroupPlaylist()} disabled={busy}>Salvar playlist</button>}</div>}
       {selectedGroup.mode === 'video_wall' && <div className="display-group-mirror-config"><div><p className="eyebrow">Exibição</p><h4>Encaixe da mídia</h4></div><label>Modo<select value={mediaFitDraft} onChange={(event) => void saveMediaFit(event.target.value as MediaFit)} disabled={!canManage || busy}><option value="contain">Vídeo inteiro</option><option value="cover">Preencher telas</option><option value="native">Conteúdo preparado</option></select></label></div>}
       {selectedGroup.mode === 'video_wall' && <div className="display-group-mirror-config"><div><p className="eyebrow">Sincronização</p><h4>{selectedReady.length}/{selectedMemberIds.length} telas prontas</h4>{selectedLaunch && <p>{launchStatusLabels[selectedLaunch.status]}</p>}</div>{canManage && <button className="secondary-button compact" type="button" onClick={() => void prepareVideoWall()} disabled={busy || !groupPlaylistId || selectedMemberIds.length === 0}>Preparar exibição</button>}{canManage && <button className="primary-button compact" type="button" onClick={() => void startVideoWall()} disabled={busy || !selectedLaunch || selectedReady.length !== selectedMemberIds.length}>Iniciar exibição</button>}</div>}
-      <div className="display-wall-grid" style={{ gridTemplateColumns: `repeat(${selectedGroup.columns}, minmax(150px, 1fr))` }}>{Array.from({ length: selectedGroup.rows * selectedGroup.columns }).map((_, index) => { const rowIndex = Math.floor(index / selectedGroup.columns); const columnIndex = index % selectedGroup.columns; const slot = `${rowIndex}:${columnIndex}`; const displayId = draftSlots[slot] || ''; const ready = selectedReady.some((row) => row.display_id === displayId); return <label className="display-wall-slot" key={slot}><span>TV {index + 1} {selectedLaunch && displayId ? (ready ? '· pronta' : '· aguardando') : ''}</span><small>Linha {rowIndex + 1} · Coluna {columnIndex + 1}</small><select value={displayId} onChange={(event) => { setDraftSlots((current) => ({ ...current, [slot]: event.target.value })); setDraftDirty(true) }} disabled={!canManage}><option value="">Sem tela</option>{activeDisplays.map((display) => <option key={display.id} value={display.id}>{display.name}{display.location ? ` · ${display.location}` : ''}</option>)}</select></label> })}</div>
+      <div className="display-wall-grid" style={{ gridTemplateColumns: `repeat(${selectedGroup.columns}, minmax(150px, 1fr))` }}>{Array.from({ length: selectedGroup.rows * selectedGroup.columns }).map((_, index) => { const rowIndex = Math.floor(index / selectedGroup.columns); const columnIndex = index % selectedGroup.columns; const slot = `${rowIndex}:${columnIndex}`; const displayId = draftSlots[slot] || ''; const ready = selectedReady.some((row) => row.display_id === displayId); return <label className="display-wall-slot" key={slot}><span>TV {index + 1} {selectedLaunch && displayId ? (ready ? '· pronta' : '· aguardando') : ''}</span><small>Linha {rowIndex + 1} · Coluna {columnIndex + 1}</small><select value={displayId} onChange={(event) => { setDraftSlots((current) => ({ ...current, [slot]: event.target.value })); setDraftDirty(true) }} disabled={!canManage}><option value="">Sem tela</option>{activeDisplays.map((display) => <option key={display.id} value={display.id}>{display.name}{display.location ? ` · ${display.location}` : ''}</option>)}</select>{selectedGroup.mode === 'coordinated' && displayId && <><small>Playlist</small><select value={coordinatedPlaylistDraft[displayId] || ''} onChange={(event) => { setCoordinatedPlaylistDraft((current) => ({ ...current, [displayId]: event.target.value })); setCoordinatedDirty(true) }} disabled={!canManage || draftDirty}><option value="">Sem playlist</option>{playlists.map((playlist) => <option key={playlist.id} value={playlist.id}>{playlist.name}</option>)}</select></>}</label> })}</div>
     </section>}
   </section>
 }
