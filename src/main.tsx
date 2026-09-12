@@ -67,6 +67,53 @@ function keepCampaignCreatePanelVisible() {
   if (panel && !panel.open) panel.open = true
 }
 
+function getCampaignPlaylistName(card: HTMLElement) {
+  return card.querySelector<HTMLElement>('.playlist-card-head strong')?.textContent?.trim() || ''
+}
+
+function getCampaignPublicationCards(card: HTMLElement, publicationList: HTMLElement) {
+  const playlistName = getCampaignPlaylistName(card)
+  if (!playlistName) return []
+  return Array.from(publicationList.querySelectorAll<HTMLElement>('.publication-card')).filter((publicationCard) => {
+    const label = publicationCard.querySelector<HTMLElement>('strong')?.textContent?.trim() || ''
+    return label.startsWith(`${playlistName} →`)
+  })
+}
+
+function updateCampaignPlaylistSummary(card: HTMLElement, publicationList: HTMLElement) {
+  const head = card.querySelector<HTMLElement>('.playlist-card-head')
+  const copy = head?.firstElementChild as HTMLElement | null
+  if (!copy) return
+
+  const itemCount = card.querySelectorAll('.playlist-item').length
+  const matchingPublications = getCampaignPublicationCards(card, publicationList)
+  const displays = new Set(
+    matchingPublications
+      .map((publicationCard) => publicationCard.querySelector<HTMLElement>('strong')?.textContent?.split('→').slice(1).join('→').trim() || '')
+      .filter(Boolean),
+  )
+
+  const contentText = `${itemCount} ${itemCount === 1 ? 'conteúdo' : 'conteúdos'}`
+  let displayText = 'sem exibição'
+  if (displays.size > 0) displayText = `${displays.size} ${displays.size === 1 ? 'tela' : 'telas'}`
+
+  let scheduleText = ''
+  if (matchingPublications.length === 1) {
+    scheduleText = matchingPublications[0].querySelector<HTMLElement>('span')?.textContent?.trim() || ''
+  } else if (matchingPublications.length > 1) {
+    scheduleText = `${matchingPublications.length} programações`
+  }
+
+  const summaryText = [contentText, displayText, scheduleText].filter(Boolean).join(' · ')
+  let summary = copy.querySelector<HTMLElement>('.campaign-playlist-summary')
+  if (!summary) {
+    summary = document.createElement('span')
+    summary.className = 'campaign-playlist-summary'
+    copy.append(summary)
+  }
+  if (summary.textContent !== summaryText) summary.textContent = summaryText
+}
+
 function prepareCampaignPlaylistCards() {
   document.querySelectorAll<HTMLElement>('.view-campaigns .playlist-card-head').forEach((head) => {
     const card = head.closest('.playlist-card') as HTMLElement | null
@@ -74,22 +121,19 @@ function prepareCampaignPlaylistCards() {
     head.setAttribute('tabindex', '0')
     head.setAttribute('aria-expanded', card?.classList.contains('is-expanded') ? 'true' : 'false')
     head.setAttribute('aria-label', 'Abrir ou recolher playlist')
+
+    const workspace = card?.closest<HTMLElement>('.playlist-workspace')
+    const publicationList = workspace?.querySelector<HTMLElement>('.publication-list')
+    if (card && publicationList) updateCampaignPlaylistSummary(card, publicationList)
   })
 }
 
-function getCampaignPlaylistName(card: HTMLElement) {
-  return card.querySelector<HTMLElement>('.playlist-card-head strong')?.textContent?.trim() || ''
-}
-
 function syncCampaignPublicationList(card: HTMLElement, publicationList: HTMLElement) {
-  const playlistName = getCampaignPlaylistName(card)
-  let visibleCount = 0
+  const matchingPublications = getCampaignPublicationCards(card, publicationList)
+  const matchingSet = new Set(matchingPublications)
 
   publicationList.querySelectorAll<HTMLElement>('.publication-card').forEach((publicationCard) => {
-    const label = publicationCard.querySelector<HTMLElement>('strong')?.textContent?.trim() || ''
-    const matchesPlaylist = Boolean(playlistName) && label.startsWith(`${playlistName} →`)
-    publicationCard.hidden = !matchesPlaylist
-    if (matchesPlaylist) visibleCount += 1
+    publicationCard.hidden = !matchingSet.has(publicationCard)
   })
 
   publicationList.querySelectorAll<HTMLElement>('.empty-state').forEach((emptyState) => {
@@ -98,7 +142,8 @@ function syncCampaignPublicationList(card: HTMLElement, publicationList: HTMLEle
 
   const heading = publicationList.querySelector<HTMLElement>('h3')
   if (heading) heading.textContent = 'Exibições ativas'
-  publicationList.dataset.campaignHasPublications = visibleCount > 0 ? 'true' : 'false'
+  publicationList.dataset.campaignHasPublications = matchingPublications.length > 0 ? 'true' : 'false'
+  updateCampaignPlaylistSummary(card, publicationList)
 }
 
 function attachCampaignScheduling(card: HTMLElement) {
