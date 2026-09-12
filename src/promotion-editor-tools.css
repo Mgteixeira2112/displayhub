@@ -1,100 +1,205 @@
-.promotion-preview-panel > .promotion-box-controls {
-  width: 100% !important;
-  max-width: none !important;
+.promotion-editor-tools {
+  width: 100%;
   box-sizing: border-box;
-  justify-self: stretch !important;
-  overflow: visible !important;
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--dh-border);
+  border-radius: 16px;
+  background: var(--dh-panel);
 }
 
-.promotion-preview-panel > .promotion-box-controls[open] {
-  display: grid !important;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 14px !important;
+.promotion-editor-tools-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
   align-items: stretch;
 }
 
-.promotion-preview-panel > .promotion-box-controls > summary {
-  grid-column: 1 / -1;
-  padding: 2px 0 10px;
-}
-
-.promotion-preview-panel > .promotion-box-controls > strong,
-.promotion-preview-panel > .promotion-box-controls > small {
-  display: none !important;
-}
-
-.promotion-preview-panel > .promotion-box-controls > label,
-.promotion-preview-panel > .promotion-box-controls > .promotion-box-status {
+.promotion-element-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
   min-width: 0;
-  width: auto !important;
-  margin: 0 !important;
-  padding: 14px !important;
+}
+
+.promotion-element-tab,
+.promotion-align-button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 10px;
   border: 1px solid var(--dh-border);
-  border-radius: 14px;
-  background: var(--dh-panel);
-  box-sizing: border-box;
-  align-content: start;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #344054;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.promotion-preview-panel > .promotion-box-controls > label {
-  display: grid !important;
-  gap: 8px !important;
+.promotion-element-tab:hover,
+.promotion-align-button:hover {
+  border-color: #98a2b3;
 }
 
-.promotion-preview-panel > .promotion-box-controls > label:nth-of-type(1) {
-  grid-column: span 8;
+.promotion-element-tab.is-active,
+.promotion-align-button.is-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: inset 0 0 0 1px #2563eb;
 }
 
-.promotion-preview-panel > .promotion-box-controls > .promotion-box-status {
-  grid-column: span 4;
-  display: flex !important;
-  align-items: center;
-  justify-content: space-between;
+.promotion-toolbox-status {
+  min-width: 138px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--dh-border);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.promotion-toolbox-status span {
+  font-size: 12px;
+  color: #667085;
+}
+
+.promotion-toolbox-status strong {
+  font-size: 13px;
+  color: #1d2939;
+}
+
+.promotion-toolbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.promotion-preview-panel > .promotion-box-controls > label:nth-of-type(2),
-.promotion-preview-panel > .promotion-box-controls > label:nth-of-type(3),
-.promotion-preview-panel > .promotion-box-controls > label:nth-of-type(4),
-.promotion-preview-panel > .promotion-box-controls > label:nth-of-type(5) {
-  grid-column: span 6;
+.promotion-tool-card {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--dh-border);
+  border-radius: 12px;
+  background: #ffffff;
 }
 
-.promotion-preview-panel > .promotion-box-controls select,
-.promotion-preview-panel > .promotion-box-controls input[type='number'] {
-  width: 100% !important;
-  min-width: 0 !important;
-}
-
-.promotion-preview-panel .promotion-font-row,
-.promotion-preview-panel .promotion-color-row {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
-  gap: 8px !important;
+.promotion-tool-heading {
+  min-height: 22px;
+  display: flex;
   align-items: center;
-  width: 100%;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.promotion-preview-panel .promotion-font-row > .secondary-button,
-.promotion-preview-panel .promotion-color-row > .secondary-button {
-  grid-column: 1 / -1;
-  width: 100%;
-  justify-content: center;
+.promotion-tool-heading strong {
+  color: #1d2939;
 }
 
-.promotion-preview-panel .promotion-color-row input[type='color'] {
-  width: 100% !important;
-  height: 42px;
-}
-
-.promotion-preview-panel .promotion-color-row code {
-  align-self: center;
+.promotion-tool-heading span {
+  color: #667085;
+  font-size: 12px;
   white-space: nowrap;
 }
 
-@media (max-width: 900px) {
-  .promotion-preview-panel > .promotion-box-controls > label,
-  .promotion-preview-panel > .promotion-box-controls > .promotion-box-status {
-    grid-column: 1 / -1 !important;
+.promotion-tool-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 76px auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.promotion-tool-row input[type='range'] {
+  width: 100%;
+  min-width: 0;
+}
+
+.promotion-tool-number {
+  width: 76px !important;
+  min-width: 0 !important;
+  box-sizing: border-box;
+}
+
+.promotion-tool-row .secondary-button,
+.promotion-color-tools .secondary-button {
+  width: auto !important;
+  min-width: 74px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.promotion-align-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.promotion-color-tools {
+  display: grid;
+  grid-template-columns: 54px minmax(92px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.promotion-color-tools input[type='color'] {
+  width: 54px !important;
+  height: 42px;
+  padding: 3px;
+  cursor: pointer;
+}
+
+.promotion-color-tools code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #475467;
+}
+
+@media (max-width: 980px) {
+  .promotion-editor-tools-head {
+    grid-template-columns: 1fr;
+  }
+
+  .promotion-toolbox-status {
+    min-width: 0;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 760px) {
+  .promotion-element-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .promotion-element-tab:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .promotion-toolbox-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .promotion-tool-row {
+    grid-template-columns: minmax(0, 1fr) 70px;
+  }
+
+  .promotion-tool-row .secondary-button {
+    grid-column: 1 / -1;
+    width: 100% !important;
+  }
+
+  .promotion-color-tools {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .promotion-color-tools .secondary-button {
+    grid-column: 1 / -1;
+    width: 100% !important;
   }
 }
