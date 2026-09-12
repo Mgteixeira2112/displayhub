@@ -3,6 +3,7 @@ import DisplayGroupsManager from './DisplayGroupsManager'
 
 type View = 'overview' | 'displays' | 'groups' | 'library' | 'posters' | 'campaigns' | 'playlists' | 'schedule' | 'templates' | 'technical-templates' | 'history' | 'settings'
 type IconName = 'home' | 'create' | 'campaigns' | 'gallery' | 'screens' | 'content' | 'advanced' | 'wall' | 'playlists' | 'schedule' | 'history' | 'settings'
+type PromotionOrientation = 'portrait' | 'landscape'
 
 type Props = {
   companyName: string
@@ -65,14 +66,28 @@ function NavIcon({ name }: { name: IconName }) {
   return <svg className="software-nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
 }
 
-function selectPromotionTemplate(key: string) {
+function setNativeSelectValue(select: HTMLSelectElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
+  setter?.call(select, value)
+  select.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
+function selectPromotionTemplate(key: string, orientation?: PromotionOrientation) {
   window.setTimeout(() => {
     const selects = Array.from(document.querySelectorAll<HTMLSelectElement>('.promotion-workspace select'))
-    const select = selects.find((candidate) => Array.from(candidate.options).some((option) => option.value === key))
-    if (!select) return
-    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
-    setter?.call(select, key)
-    select.dispatchEvent(new Event('change', { bubbles: true }))
+    const templateSelect = selects.find((candidate) => Array.from(candidate.options).some((option) => option.value === key))
+    if (!templateSelect) return
+    setNativeSelectValue(templateSelect, key)
+
+    if (!orientation) return
+    window.setTimeout(() => {
+      const currentSelects = Array.from(document.querySelectorAll<HTMLSelectElement>('.promotion-workspace select'))
+      const orientationSelect = currentSelects.find((candidate) => {
+        const values = new Set(Array.from(candidate.options).map((option) => option.value))
+        return values.has('portrait') && values.has('landscape')
+      })
+      if (orientationSelect) setNativeSelectValue(orientationSelect, orientation)
+    }, 0)
   }, 0)
 }
 
@@ -89,9 +104,11 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
       if (advancedViews.includes(target)) setAdvancedOpen(true)
     }
     const handleUseTemplate = (event: Event) => {
-      const key = (event as CustomEvent<{ key?: string }>).detail?.key
+      const detail = (event as CustomEvent<{ key?: string; orientation?: PromotionOrientation }>).detail
+      const key = detail?.key
+      const orientation = detail?.orientation
       setView('posters')
-      if (key) selectPromotionTemplate(key)
+      if (key) selectPromotionTemplate(key, orientation)
     }
     window.addEventListener('displayhub:navigate', handleNavigate)
     window.addEventListener('displayhub:use-promotion-template', handleUseTemplate)
