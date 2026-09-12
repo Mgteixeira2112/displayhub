@@ -1,0 +1,150 @@
+/* Acabamento visual dos cartazes salvos no módulo Criar.
+   Mantém a lógica intacta e aplica a mesma linguagem visual do editor. */
+
+.promotion-workspace .promotion-saved-heading {
+  margin: 8px 0 0;
+  padding: 16px 2px 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.promotion-workspace .promotion-saved-heading .eyebrow {
+  margin: 0 0 2px;
+  color: #2563eb;
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.promotion-workspace .promotion-saved-heading h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1rem;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.promotion-workspace .promotion-poster-grid {
+  gap: 14px;
+}
+
+.promotion-workspace .promotion-poster-card {
+  gap: 10px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 6px 18px rgba(15, 23, 42, .05);
+  overflow: hidden;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.promotion-workspace .promotion-poster-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, .05), 0 10px 24px rgba(15, 23, 42, .07);
+  transform: translateY(-1px);
+}
+
+.promotion-workspace .promotion-poster-card .promo-poster {
+  border-radius: 12px;
+}
+
+.promotion-workspace .promotion-card-actions {
+  gap: 3px;
+  padding: 2px 2px 1px;
+}
+
+.promotion-workspace .promotion-card-actions > strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: .875rem;
+  line-height: 1.3;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.promotion-workspace .promotion-card-actions > small {
+  color: #64748b;
+  font-size: .75rem;
+  line-height: 1.35;
+}
+
+.promotion-workspace .promotion-card-actions > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.promotion-workspace .promotion-card-actions > div > button {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0 9px;
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: .75rem;
+  line-height: 1;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+
+.promotion-workspace .promotion-card-actions > div > .secondary-button:first-child {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.promotion-workspace .promotion-card-actions > div > .secondary-button:first-child:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.promotion-workspace .promotion-card-actions > div > .secondary-button:nth-child(2) {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+.promotion-workspace .promotion-card-actions > div > .secondary-button:nth-child(2):hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.promotion-workspace .promotion-card-actions > div > .danger-button {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+}
+
+.promotion-workspace .promotion-card-actions > div > .danger-button:hover:not(:disabled) {
+  background: #ffe4e6;
+  border-color: #fda4af;
+  color: #9f1239;
+}
+
+.promotion-workspace .promotion-card-actions > div > button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
+}
+
+.promotion-workspace .promotion-card-actions > div > button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .promotion-workspace .promotion-card-actions > div {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .promotion-workspace .promotion-card-actions > div > .danger-button {
+    grid-column: 1 / -1;
+  }
+}
