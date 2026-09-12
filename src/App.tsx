@@ -175,6 +175,8 @@ function App() {
     const { data, error } = await supabase
       .from('displays')
       .select('id, unit_id, name, location, orientation, resolution_width, resolution_height, public_token, is_active, revoked_at, last_seen_at')
+      .eq('is_active', true)
+      .is('revoked_at', null)
       .order('created_at', { ascending: false })
     if (error) throw error
     setDisplays((data || []) as Display[])
