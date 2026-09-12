@@ -11,7 +11,7 @@
 }
 
 .view-displays .software-dashboard-panel > .workspace-section + .workspace-section {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
 /* Cadastro sempre visível */
@@ -145,11 +145,15 @@
 
 /* Barra da lista */
 .view-displays .workspace-section > .section-heading {
-  min-height: 30px;
+  min-height: 38px;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
-  padding: 0 2px;
+  margin-bottom: 10px;
+  padding: 5px 6px 5px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .025);
 }
 
 .view-displays .workspace-section > .section-heading .eyebrow {
@@ -159,7 +163,7 @@
 .view-displays .workspace-section > .section-heading h2 {
   margin: 0;
   color: #334155;
-  font-size: .82rem;
+  font-size: .8rem;
   font-weight: 750;
   letter-spacing: 0;
 }
@@ -394,6 +398,11 @@
 
   .view-displays .display-form .primary-button {
     width: 100%;
+  }
+
+  .view-displays .workspace-section > .section-heading {
+    min-height: 0;
+    padding: 6px;
   }
 
   .view-displays .display-card {
