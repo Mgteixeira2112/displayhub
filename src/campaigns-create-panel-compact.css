@@ -1,0 +1,125 @@
+/* Compactação exclusiva do accordion de criação em Campanhas.
+   Mantém a funcionalidade existente e reduz a altura quando expandido. */
+
+.view-campaigns .playlist-create-panel > summary {
+  min-height: 36px;
+  padding: 0 11px;
+  justify-content: flex-start;
+}
+
+.view-campaigns .playlist-create-panel > summary::after {
+  margin-left: auto;
+}
+
+.view-campaigns .playlist-create-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  padding: 8px;
+}
+
+.view-campaigns .playlist-create-grid .content-form {
+  display: grid;
+  align-items: end;
+  gap: 7px;
+  padding: 8px 9px;
+  border-radius: 10px;
+}
+
+.view-campaigns .playlist-create-grid .content-form:first-child {
+  grid-template-columns: 112px minmax(150px, .8fr) minmax(210px, 1.25fr) 112px;
+}
+
+.view-campaigns .playlist-create-grid .content-form:nth-child(2) {
+  grid-template-columns: 112px minmax(135px, .8fr) minmax(210px, 1.35fr) minmax(155px, .9fr) minmax(120px, .75fr) 92px;
+}
+
+.view-campaigns .playlist-create-grid .content-form h3 {
+  align-self: center;
+  margin: 0;
+  font-size: .76rem;
+  line-height: 1.2;
+}
+
+.view-campaigns .playlist-create-grid .content-form label {
+  min-width: 0;
+}
+
+.view-campaigns .playlist-create-grid .content-form input,
+.view-campaigns .playlist-create-grid .content-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  height: 30px;
+}
+
+.view-campaigns .playlist-create-grid .content-form > .primary-button {
+  width: 100%;
+  min-height: 30px;
+  height: 30px;
+  padding-inline: 9px;
+  white-space: nowrap;
+}
+
+.view-campaigns .playlist-create-grid .playlist-inline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  align-items: end;
+  min-width: 0;
+}
+
+.view-campaigns .playlist-create-grid .playlist-inline > label:only-of-type {
+  grid-column: 1 / -1;
+}
+
+.view-campaigns .playlist-create-grid .playlist-inline small {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #94a3b8;
+  font-size: .61rem;
+  line-height: 1.2;
+}
+
+@media (max-width: 1180px) {
+  .view-campaigns .playlist-create-grid .content-form:first-child {
+    grid-template-columns: 100px minmax(140px, .8fr) minmax(180px, 1.15fr) 104px;
+  }
+
+  .view-campaigns .playlist-create-grid .content-form:nth-child(2) {
+    grid-template-columns: 100px minmax(125px, .8fr) minmax(180px, 1.25fr) minmax(135px, .9fr) minmax(115px, .75fr) 86px;
+  }
+}
+
+@media (max-width: 980px) {
+  .view-campaigns .playlist-create-grid .content-form:first-child,
+  .view-campaigns .playlist-create-grid .content-form:nth-child(2) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .view-campaigns .playlist-create-grid .content-form h3 {
+    grid-column: 1 / -1;
+  }
+
+  .view-campaigns .playlist-create-grid .content-form > .primary-button {
+    width: auto;
+    min-width: 120px;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 640px) {
+  .view-campaigns .playlist-create-grid .content-form:first-child,
+  .view-campaigns .playlist-create-grid .content-form:nth-child(2) {
+    grid-template-columns: 1fr;
+  }
+
+  .view-campaigns .playlist-create-grid .content-form h3,
+  .view-campaigns .playlist-create-grid .content-form > .primary-button {
+    grid-column: auto;
+  }
+
+  .view-campaigns .playlist-create-grid .content-form > .primary-button {
+    width: 100%;
+  }
+}
