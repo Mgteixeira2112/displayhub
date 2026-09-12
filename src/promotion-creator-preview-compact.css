@@ -1,0 +1,62 @@
+/* Ajuste final de densidade do Criar: reduz somente o preview e ferramentas no editor desktop. */
+@media (min-width: 900px) {
+  .promotion-workspace .promotion-preview-panel {
+    gap: 8px;
+    padding: 8px !important;
+  }
+
+  .promotion-workspace .promotion-preview-panel > .promo-landscape {
+    width: min(100%, 640px);
+  }
+
+  .promotion-workspace .promotion-preview-panel > .promo-portrait {
+    width: min(100%, 390px);
+  }
+
+  .promotion-workspace .promotion-editor-tools {
+    gap: 6px;
+    padding-top: 6px;
+  }
+
+  .promotion-workspace .promotion-editor-tools-head {
+    gap: 6px;
+  }
+
+  .promotion-workspace .promotion-element-tab {
+    min-height: 29px;
+    padding: 4px 6px;
+  }
+
+  .promotion-workspace .promotion-toolbox-status {
+    min-height: 34px;
+    padding: 3px 7px;
+  }
+
+  .promotion-workspace .promotion-tool-card,
+  .promotion-workspace .promotion-tool-card:nth-child(odd),
+  .promotion-workspace .promotion-tool-card:nth-child(-n+2) {
+    gap: 4px;
+    padding: 7px 8px;
+  }
+
+  .promotion-workspace .promotion-tool-heading {
+    min-height: 14px;
+  }
+
+  .promotion-workspace .promotion-tool-number {
+    min-height: 30px !important;
+  }
+
+  .promotion-workspace .promotion-align-button {
+    min-height: 28px;
+  }
+
+  .promotion-workspace .promotion-color-tools input[type='color'] {
+    height: 30px;
+  }
+
+  .promotion-workspace .promotion-tool-row .secondary-button,
+  .promotion-workspace .promotion-color-tools .secondary-button {
+    min-height: 28px;
+  }
+}
