@@ -35,7 +35,11 @@ type VideoResult = {
   videoUrl: string
   thumbUrl?: string
   quality: string
+  selectedHeight: number
   bitrate?: string
+  bitrateBps?: number
+  sourceWidth: number
+  sourceHeight: number
   author?: string
   license?: string
   licenseUrl?: string
@@ -46,14 +50,31 @@ type Props = {
 }
 
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php'
-const presets = [
-  { label: 'Cerveja', query: 'beer' },
-  { label: 'Café', query: 'coffee' },
-  { label: 'Hotel', query: 'hotel' },
-  { label: 'Praia', query: 'beach' },
-  { label: 'Restaurante', query: 'restaurant' },
-  { label: 'Natureza', query: 'nature' },
-]
+const searchWordMap: Record<string, string> = {
+  cerveja: 'beer',
+  chope: 'draft beer',
+  chopp: 'draft beer',
+  copo: 'glass',
+  taca: 'glass',
+  servindo: 'pouring',
+  servida: 'pouring',
+  servido: 'pouring',
+  servir: 'pouring',
+  derramando: 'pouring',
+  torneira: 'tap',
+  garrafa: 'bottle',
+  lata: 'can',
+  espuma: 'foam',
+  gelada: 'cold',
+  cafe: 'coffee',
+  praia: 'beach',
+  restaurante: 'restaurant',
+  natureza: 'nature',
+  comida: 'food',
+  bebida: 'drink',
+  vinho: 'wine',
+}
+const portugueseStopWords = new Set(['a', 'o', 'as', 'os', 'de', 'da', 'do', 'das', 'dos', 'em', 'no', 'na', 'nos', 'nas', 'um', 'uma', 'sendo', 'com', 'para'])
 
 function stripHtml(value?: string) {
   if (!value) return undefined
@@ -113,6 +134,46 @@ function chooseDerivative(info: CommonsVideoInfo) {
   }
 }
 
+function displayFileTitle(fileTitle: string) {
+  return fileTitle
+    .replace(/\.[a-z0-9]{2,5}$/i, '')
+    .replace(/[_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function normalizeSearchTerm(value: string) {
+  const ascii = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, ' ')
+
+  return ascii
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((word) => !portugueseStopWords.has(word))
+    .map((word) => searchWordMap[word] || word)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function buildSearchVariants(value: string) {
+  const normalized = normalizeSearchTerm(value)
+  const variants = new Set<string>()
+  if (normalized) variants.add(normalized)
+
+  if (normalized.includes('beer')) {
+    if (!normalized.includes('pour')) variants.add(`${normalized} pouring`)
+    variants.add('beer pouring')
+    variants.add('draft beer pouring')
+    variants.add('beer glass pouring')
+  }
+
+  return Array.from(variants).slice(0, 4)
+}
+
 function toVideoResult(page: CommonsPage): VideoResult | null {
   const info = page.videoinfo?.[0]
   if (!info) return null
@@ -127,20 +188,54 @@ function toVideoResult(page: CommonsPage): VideoResult | null {
 
   return {
     pageId: page.pageid,
-    title: stripHtml(metadata.ImageDescription?.value) || fileTitle,
+    title: displayFileTitle(fileTitle),
     fileTitle,
     pageUrl: `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`,
     videoUrl: chosen.url,
     thumbUrl: normalizeMediaUrl(info.thumburl),
     quality: chosen.height ? `${chosen.height}p` : 'versão otimizada',
+    selectedHeight: chosen.height,
     bitrate: chosen.bandwidth ? `${(chosen.bandwidth / 1_000_000).toFixed(1)} Mbps` : undefined,
+    bitrateBps: chosen.bandwidth,
+    sourceWidth: info.width || 0,
+    sourceHeight: info.height || 0,
     author,
     license,
     licenseUrl,
   }
 }
 
-async function searchCommonsVideos(searchTerm: string) {
+function rankVideo(item: VideoResult, normalizedQuery: string) {
+  let score = 0
+  const ratio = item.sourceHeight > 0 ? item.sourceWidth / item.sourceHeight : 0
+  if (ratio >= 1.5) score -= 240
+  else if (ratio >= 1.2) score -= 80
+  else score += 380
+
+  if (item.selectedHeight === 720) score -= 160
+  else if (item.selectedHeight >= 480 && item.selectedHeight <= 720) score -= 80
+  else if (item.selectedHeight > 720) score += 70
+
+  if (typeof item.bitrateBps === 'number') {
+    if (item.bitrateBps >= 800_000 && item.bitrateBps <= 3_500_000) score -= 100
+    else if (item.bitrateBps > 5_000_000) score += 220
+  }
+
+  const title = item.fileTitle.toLowerCase()
+  const queryTokens = normalizedQuery.split(/\s+/).filter((word) => word.length > 2)
+  for (const token of queryTokens) if (title.includes(token)) score -= 70
+
+  if (normalizedQuery.includes('beer')) {
+    if (title.includes('beer')) score -= 120
+    if (title.includes('pour')) score -= 180
+    if (title.includes('glass')) score -= 70
+    if (title.includes('draft') || title.includes('tap')) score -= 40
+  }
+
+  return score
+}
+
+async function fetchCommonsVariant(searchTerm: string) {
   const params = new URLSearchParams({
     action: 'query',
     generator: 'search',
@@ -151,7 +246,7 @@ async function searchCommonsVideos(searchTerm: string) {
     viprop: 'url|derivatives|extmetadata|dimensions|mime|thumburls',
     viurlwidth: '360',
     viextmetadatalanguage: 'pt-br',
-    viextmetadatafilter: 'Artist|Credit|LicenseShortName|LicenseUrl|ImageDescription',
+    viextmetadatafilter: 'Artist|Credit|LicenseShortName|LicenseUrl',
     format: 'json',
     formatversion: '2',
     origin: '*',
@@ -161,10 +256,21 @@ async function searchCommonsVideos(searchTerm: string) {
   if (!response.ok) throw new Error(`commons_http_${response.status}`)
   const payload = await response.json() as CommonsResponse
   if (payload.error) throw new Error(payload.error.info || 'commons_api_error')
-
   return (payload.query?.pages || [])
     .map(toVideoResult)
     .filter((item): item is VideoResult => Boolean(item))
+}
+
+async function searchCommonsVideos(searchTerm: string) {
+  const variants = buildSearchVariants(searchTerm)
+  const normalizedQuery = normalizeSearchTerm(searchTerm)
+  const batches = await Promise.all(variants.map(fetchCommonsVariant))
+  const unique = new Map<number, VideoResult>()
+  for (const item of batches.flat()) if (!unique.has(item.pageId)) unique.set(item.pageId, item)
+
+  return Array.from(unique.values())
+    .sort((a, b) => rankVideo(a, normalizedQuery) - rankVideo(b, normalizedQuery))
+    .slice(0, 8)
 }
 
 function withCommonsAttribution(item: VideoResult) {
@@ -181,7 +287,7 @@ function withCommonsAttribution(item: VideoResult) {
 
 export default function WikimediaVideoPicker({ onSelect }: Props) {
   const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('beer')
+  const [query, setQuery] = useState('cerveja sendo servida no copo')
   const [results, setResults] = useState<VideoResult[]>([])
   const [previewing, setPreviewing] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
@@ -189,16 +295,16 @@ export default function WikimediaVideoPicker({ onSelect }: Props) {
 
   const preview = useMemo(() => results.find((item) => item.pageId === previewing) || null, [results, previewing])
 
-  async function runSearch(nextQuery = query) {
-    const clean = nextQuery.trim()
+  async function runSearch() {
+    const clean = query.trim()
     if (!clean) return
     setLoading(true)
-    setMessage('Buscando vídeos no Wikimedia Commons...')
+    setMessage('Procurando as melhores opções no Wikimedia Commons...')
     setPreviewing(null)
     try {
       const nextResults = await searchCommonsVideos(clean)
       setResults(nextResults)
-      setMessage(nextResults.length ? `${nextResults.length} vídeo(s) encontrado(s).` : 'Nenhum vídeo encontrado. Tente outro termo.')
+      setMessage(nextResults.length ? `${nextResults.length} melhor(es) opção(ões) encontrada(s).` : 'Nenhum vídeo encontrado. Descreva a cena de outra forma.')
     } catch {
       setResults([])
       setMessage('Não foi possível consultar o Wikimedia Commons agora.')
@@ -209,13 +315,7 @@ export default function WikimediaVideoPicker({ onSelect }: Props) {
 
   function selectVideo(item: VideoResult) {
     const changed = onSelect(withCommonsAttribution(item))
-    setMessage(changed ? `Selecionado: ${item.fileTitle} · ${item.quality}${item.bitrate ? ` · ${item.bitrate}` : ''}` : 'Não foi possível atualizar a URL do cartaz.')
-  }
-
-  function choosePreset(label: string, presetQuery: string) {
-    setQuery(presetQuery)
-    void runSearch(presetQuery)
-    setMessage(`Buscando: ${label}`)
+    setMessage(changed ? `Selecionado: ${item.title} · ${item.quality}${item.bitrate ? ` · ${item.bitrate}` : ''}` : 'Não foi possível atualizar a URL do cartaz.')
   }
 
   return (
@@ -225,10 +325,7 @@ export default function WikimediaVideoPicker({ onSelect }: Props) {
       </button>
 
       {open && <div className="wikimedia-picker-panel">
-        <div className="wikimedia-picker-presets">
-          {presets.map((preset) => <button type="button" key={preset.label} onClick={() => choosePreset(preset.label, preset.query)} disabled={loading}>{preset.label}</button>)}
-        </div>
-
+        <small>Descreva a cena desejada. O DisplayHub amplia a busca e prioriza vídeos horizontais e versões leves próximas de 720p.</small>
         <div className="wikimedia-picker-search">
           <input
             type="search"
@@ -240,10 +337,10 @@ export default function WikimediaVideoPicker({ onSelect }: Props) {
                 void runSearch()
               }
             }}
-            placeholder="Ex.: beer, coffee, beach..."
+            placeholder="Ex.: cerveja sendo servida no copo"
             aria-label="Buscar vídeos no Wikimedia Commons"
           />
-          <button className="primary-button compact" type="button" onClick={() => void runSearch()} disabled={loading || !query.trim()}>{loading ? 'Buscando...' : 'Buscar'}</button>
+          <button className="primary-button compact" type="button" onClick={() => void runSearch()} disabled={loading || !query.trim()}>{loading ? 'Buscando...' : 'Buscar melhores opções'}</button>
         </div>
 
         {message && <small className="wikimedia-picker-message">{message}</small>}
@@ -253,7 +350,6 @@ export default function WikimediaVideoPicker({ onSelect }: Props) {
           <div>
             <strong>{preview.title}</strong>
             <small>{preview.quality}{preview.bitrate ? ` · ${preview.bitrate}` : ''}</small>
-            {(preview.author || preview.license) && <small>{preview.author || 'Autor não informado'}{preview.license ? ` · ${preview.license}` : ''}</small>}
             <div className="wikimedia-picker-actions">
               <button className="primary-button compact" type="button" onClick={() => selectVideo(preview)}>Usar este vídeo</button>
               <a href={preview.pageUrl} target="_blank" rel="noreferrer">Abrir no Wikimedia</a>
@@ -270,17 +366,15 @@ export default function WikimediaVideoPicker({ onSelect }: Props) {
             <div className="wikimedia-video-card-copy">
               <strong title={item.title}>{item.title}</strong>
               <small>{item.quality}{item.bitrate ? ` · ${item.bitrate}` : ''}</small>
-              {(item.author || item.license) && <small>{item.author || 'Autor não informado'}{item.license ? ` · ${item.license}` : ''}</small>}
               <div className="wikimedia-picker-actions">
                 <button type="button" onClick={() => setPreviewing(item.pageId)}>Pré-visualizar</button>
                 <button className="primary-button compact" type="button" onClick={() => selectVideo(item)}>Usar</button>
               </div>
-              {item.licenseUrl && <a className="wikimedia-license-link" href={item.licenseUrl} target="_blank" rel="noreferrer">Ver licença</a>}
             </div>
           </article>)}
         </div>
 
-        <small className="wikimedia-picker-footnote">O DisplayHub prefere automaticamente uma transcodificação próxima de 720p e mantém a origem/licença junto da URL salva. Confirme os termos do arquivo antes do uso comercial.</small>
+        <small className="wikimedia-picker-footnote">Autor, licença e página de origem continuam preservados junto do vídeo selecionado, sem poluir a tela de busca.</small>
       </div>}
     </div>
   )
