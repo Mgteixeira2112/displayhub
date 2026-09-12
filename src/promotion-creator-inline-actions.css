@@ -10,16 +10,27 @@
     grid-column: 9 / -1 !important;
     order: 3;
     align-self: end;
-    justify-content: flex-end;
-    gap: 5px;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    gap: 6px !important;
+    min-height: 30px;
     padding: 0 !important;
   }
 
-  .promotion-workspace .promotion-actions > .secondary-button:first-of-type {
+  .promotion-workspace .promotion-actions > button {
+    flex: 1 1 0;
+    min-width: 0 !important;
+    width: auto !important;
+    white-space: nowrap;
+  }
+
+  .promotion-workspace .promotion-actions > .primary-button + .secondary-button {
     font-size: 0 !important;
   }
 
-  .promotion-workspace .promotion-actions > .secondary-button:first-of-type::after {
+  .promotion-workspace .promotion-actions > .primary-button + .secondary-button::after {
     content: 'Restaurar';
     font-size: .6875rem;
   }
