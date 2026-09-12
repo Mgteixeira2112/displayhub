@@ -1,0 +1,71 @@
+/* Extensão vertical do Cerveja Viva — Vídeo.
+   As regras horizontais homologadas permanecem em promotion-beer-video.css
+   e não são alteradas por este arquivo. */
+
+.promo-theme-animated_beer_video.promo-portrait .promo-poster-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  gap: 3.2%;
+  align-items: center;
+  justify-items: center;
+  padding: 10% 8% 8%;
+}
+
+.promo-theme-animated_beer_video.promo-portrait .promo-headline {
+  grid-row: 1;
+  justify-self: center;
+  max-width: 92%;
+  font-size: 6.1cqw;
+  text-align: center;
+}
+
+.promo-theme-animated_beer_video.promo-portrait .promo-product {
+  grid-row: 2;
+  align-self: end;
+  max-width: 92%;
+  font-size: 11.4cqw;
+  line-height: .9;
+  text-align: center;
+}
+
+.promo-theme-animated_beer_video.promo-portrait .promo-price {
+  grid-row: 3;
+  justify-self: center;
+  align-self: center;
+  max-width: 92%;
+  font-size: 20cqw;
+  line-height: .9;
+}
+
+.promo-theme-animated_beer_video.promo-portrait .promo-unit {
+  grid-row: 4;
+  justify-self: center;
+  font-size: 5cqw;
+}
+
+.promo-theme-animated_beer_video.promo-portrait .promo-footer {
+  grid-row: 5;
+  position: static;
+  justify-self: center;
+  max-width: 92%;
+  font-size: 4.1cqw;
+  text-align: center;
+}
+
+/* O vídeo 16:9 é recortado pelo centro em telas verticais; o object-fit cover
+   continua preservando a proporção original sem esticar a imagem. */
+.promo-theme-animated_beer_video.promo-portrait > .promo-video-background {
+  object-fit: cover;
+  object-position: center;
+}
+
+.promo-theme-animated_beer_video.promo-portrait > .promo-video-overlay {
+  background: linear-gradient(180deg, rgba(16,6,1,.74) 0%, rgba(36,13,2,.34) 38%, rgba(19,7,1,.28) 62%, rgba(13,5,1,.7) 100%);
+}
+
+/* No player público a camada de vídeo fica fora do cartaz. Esta regra só
+   altera o overlay quando o cartaz filho é vertical. */
+.promo-video-stage:has(> .promo-poster.promo-portrait) > .promo-video-overlay {
+  background: linear-gradient(180deg, rgba(16,6,1,.74) 0%, rgba(36,13,2,.34) 38%, rgba(19,7,1,.28) 62%, rgba(13,5,1,.7) 100%);
+}
