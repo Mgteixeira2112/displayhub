@@ -1,0 +1,43 @@
+.modern-software-shell .view-posters .software-topbar {
+  height: 58px;
+  min-height: 58px;
+}
+
+.modern-software-shell .view-posters .software-topbar-copy {
+  gap: 0;
+}
+
+.modern-software-shell .view-posters .software-page-kicker,
+.modern-software-shell .view-posters .software-topbar-copy p {
+  display: none;
+}
+
+.modern-software-shell .view-posters .software-topbar-copy strong {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.modern-software-shell .view-posters .software-content {
+  padding-top: 10px;
+}
+
+.modern-software-shell .view-posters .promotion-workspace.workspace-section {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+}
+
+.modern-software-shell .view-posters .promotion-workspace > .section-heading {
+  display: none !important;
+}
+
+@media (max-width: 680px) {
+  .modern-software-shell .view-posters .software-topbar {
+    height: 54px;
+    min-height: 54px;
+  }
+
+  .modern-software-shell .view-posters .software-content {
+    padding-top: 8px;
+  }
+}
