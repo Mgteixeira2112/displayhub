@@ -174,7 +174,7 @@
    pausa perceptível quando um arquivo remoto é reposicionado para 0s. */
 .promo-video-stage > .promo-video-loop-layer {
   opacity: 0;
-  transition: opacity .34s linear;
+  transition: opacity .28s linear;
   will-change: opacity;
 }
 
