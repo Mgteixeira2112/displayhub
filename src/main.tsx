@@ -42,6 +42,7 @@ import './promotion-creator-controls-polish.css'
 import './campaigns-visual.css'
 import './campaigns-create-panel-compact.css'
 import './campaigns-playlist-cards-compact.css'
+import './campaigns-playlist-cards-expandable.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
@@ -65,12 +66,58 @@ function keepCampaignCreatePanelVisible() {
   if (panel && !panel.open) panel.open = true
 }
 
+function prepareCampaignPlaylistCards() {
+  document.querySelectorAll<HTMLElement>('.view-campaigns .playlist-card-head').forEach((head) => {
+    const card = head.closest('.playlist-card') as HTMLElement | null
+    head.setAttribute('role', 'button')
+    head.setAttribute('tabindex', '0')
+    head.setAttribute('aria-expanded', card?.classList.contains('is-expanded') ? 'true' : 'false')
+    head.setAttribute('aria-label', 'Abrir ou recolher playlist')
+  })
+}
+
+function setCampaignPlaylistExpanded(card: HTMLElement, expanded: boolean) {
+  if (expanded) {
+    document.querySelectorAll<HTMLElement>('.view-campaigns .playlist-card.is-expanded').forEach((otherCard) => {
+      if (otherCard === card) return
+      otherCard.classList.remove('is-expanded')
+      const otherHead = otherCard.querySelector<HTMLElement>('.playlist-card-head')
+      otherHead?.setAttribute('aria-expanded', 'false')
+    })
+  }
+
+  card.classList.toggle('is-expanded', expanded)
+  const head = card.querySelector<HTMLElement>('.playlist-card-head')
+  head?.setAttribute('aria-expanded', expanded ? 'true' : 'false')
+}
+
+function toggleCampaignPlaylistFromTarget(target: Element) {
+  const head = target.closest('.view-campaigns .playlist-card-head') as HTMLElement | null
+  if (!head || target.closest('button, input, select, textarea, a')) return false
+  const card = head.closest('.playlist-card') as HTMLElement | null
+  if (!card) return false
+  setCampaignPlaylistExpanded(card, !card.classList.contains('is-expanded'))
+  return true
+}
+
 window.addEventListener('displayhub:navigate', resetAppScroll)
-window.addEventListener('displayhub:navigate', () => window.requestAnimationFrame(keepCampaignCreatePanelVisible))
+window.addEventListener('displayhub:navigate', () => window.requestAnimationFrame(() => {
+  keepCampaignCreatePanelVisible()
+  prepareCampaignPlaylistCards()
+}))
 window.addEventListener('displayhub:use-promotion-template', resetAppScroll)
 document.addEventListener('click', (event) => {
   const target = event.target instanceof Element ? event.target : null
   if (target?.closest('.software-nav-item:not(.software-nav-advanced-toggle), .software-topbar-create')) resetAppScroll()
+  if (target) toggleCampaignPlaylistFromTarget(target)
+})
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  const target = event.target instanceof HTMLElement ? event.target : null
+  if (!target?.matches('.view-campaigns .playlist-card-head')) return
+  event.preventDefault()
+  const card = target.closest('.playlist-card') as HTMLElement | null
+  if (card) setCampaignPlaylistExpanded(card, !card.classList.contains('is-expanded'))
 })
 
 const publicToken = getPublicToken()
@@ -83,7 +130,13 @@ createRoot(root).render(
 )
 
 if (!publicToken) {
-  const observer = new MutationObserver(() => keepCampaignCreatePanelVisible())
+  const observer = new MutationObserver(() => {
+    keepCampaignCreatePanelVisible()
+    prepareCampaignPlaylistCards()
+  })
   observer.observe(root, { childList: true, subtree: true })
-  window.requestAnimationFrame(keepCampaignCreatePanelVisible)
+  window.requestAnimationFrame(() => {
+    keepCampaignCreatePanelVisible()
+    prepareCampaignPlaylistCards()
+  })
 }
