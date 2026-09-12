@@ -13,6 +13,13 @@ type CachedVideo = {
   objectUrl?: string
 }
 
+type CommonsCredit = {
+  p?: string
+  a?: string
+  l?: string
+  u?: string
+}
+
 const cachedPromotionVideos = new Map<string, CachedVideo>()
 
 export function readPromotionVideoMetadata(layoutPositions: unknown): PromotionVideoMetadata {
@@ -25,6 +32,29 @@ export function readPromotionVideoMetadata(layoutPositions: unknown): PromotionV
   return {
     background_video_url: url || undefined,
     background_overlay_opacity: Math.min(0.8, Math.max(0, rawOpacity)),
+  }
+}
+
+function cleanVideoUrl(src: string) {
+  try {
+    const url = new URL(src)
+    url.hash = ''
+    return url.toString()
+  } catch {
+    return src
+  }
+}
+
+function readCommonsCredit(src: string): CommonsCredit | null {
+  try {
+    const url = new URL(src)
+    const params = new URLSearchParams(url.hash.replace(/^#/, ''))
+    const raw = params.get('dhcommons')
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as CommonsCredit
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
   }
 }
 
@@ -93,12 +123,20 @@ export default function PromotionVideoPoster({ poster, className = '', loop = tr
     return <PromotionPosterView poster={poster} className={className} />
   }
 
+  const playbackUrl = cleanVideoUrl(videoUrl)
+  const commonsCredit = readCommonsCredit(videoUrl)
+  const creditText = commonsCredit
+    ? `Vídeo: ${commonsCredit.a || 'Wikimedia Commons'} / Wikimedia Commons${commonsCredit.l ? ` · ${commonsCredit.l}` : ''}`
+    : playbackUrl === DEMO_BEER_VIDEO_URL
+      ? 'Vídeo de demonstração: Angulidayaaluta / Wikimedia Commons · CC BY-SA 4.0'
+      : null
+
   return (
     <div className="promo-video-stage">
-      <BufferedPromotionVideo key={`${videoUrl}:${loop ? 'loop' : 'once'}`} src={videoUrl} loop={loop} onEnded={onVideoEnded} />
+      <BufferedPromotionVideo key={`${playbackUrl}:${loop ? 'loop' : 'once'}`} src={playbackUrl} loop={loop} onEnded={onVideoEnded} />
       <div className="promo-video-overlay" style={{ opacity: overlayOpacity }} aria-hidden="true" />
       <PromotionPosterView poster={poster} className={`${className} promo-video-poster`.trim()} />
-      {videoUrl === DEMO_BEER_VIDEO_URL && <small className="promo-video-credit">Vídeo de demonstração: Angulidayaaluta / Wikimedia Commons · CC BY-SA 4.0</small>}
+      {creditText && <small className="promo-video-credit" title={commonsCredit?.p || undefined}>{creditText}</small>}
     </div>
   )
 }
