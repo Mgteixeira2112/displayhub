@@ -5,3 +5,16 @@
 .promotion-workspace .promotion-drag-hint {
   display: none !important;
 }
+
+.promotion-preview-panel > .promotion-box-controls {
+  width: min(100%, 720px);
+  box-sizing: border-box;
+  justify-self: center;
+}
+
+@media (min-width: 1280px) {
+  .promotion-preview-panel {
+    padding-left: 20px !important;
+    min-height: 0 !important;
+  }
+}
