@@ -65,6 +65,17 @@ function NavIcon({ name }: { name: IconName }) {
   return <svg className="software-nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
 }
 
+function selectPromotionTemplate(key: string) {
+  window.setTimeout(() => {
+    const selects = Array.from(document.querySelectorAll<HTMLSelectElement>('.promotion-workspace select'))
+    const select = selects.find((candidate) => Array.from(candidate.options).some((option) => option.value === key))
+    if (!select) return
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
+    setter?.call(select, key)
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+  }, 0)
+}
+
 export default function AppLayout({ companyName, userName, roleLabel, busy, onSignOut, children }: Props) {
   const [view, setView] = useState<View>('overview')
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -77,7 +88,11 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
       setView(target)
       if (advancedViews.includes(target)) setAdvancedOpen(true)
     }
-    const handleUseTemplate = () => setView('posters')
+    const handleUseTemplate = (event: Event) => {
+      const key = (event as CustomEvent<{ key?: string }>).detail?.key
+      setView('posters')
+      if (key) selectPromotionTemplate(key)
+    }
     window.addEventListener('displayhub:navigate', handleNavigate)
     window.addEventListener('displayhub:use-promotion-template', handleUseTemplate)
     return () => {
