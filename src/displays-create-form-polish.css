@@ -1,5 +1,26 @@
 /* Refinamento do cadastro de display: resolução tratada como um único grupo visual. */
 
+.view-displays .create-panel-display > summary {
+  position: relative;
+  font-size: 0;
+}
+
+.view-displays .create-panel-display > summary::marker {
+  content: '';
+}
+
+.view-displays .create-panel-display > summary::after {
+  content: 'Novo display';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #1d4ed8;
+  font-size: .75rem;
+  font-weight: 750;
+  line-height: 1;
+  pointer-events: none;
+}
+
 .view-displays .display-form {
   grid-template-columns: minmax(150px, 1.2fr) minmax(150px, 1.2fr) minmax(150px, 1fr) minmax(110px, .72fr) 80px 80px 104px;
   gap: 6px 4px;
@@ -9,6 +30,14 @@
 .view-displays .display-form > label:nth-of-type(6) {
   position: relative;
   font-size: 0;
+}
+
+.view-displays .display-form > label:nth-of-type(5) {
+  padding-right: 4px;
+}
+
+.view-displays .display-form > label:nth-of-type(6) {
+  padding-left: 4px;
 }
 
 .view-displays .display-form > label:nth-of-type(5)::before,
@@ -63,6 +92,7 @@
 
   .view-displays .display-form > label:nth-of-type(5),
   .view-displays .display-form > label:nth-of-type(6) {
+    padding-inline: 0;
     font-size: .64rem;
   }
 
