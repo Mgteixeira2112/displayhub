@@ -443,30 +443,46 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
         <span>Pré-visualização · {orientation === 'portrait' ? 'Vertical' : 'Horizontal'}</span>
         {canManage && <small className="promotion-drag-hint">Clique no texto para selecionar. Clique em uma área vazia do cartaz para remover a seleção.</small>}
         {posterPreview(selectedTemplate?.theme || 'hot_red', orientation, { product_name: productName || 'NOME DO PRODUTO', price: previewPrice, unit: unit || null, headline: headline || 'OFERTA', footer: footer || null }, layoutPositions, canManage)}
-        {canManage && <details className="promotion-box-controls">
-          <summary>Ajustes avançados do layout</summary>
-          <strong>Ajustar texto selecionado</strong>
-          <label>Elemento<select value={selectedElement} onChange={(e) => { setSelectedElement(e.target.value as ElementKey); setSelectionActive(true) }}>{elementKeys.map((key) => <option key={key} value={key}>{elementLabels[key]}</option>)}</select></label>
-          <div className="promotion-box-status"><span>Caixa</span><strong>{typeof selectedElementLayout.width === 'number' ? `${Math.round(selectedElementLayout.width)}% × ${Math.round(selectedElementLayout.height ?? 0)}%` : 'automática'}</strong></div>
-          <small>Os quadradinhos alteram somente a caixa. Tamanho e rotação do texto são controlados manualmente abaixo.</small>
-          <label>Tamanho da fonte (px do cartaz)
-            <div className="promotion-font-row">
-              <input type="number" min="8" max="400" step="1" value={Math.round(selectedFontSize)} onChange={(e) => updateElementLayout(orientation, selectedElement, { fontSize: clamp(Number(e.target.value) || designFontSizes[orientation][selectedElement], 8, 400) })} />
-              <span>px</span>
-              <button className="secondary-button compact" type="button" onClick={() => clearElementField(orientation, selectedElement, 'fontSize')}>Usar tamanho do template</button>
+        {canManage && <div className="promotion-editor-tools">
+          <div className="promotion-editor-tools-head">
+            <div className="promotion-element-tabs" role="group" aria-label="Elemento do cartaz">
+              {elementKeys.map((key) => <button key={key} className={`promotion-element-tab${selectedElement === key ? ' is-active' : ''}`} type="button" aria-pressed={selectedElement === key} onClick={() => { setSelectedElement(key); setSelectionActive(true) }}>{elementLabels[key]}</button>)}
             </div>
-          </label>
-          <label>Rotação
-            <div className="promotion-font-row">
-              <input type="number" min="-180" max="180" step="1" value={Math.round(selectedRotation)} onChange={(e) => updateElementLayout(orientation, selectedElement, { rotation: clamp(Number(e.target.value) || 0, -180, 180) })} />
-              <span>°</span>
-              <button className="secondary-button compact" type="button" onClick={() => clearElementField(orientation, selectedElement, 'rotation')}>Zerar rotação</button>
-            </div>
-          </label>
-          <label>Alinhamento<select value={selectedAlign} onChange={(e) => updateElementLayout(orientation, selectedElement, { align: e.target.value as TextAlign })}><option value="left">Esquerda</option><option value="center">Centro</option><option value="right">Direita</option></select></label>
-          <label>Cor da letra<div className="promotion-color-row"><input aria-label="Cor da letra" type="color" value={selectedColor} onChange={(e) => updateElementLayout(orientation, selectedElement, { color: e.target.value.toLowerCase() })} /><code>{selectedColor.toUpperCase()}</code><button className="secondary-button compact" type="button" onClick={() => clearElementField(orientation, selectedElement, 'color')}>Usar cor do template</button></div></label>
-          <small>Os ajustes valem somente para {orientation === 'portrait' ? 'Vertical' : 'Horizontal'}.</small>
-        </details>}
+            <div className="promotion-toolbox-status"><span>Caixa</span><strong>{typeof selectedElementLayout.width === 'number' ? `${Math.round(selectedElementLayout.width)}% × ${Math.round(selectedElementLayout.height ?? 0)}%` : 'automática'}</strong></div>
+          </div>
+          <div className="promotion-toolbox-grid">
+            <section className="promotion-tool-card">
+              <div className="promotion-tool-heading"><strong>Fonte</strong><span>{Math.round(selectedFontSize)} px</span></div>
+              <div className="promotion-tool-row">
+                <input aria-label="Tamanho da fonte" type="range" min="8" max="400" step="1" value={Math.round(selectedFontSize)} onChange={(e) => updateElementLayout(orientation, selectedElement, { fontSize: clamp(Number(e.target.value) || designFontSizes[orientation][selectedElement], 8, 400) })} />
+                <input className="promotion-tool-number" aria-label="Tamanho da fonte em pixels" type="number" min="8" max="400" step="1" value={Math.round(selectedFontSize)} onChange={(e) => updateElementLayout(orientation, selectedElement, { fontSize: clamp(Number(e.target.value) || designFontSizes[orientation][selectedElement], 8, 400) })} />
+                <button className="secondary-button compact" type="button" onClick={() => clearElementField(orientation, selectedElement, 'fontSize')}>Padrão</button>
+              </div>
+            </section>
+            <section className="promotion-tool-card">
+              <div className="promotion-tool-heading"><strong>Rotação</strong><span>{Math.round(selectedRotation)}°</span></div>
+              <div className="promotion-tool-row">
+                <input aria-label="Rotação" type="range" min="-180" max="180" step="1" value={Math.round(selectedRotation)} onChange={(e) => updateElementLayout(orientation, selectedElement, { rotation: clamp(Number(e.target.value) || 0, -180, 180) })} />
+                <input className="promotion-tool-number" aria-label="Rotação em graus" type="number" min="-180" max="180" step="1" value={Math.round(selectedRotation)} onChange={(e) => updateElementLayout(orientation, selectedElement, { rotation: clamp(Number(e.target.value) || 0, -180, 180) })} />
+                <button className="secondary-button compact" type="button" onClick={() => clearElementField(orientation, selectedElement, 'rotation')}>Zerar</button>
+              </div>
+            </section>
+            <section className="promotion-tool-card">
+              <div className="promotion-tool-heading"><strong>Alinhamento</strong></div>
+              <div className="promotion-align-buttons" role="group" aria-label="Alinhamento do texto">
+                {(['left', 'center', 'right'] as TextAlign[]).map((align) => <button key={align} className={`promotion-align-button${selectedAlign === align ? ' is-active' : ''}`} type="button" aria-pressed={selectedAlign === align} onClick={() => updateElementLayout(orientation, selectedElement, { align })}>{align === 'left' ? 'Esquerda' : align === 'center' ? 'Centro' : 'Direita'}</button>)}
+              </div>
+            </section>
+            <section className="promotion-tool-card">
+              <div className="promotion-tool-heading"><strong>Cor</strong><span>{selectedColor.toUpperCase()}</span></div>
+              <div className="promotion-color-tools">
+                <input aria-label="Cor da letra" type="color" value={selectedColor} onChange={(e) => updateElementLayout(orientation, selectedElement, { color: e.target.value.toLowerCase() })} />
+                <code>{selectedColor.toUpperCase()}</code>
+                <button className="secondary-button compact" type="button" onClick={() => clearElementField(orientation, selectedElement, 'color')}>Padrão</button>
+              </div>
+            </section>
+          </div>
+        </div>}
       </div>
     </div>
     <div className="section-heading promotion-saved-heading"><div><p className="eyebrow">Salvos</p><h3>{posters.length} cartaz{posters.length === 1 ? '' : 'es'}</h3></div></div>
