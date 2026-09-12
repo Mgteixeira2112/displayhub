@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import DisplayGroupsManager from './DisplayGroupsManager'
 
 type View = 'overview' | 'displays' | 'groups' | 'library' | 'posters' | 'campaigns' | 'playlists' | 'schedule' | 'templates' | 'history' | 'settings'
@@ -42,6 +42,7 @@ const descriptions: Record<View, string> = {
 }
 
 const advancedViews: View[] = ['groups', 'playlists', 'schedule', 'history']
+const allViews = new Set<View>(['overview', 'displays', 'groups', 'library', 'posters', 'campaigns', 'playlists', 'schedule', 'templates', 'history', 'settings'])
 
 function NavIcon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
@@ -66,6 +67,17 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
   const [view, setView] = useState<View>('overview')
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const isAdvanced = advancedViews.includes(view)
+
+  useEffect(() => {
+    const handleNavigate = (event: Event) => {
+      const target = (event as CustomEvent<string>).detail as View
+      if (!allViews.has(target)) return
+      setView(target)
+      if (advancedViews.includes(target)) setAdvancedOpen(true)
+    }
+    window.addEventListener('displayhub:navigate', handleNavigate)
+    return () => window.removeEventListener('displayhub:navigate', handleNavigate)
+  }, [])
 
   const nav = (target: View, label: string, icon: IconName, nested = false) => (
     <button
