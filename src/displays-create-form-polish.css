@@ -1,13 +1,5 @@
 /* Refinamento do cadastro de display: formulário sempre visível e resolução tratada como um único grupo visual. */
 
-.view-displays .create-panel-display > summary {
-  display: none !important;
-}
-
-.view-displays .create-panel-display:not([open]) > .display-form {
-  display: grid !important;
-}
-
 .view-displays .display-form {
   grid-template-columns: minmax(150px, 1.2fr) minmax(150px, 1.2fr) minmax(150px, 1fr) minmax(110px, .72fr) 80px 80px 104px;
   gap: 6px 4px;
