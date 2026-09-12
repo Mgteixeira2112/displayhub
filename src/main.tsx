@@ -2,7 +2,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import PublicPlayer from './PublicPlayer'
-import { installWikimediaVideoPicker } from './WikimediaVideoPicker'
 import './styles.css'
 import './structured.css'
 import './playlists.css'
@@ -19,7 +18,6 @@ import './promotion-animated-backgrounds.css'
 import './promotion-beer-live.css'
 import './promotion-beer-offer.css'
 import './promotion-beer-video.css'
-import './wikimedia-video-picker.css'
 import './promotion-player.css'
 import './playlist-transitions.css'
 import './promotion-render-scale.css'
@@ -36,8 +34,6 @@ function getPublicToken() {
 }
 
 const publicToken = getPublicToken()
-
-if (!publicToken) installWikimediaVideoPicker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
