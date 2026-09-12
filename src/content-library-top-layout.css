@@ -1,60 +1,87 @@
-/* Organização final do módulo Conteúdo:
-   todas as ações de criação ficam no topo; galerias vêm depois. */
+/* Organização do módulo Conteúdo:
+   todos os controles de criação aparecem antes de qualquer galeria. */
 
 .view-library .module-library {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-/* Achata as duas seções apenas no layout visual para podermos ordenar
-   mídia + comercial antes das galerias, sem alterar os componentes/dados. */
+/* As duas seções deixam de criar caixas próprias apenas nesta view.
+   Seus filhos passam a participar diretamente da coluna principal. */
 .view-library .module-library > .workspace-section {
-  display: contents;
+  display: contents !important;
 }
 
-/* Mídia: cabeçalho, ações, formulário e mensagem */
-.view-library .module-library > .workspace-section:first-child > .section-heading { order: 1; }
-.view-library .module-library > .workspace-section:first-child > .content-create-toolbar { order: 2; }
-.view-library .module-library > .workspace-section:first-child > .content-create-workspace { order: 3; }
-.view-library .module-library > .workspace-section:first-child > .content-message { order: 4; }
+/* 1) Todos os menus no início da página. */
+.view-library .module-library > .workspace-section:first-child > .section-heading {
+  order: 1 !important;
+}
 
-/* Comercial: também fica antes de qualquer galeria */
+.view-library .module-library > .workspace-section:first-child > .content-create-toolbar {
+  order: 2 !important;
+}
+
 .view-library .module-library > .workspace-section:nth-child(2) > .section-heading {
-  order: 5;
-  margin-top: 3px;
-  padding-top: 12px;
+  order: 3 !important;
+  margin-top: 2px;
+  padding-top: 9px;
   border-top: 1px solid #e2e8f0;
 }
-.view-library .module-library > .workspace-section:nth-child(2) > .content-create-toolbar { order: 6; }
-.view-library .module-library > .workspace-section:nth-child(2) > .content-create-workspace { order: 7; }
-.view-library .module-library > .workspace-section:nth-child(2) > .content-message { order: 8; }
 
-/* Só depois de todos os controles aparecem as galerias. */
+.view-library .module-library > .workspace-section:nth-child(2) > .content-create-toolbar {
+  order: 4 !important;
+}
+
+/* 2) Se algum cadastro estiver aberto, ele vem depois de todos os menus. */
+.view-library .module-library > .workspace-section:first-child > .content-create-workspace {
+  order: 5 !important;
+}
+
+.view-library .module-library > .workspace-section:nth-child(2) > .content-create-workspace {
+  order: 6 !important;
+}
+
+.view-library .module-library > .workspace-section:first-child > .content-message {
+  order: 7 !important;
+}
+
+.view-library .module-library > .workspace-section:nth-child(2) > .content-message {
+  order: 8 !important;
+}
+
+/* 3) Só depois dos controles e formulários começam as galerias. */
 .view-library .module-library > .workspace-section:first-child > .content-list {
-  order: 20;
-  margin-top: 6px;
+  order: 20 !important;
+  margin-top: 5px;
   padding-top: 12px;
   border-top: 1px solid #e2e8f0;
 }
 
 .view-library .module-library > .workspace-section:nth-child(2) > .structured-list {
-  order: 21;
-  margin-top: 6px;
+  order: 21 !important;
+  margin-top: 5px;
   padding-top: 12px;
   border-top: 1px solid #e2e8f0;
 }
 
-/* Biblioteca pensada para volume alto: 7 cards por linha no desktop. */
+/* Biblioteca preparada para volume alto: 7 posições reais por linha no desktop. */
 .view-library .content-list {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
   gap: 8px;
 }
 
 .view-library .content-card {
+  min-width: 0;
   border-radius: 9px;
 }
 
+.view-library .content-preview {
+  min-width: 0;
+}
+
 .view-library .content-meta {
+  min-width: 0;
   gap: 4px;
   padding: 7px 8px 8px;
 }
@@ -76,20 +103,21 @@
   font-size: .56rem;
 }
 
-@media (max-width: 1000px) {
+/* Mantém 7 colunas em notebooks comuns; reduz apenas quando o viewport fica realmente estreito. */
+@media (max-width: 860px) {
   .view-library .content-list {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 680px) {
   .view-library .content-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 
 @media (max-width: 520px) {
   .view-library .content-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
