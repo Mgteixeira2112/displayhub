@@ -4,7 +4,6 @@ import HomeDashboard from './HomeDashboard'
 import MonitoringPanel from './MonitoringPanel'
 import PlaylistManager from './PlaylistManager'
 import PromotionPosterManager from './PromotionPosterManager'
-import PromotionTemplateGallery from './PromotionTemplateGallery'
 import StructuredContent from './StructuredContent'
 import TemplateManager from './TemplateManager'
 import { subscribeDataChanged } from './lib/dataRefresh'
@@ -69,10 +68,6 @@ export default function ContentLibrary(props: Props) {
 
         <div className="software-module module-posters">
           <PromotionPosterManager {...props} />
-        </div>
-
-        <div className="software-module module-gallery">
-          <PromotionTemplateGallery />
         </div>
 
         <div className="software-module module-playlists">

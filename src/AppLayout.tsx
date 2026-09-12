@@ -1,9 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import DisplayGroupsManager from './DisplayGroupsManager'
 
-type View = 'overview' | 'displays' | 'groups' | 'library' | 'posters' | 'campaigns' | 'playlists' | 'schedule' | 'templates' | 'technical-templates' | 'history' | 'settings'
+type View = 'overview' | 'displays' | 'groups' | 'library' | 'posters' | 'campaigns' | 'playlists' | 'schedule' | 'technical-templates' | 'history' | 'settings'
 type IconName = 'home' | 'create' | 'campaigns' | 'gallery' | 'screens' | 'content' | 'advanced' | 'wall' | 'playlists' | 'schedule' | 'history' | 'settings'
-type PromotionOrientation = 'portrait' | 'landscape'
 
 type Props = {
   companyName: string
@@ -23,7 +22,6 @@ const labels: Record<View, string> = {
   campaigns: 'Campanhas',
   playlists: 'Playlists avançadas',
   schedule: 'Programação avançada',
-  templates: 'Galeria',
   'technical-templates': 'Templates técnicos',
   history: 'Histórico técnico',
   settings: 'Configurações',
@@ -38,14 +36,13 @@ const descriptions: Record<View, string> = {
   campaigns: 'Organize sequências de conteúdo e campanhas em exibição',
   playlists: 'Controle técnico das sequências de conteúdo do player',
   schedule: 'Defina regras avançadas de onde e quando o conteúdo será exibido',
-  templates: 'Escolha modelos promocionais prontos para campanhas de supermercado',
   'technical-templates': 'Gerencie modelos técnicos usados na apresentação dos itens das playlists',
   history: 'Consulte eventos e alterações registradas na operação',
   settings: 'Dados da conta, acesso e preferências do sistema',
 }
 
 const advancedViews: View[] = ['groups', 'playlists', 'schedule', 'technical-templates', 'history']
-const allViews = new Set<View>(['overview', 'displays', 'groups', 'library', 'posters', 'campaigns', 'playlists', 'schedule', 'templates', 'technical-templates', 'history', 'settings'])
+const allViews = new Set<View>(['overview', 'displays', 'groups', 'library', 'posters', 'campaigns', 'playlists', 'schedule', 'technical-templates', 'history', 'settings'])
 
 function NavIcon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
@@ -66,46 +63,6 @@ function NavIcon({ name }: { name: IconName }) {
   return <svg className="software-nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
 }
 
-function setNativeSelectValue(select: HTMLSelectElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
-  setter?.call(select, value)
-  select.dispatchEvent(new Event('change', { bubbles: true }))
-}
-
-function selectPromotionTemplate(key: string, orientation?: PromotionOrientation) {
-  const tryApply = (attemptsLeft: number) => {
-    const selects = Array.from(document.querySelectorAll<HTMLSelectElement>('.promotion-workspace select'))
-    const templateSelect = selects.find((candidate) => Array.from(candidate.options).some((option) => option.value === key))
-
-    if (!templateSelect) {
-      if (attemptsLeft > 0) window.setTimeout(() => tryApply(attemptsLeft - 1), 100)
-      return
-    }
-
-    setNativeSelectValue(templateSelect, key)
-    if (!orientation) return
-
-    const applyOrientation = (orientationAttemptsLeft: number) => {
-      const currentSelects = Array.from(document.querySelectorAll<HTMLSelectElement>('.promotion-workspace select'))
-      const orientationSelect = currentSelects.find((candidate) => {
-        const values = new Set(Array.from(candidate.options).map((option) => option.value))
-        return values.has('portrait') && values.has('landscape')
-      })
-
-      if (!orientationSelect) {
-        if (orientationAttemptsLeft > 0) window.setTimeout(() => applyOrientation(orientationAttemptsLeft - 1), 100)
-        return
-      }
-
-      setNativeSelectValue(orientationSelect, orientation)
-    }
-
-    window.setTimeout(() => applyOrientation(20), 0)
-  }
-
-  window.setTimeout(() => tryApply(40), 0)
-}
-
 export default function AppLayout({ companyName, userName, roleLabel, busy, onSignOut, children }: Props) {
   const [view, setView] = useState<View>('overview')
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -118,19 +75,8 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
       setView(target)
       if (advancedViews.includes(target)) setAdvancedOpen(true)
     }
-    const handleUseTemplate = (event: Event) => {
-      const detail = (event as CustomEvent<{ key?: string; orientation?: PromotionOrientation }>).detail
-      const key = detail?.key
-      const orientation = detail?.orientation
-      setView('posters')
-      if (key) selectPromotionTemplate(key, orientation)
-    }
     window.addEventListener('displayhub:navigate', handleNavigate)
-    window.addEventListener('displayhub:use-promotion-template', handleUseTemplate)
-    return () => {
-      window.removeEventListener('displayhub:navigate', handleNavigate)
-      window.removeEventListener('displayhub:use-promotion-template', handleUseTemplate)
-    }
+    return () => window.removeEventListener('displayhub:navigate', handleNavigate)
   }, [])
 
   const nav = (target: View, label: string, icon: IconName, nested = false) => (
@@ -161,7 +107,6 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           {nav('overview', 'Início', 'home')}
           {nav('posters', 'Criar', 'create')}
           {nav('campaigns', 'Campanhas', 'campaigns')}
-          {nav('templates', 'Galeria', 'gallery')}
           {nav('displays', 'Telas', 'screens')}
           {nav('library', 'Conteúdo', 'content')}
 

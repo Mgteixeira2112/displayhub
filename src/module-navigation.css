@@ -11,7 +11,6 @@
 .view-posters .module-posters,
 .view-playlists .module-playlists,
 .view-schedule .module-schedule,
-.view-templates .module-gallery,
 .view-technical-templates .module-templates,
 .view-history .module-history { display: block; }
 
@@ -117,7 +116,6 @@
 .view-posters .module-posters,
 .view-playlists .module-playlists,
 .view-schedule .module-schedule,
-.view-templates .module-gallery,
 .view-technical-templates .module-templates,
 .view-history .module-history,
 .view-settings .account-grid {
