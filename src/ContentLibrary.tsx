@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import ContentLibraryCore from './ContentLibraryCore'
+import HomeDashboard from './HomeDashboard'
 import MonitoringPanel from './MonitoringPanel'
 import PlaylistManager from './PlaylistManager'
 import PromotionPosterManager from './PromotionPosterManager'
@@ -35,7 +36,7 @@ export default function ContentLibrary(props: Props) {
   return (
     <>
       <div className="software-module module-overview">
-        <MonitoringPanel companyId={props.companyId} />
+        <HomeDashboard companyId={props.companyId} />
       </div>
 
       <Fragment key={dataVersion}>
