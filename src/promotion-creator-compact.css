@@ -1,0 +1,353 @@
+/* Compactação final do módulo Criar: mantém preview no topo e reduz altura vertical. */
+
+.promotion-workspace {
+  gap: 10px;
+}
+
+.promotion-workspace .promotion-editor-grid {
+  gap: 10px !important;
+}
+
+.promotion-workspace .promotion-preview-panel {
+  gap: 10px;
+  padding: 12px !important;
+  border-radius: 14px;
+}
+
+.promotion-workspace .promotion-preview-panel > span {
+  display: none;
+}
+
+.promotion-workspace .promotion-editor-tools {
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.promotion-workspace .promotion-editor-tools-head {
+  gap: 8px;
+}
+
+.promotion-workspace .promotion-element-tabs {
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+}
+
+.promotion-workspace .promotion-element-tab {
+  min-height: 32px;
+  padding: 5px 7px;
+  border-radius: 7px;
+  font-size: .75rem;
+}
+
+.promotion-workspace .promotion-toolbox-status {
+  min-width: 102px;
+  min-height: 38px;
+  padding: 4px 8px;
+  border-radius: 9px;
+}
+
+.promotion-workspace .promotion-toolbox-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-radius: 10px;
+}
+
+.promotion-workspace .promotion-tool-card,
+.promotion-workspace .promotion-tool-card:nth-child(odd),
+.promotion-workspace .promotion-tool-card:nth-child(-n+2) {
+  gap: 6px;
+  padding: 9px 10px;
+  border: 0;
+  border-right: 1px solid var(--creator-border);
+}
+
+.promotion-workspace .promotion-tool-card:last-child {
+  border-right: 0;
+}
+
+.promotion-workspace .promotion-tool-heading {
+  min-height: 16px;
+}
+
+.promotion-workspace .promotion-tool-heading strong {
+  font-size: .75rem;
+}
+
+.promotion-workspace .promotion-tool-heading span {
+  font-size: .625rem;
+}
+
+.promotion-workspace .promotion-tool-row {
+  grid-template-columns: minmax(58px, 1fr) 52px auto;
+  gap: 5px;
+}
+
+.promotion-workspace .promotion-tool-number {
+  width: 52px !important;
+  min-height: 32px !important;
+  padding-inline: 7px !important;
+  border-radius: 8px !important;
+  font-size: .75rem !important;
+}
+
+.promotion-workspace .promotion-tool-row .secondary-button,
+.promotion-workspace .promotion-color-tools .secondary-button {
+  min-height: 30px;
+  padding: 3px 5px;
+  font-size: .6875rem;
+}
+
+.promotion-workspace .promotion-align-buttons {
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.promotion-workspace .promotion-align-button {
+  min-height: 30px;
+  padding: 4px 5px;
+  border-radius: 6px;
+  font-size: .6875rem;
+}
+
+.promotion-workspace .promotion-color-tools {
+  grid-template-columns: 34px minmax(58px, 1fr) auto;
+  gap: 5px;
+}
+
+.promotion-workspace .promotion-color-tools input[type='color'] {
+  width: 34px !important;
+  height: 32px;
+  border-radius: 7px;
+}
+
+.promotion-workspace .promotion-color-tools code {
+  font-size: .6875rem;
+}
+
+/* Formulário inferior: duas linhas úteis, sem cabeçalhos redundantes. */
+.promotion-workspace .promotion-form {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px !important;
+  padding: 10px !important;
+  overflow: visible;
+  border-radius: 14px;
+}
+
+.promotion-workspace .promotion-form h3,
+.promotion-workspace .promotion-form::before,
+.promotion-workspace .promotion-form::after {
+  display: none;
+}
+
+.promotion-workspace .promotion-form > label,
+.promotion-workspace .promotion-form > .inline-fields,
+.promotion-workspace .promotion-form > label:nth-of-type(1),
+.promotion-workspace .promotion-form > label:nth-of-type(2),
+.promotion-workspace .promotion-form > label:nth-of-type(3),
+.promotion-workspace .promotion-form > label:nth-of-type(4),
+.promotion-workspace .promotion-form > label:nth-of-type(5) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.promotion-workspace .promotion-form > label {
+  gap: 4px;
+  font-size: .6875rem;
+}
+
+.promotion-workspace .promotion-form > label:nth-of-type(1) {
+  grid-column: span 2;
+  order: 1;
+}
+
+.promotion-workspace .promotion-form > label:nth-of-type(2) {
+  grid-column: span 2;
+  order: 1;
+}
+
+.promotion-workspace .promotion-form > label:nth-of-type(3) {
+  grid-column: span 2;
+  order: 1;
+}
+
+.promotion-workspace .promotion-form > label:nth-of-type(4) {
+  grid-column: span 2;
+  order: 2;
+}
+
+.promotion-workspace .promotion-form > .inline-fields {
+  grid-column: span 2;
+  order: 2;
+  gap: 8px;
+  border: 0;
+}
+
+.promotion-workspace .promotion-form > .inline-fields > label {
+  gap: 4px;
+  padding: 0;
+  border: 0 !important;
+  font-size: .6875rem;
+}
+
+.promotion-workspace .promotion-form > label:nth-of-type(5) {
+  grid-column: span 2;
+  order: 2;
+}
+
+.promotion-workspace .promotion-form input,
+.promotion-workspace .promotion-form select {
+  min-height: 34px;
+  padding-inline: 9px;
+  border-radius: 8px;
+  font-size: .75rem;
+}
+
+.promotion-workspace .promotion-video-controls {
+  grid-column: 1 / -1;
+  order: 3;
+  grid-template-columns: minmax(0, 2fr) minmax(180px, .8fr) auto;
+  gap: 8px;
+  align-items: end;
+  padding: 8px 10px;
+  border: 1px solid var(--creator-border);
+  border-radius: 10px;
+  background: var(--creator-surface-muted);
+}
+
+.promotion-workspace .promotion-video-controls::before,
+.promotion-workspace .promotion-video-controls > strong {
+  display: none;
+}
+
+.promotion-workspace .promotion-video-controls > label {
+  gap: 4px;
+  font-size: .6875rem;
+}
+
+.promotion-workspace .promotion-video-controls > label:first-of-type {
+  grid-column: 1;
+}
+
+.promotion-workspace .promotion-video-controls > label:last-of-type {
+  grid-column: 2;
+}
+
+.promotion-workspace .promotion-video-controls > .secondary-button {
+  grid-column: 3;
+  min-height: 34px;
+  padding: 6px 9px;
+  font-size: .6875rem;
+}
+
+.promotion-workspace .promotion-video-range {
+  gap: 6px;
+}
+
+.promotion-workspace .promotion-actions {
+  grid-column: 1 / -1;
+  order: 4;
+  gap: 6px;
+  justify-content: flex-end;
+  padding: 0;
+  background: transparent;
+}
+
+.promotion-workspace .promotion-actions .primary-button,
+.promotion-workspace .promotion-actions .secondary-button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: .75rem;
+}
+
+.promotion-workspace .promotion-actions .primary-button {
+  min-width: 120px;
+}
+
+@media (max-width: 1100px) {
+  .promotion-workspace .promotion-toolbox-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .promotion-workspace .promotion-tool-card,
+  .promotion-workspace .promotion-tool-card:nth-child(odd),
+  .promotion-workspace .promotion-tool-card:nth-child(-n+2) {
+    border-right: 1px solid var(--creator-border);
+    border-bottom: 1px solid var(--creator-border);
+  }
+
+  .promotion-workspace .promotion-tool-card:nth-child(even) {
+    border-right: 0;
+  }
+
+  .promotion-workspace .promotion-tool-card:nth-child(n+3) {
+    border-bottom: 0;
+  }
+
+  .promotion-workspace .promotion-form {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .promotion-workspace .promotion-form > label:nth-of-type(1),
+  .promotion-workspace .promotion-form > label:nth-of-type(2),
+  .promotion-workspace .promotion-form > label:nth-of-type(3),
+  .promotion-workspace .promotion-form > label:nth-of-type(4),
+  .promotion-workspace .promotion-form > .inline-fields,
+  .promotion-workspace .promotion-form > label:nth-of-type(5) {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .promotion-workspace .promotion-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .promotion-workspace .promotion-video-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .promotion-workspace .promotion-video-controls > label:first-of-type,
+  .promotion-workspace .promotion-video-controls > label:last-of-type,
+  .promotion-workspace .promotion-video-controls > .secondary-button {
+    grid-column: 1;
+  }
+
+  .promotion-workspace .promotion-video-controls > .secondary-button {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 620px) {
+  .promotion-workspace .promotion-editor-tools-head {
+    grid-template-columns: 1fr;
+  }
+
+  .promotion-workspace .promotion-toolbox-grid,
+  .promotion-workspace .promotion-form {
+    grid-template-columns: 1fr;
+  }
+
+  .promotion-workspace .promotion-form > label:nth-of-type(1),
+  .promotion-workspace .promotion-form > label:nth-of-type(2),
+  .promotion-workspace .promotion-form > label:nth-of-type(3),
+  .promotion-workspace .promotion-form > label:nth-of-type(4),
+  .promotion-workspace .promotion-form > .inline-fields,
+  .promotion-workspace .promotion-form > label:nth-of-type(5) {
+    grid-column: 1;
+  }
+
+  .promotion-workspace .promotion-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .promotion-workspace .promotion-actions .primary-button,
+  .promotion-workspace .promotion-actions .secondary-button {
+    width: 100%;
+  }
+}

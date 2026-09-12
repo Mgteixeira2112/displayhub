@@ -29,6 +29,7 @@ import './promotion-render-scale.css'
 import './promotion-editor-tools.css'
 import './promotion-creator-workspace.css'
 import './promotion-creator-content-panel.css'
+import './promotion-creator-compact.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
