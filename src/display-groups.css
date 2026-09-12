@@ -26,7 +26,7 @@
 
 .view-groups .display-group-form {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) 78px 78px minmax(0, .8fr) minmax(0, .8fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) 78px 78px minmax(0, .8fr) minmax(0, .8fr) 104px;
   gap: 9px;
   align-items: end;
   padding: 12px 13px 14px;
@@ -55,16 +55,16 @@
 }
 
 .view-groups .display-group-form .primary-button {
-  grid-column: 1 / -1;
-  justify-self: end;
-  width: 104px;
-  min-width: 104px;
+  width: 100%;
+  min-width: 0;
   min-height: 36px;
   height: 36px;
-  margin-top: 2px;
+  position: relative;
+  z-index: 1;
   padding-inline: 10px;
   white-space: nowrap;
   font-size: .67rem;
+  text-align: center;
 }
 
 .view-groups .form-message {
@@ -290,8 +290,7 @@
   }
 
   .view-groups .display-group-form .primary-button {
-    grid-column: 1 / -1;
-    justify-self: end;
+    grid-column: span 2;
   }
 
   .view-groups .display-group-list {
@@ -319,9 +318,6 @@
 
   .view-groups .display-group-form .primary-button {
     grid-column: auto;
-    justify-self: stretch;
-    width: 100%;
-    min-width: 0;
   }
 
   .view-groups .display-group-editor {
