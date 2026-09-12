@@ -1,0 +1,66 @@
+/* Densidade da galeria de cartazes salvos.
+   Mantém as ações e previews existentes, priorizando gestão de muitos itens. */
+
+.promotion-workspace .promotion-poster-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.promotion-workspace .promotion-poster-card,
+.promotion-workspace .promotion-poster-card.card-landscape {
+  grid-column: span 1;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px;
+  border-radius: 14px;
+}
+
+.promotion-workspace .promotion-poster-card .promo-poster {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.promotion-workspace .promotion-card-actions {
+  gap: 2px;
+  padding: 1px;
+}
+
+.promotion-workspace .promotion-card-actions > strong {
+  font-size: .8125rem;
+}
+
+.promotion-workspace .promotion-card-actions > small {
+  font-size: .6875rem;
+}
+
+.promotion-workspace .promotion-card-actions > div {
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.promotion-workspace .promotion-card-actions > div > button {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 6px;
+  border-radius: 7px;
+  font-size: .6875rem;
+}
+
+@media (max-width: 1180px) {
+  .promotion-workspace .promotion-poster-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .promotion-workspace .promotion-poster-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .promotion-workspace .promotion-poster-grid {
+    grid-template-columns: 1fr;
+  }
+}
