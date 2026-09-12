@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from './lib/supabase'
 
 type StructuredContent = {
@@ -27,6 +28,8 @@ type StructuredRow = {
 type Props = {
   companyId: string
   role: string
+  controlsTarget: HTMLElement | null
+  galleryTarget: HTMLElement | null
 }
 
 type CommercialCreateMode = 'product' | 'simple' | 'collection' | 'row' | null
@@ -45,7 +48,7 @@ function money(value: number | null) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 }
 
-export default function StructuredContent({ companyId, role }: Props) {
+export default function StructuredContent({ companyId, role, controlsTarget, galleryTarget }: Props) {
   const [contents, setContents] = useState<StructuredContent[]>([])
   const [rows, setRows] = useState<StructuredRow[]>([])
   const [busy, setBusy] = useState(false)
@@ -248,8 +251,8 @@ export default function StructuredContent({ companyId, role }: Props) {
     setCreateMode((current) => current === mode ? null : mode)
   }
 
-  return (
-    <section className="workspace-section">
+  const controls = (
+    <section className="workspace-section content-controls-section content-controls-commercial">
       <div className="section-heading">
         <div><p className="eyebrow">Comercial</p><h2>Conteúdo comercial</h2></div>
         <button className="secondary-button compact" type="button" onClick={() => void load()} disabled={busy}>Atualizar</button>
@@ -320,7 +323,15 @@ export default function StructuredContent({ companyId, role }: Props) {
       )}
 
       {message && <p className="form-message content-message">{message}</p>}
+    </section>
+  )
 
+  const gallery = (
+    <section className="workspace-section content-gallery-section content-gallery-commercial">
+      <div className="content-gallery-heading">
+        <h3>Conteúdo comercial cadastrado</h3>
+        <span>{contents.length}</span>
+      </div>
       <div className="structured-list">
         {contents.length === 0 && <p className="empty-state">Nenhum conteúdo comercial cadastrado.</p>}
         {contents.map((item) => {
@@ -348,5 +359,12 @@ export default function StructuredContent({ companyId, role }: Props) {
         })}
       </div>
     </section>
+  )
+
+  return (
+    <>
+      {controlsTarget && createPortal(controls, controlsTarget)}
+      {galleryTarget && createPortal(gallery, galleryTarget)}
+    </>
   )
 }
