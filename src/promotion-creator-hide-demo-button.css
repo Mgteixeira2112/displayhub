@@ -1,0 +1,13 @@
+.promotion-workspace .promotion-video-controls {
+  grid-template-columns: minmax(0, 2fr) minmax(180px, .8fr) !important;
+}
+
+.promotion-workspace .promotion-video-controls > .secondary-button {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .promotion-workspace .promotion-video-controls {
+    grid-template-columns: 1fr !important;
+  }
+}
