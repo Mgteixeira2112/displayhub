@@ -169,6 +169,19 @@
   object-position: center;
 }
 
+/* O player alterna dois vídeos pré-carregados em vez de depender do `loop`
+   nativo. A sobreposição curta mascara a volta ao primeiro quadro e evita a
+   pausa perceptível quando um arquivo remoto é reposicionado para 0s. */
+.promo-video-stage > .promo-video-loop-layer {
+  opacity: 0;
+  transition: opacity .28s linear;
+  will-change: opacity;
+}
+
+.promo-video-stage > .promo-video-loop-layer.is-active {
+  opacity: 1;
+}
+
 .promo-video-stage > .promo-video-overlay {
   z-index: 1;
   background: linear-gradient(90deg, rgba(16,6,1,.9) 0%, rgba(36,13,2,.62) 42%, rgba(19,7,1,.32) 70%, rgba(13,5,1,.58) 100%);
