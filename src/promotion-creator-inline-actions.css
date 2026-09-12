@@ -1,0 +1,26 @@
+/* Integra as ações do formulário à mesma faixa da mídia no desktop. */
+
+@media (min-width: 1101px) {
+  .promotion-workspace .promotion-video-controls {
+    grid-column: 1 / span 8 !important;
+    order: 3;
+  }
+
+  .promotion-workspace .promotion-actions {
+    grid-column: 9 / -1 !important;
+    order: 3;
+    align-self: end;
+    justify-content: flex-end;
+    gap: 5px;
+    padding: 0 !important;
+  }
+
+  .promotion-workspace .promotion-actions > .secondary-button:first-of-type {
+    font-size: 0 !important;
+  }
+
+  .promotion-workspace .promotion-actions > .secondary-button:first-of-type::after {
+    content: 'Restaurar';
+    font-size: .6875rem;
+  }
+}
