@@ -17,6 +17,10 @@ type Props = {
 export default function ContentLibrary(props: Props) {
   const [dataVersion, setDataVersion] = useState(0)
   const refreshTimerRef = useRef<number | null>(null)
+  const [mediaControlsTarget, setMediaControlsTarget] = useState<HTMLDivElement | null>(null)
+  const [commercialControlsTarget, setCommercialControlsTarget] = useState<HTMLDivElement | null>(null)
+  const [mediaGalleryTarget, setMediaGalleryTarget] = useState<HTMLDivElement | null>(null)
+  const [commercialGalleryTarget, setCommercialGalleryTarget] = useState<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const unsubscribe = subscribeDataChanged(() => {
@@ -41,8 +45,26 @@ export default function ContentLibrary(props: Props) {
 
       <Fragment key={dataVersion}>
         <div className="software-module module-library">
-          <ContentLibraryCore {...props} />
-          <StructuredContent {...props} />
+          <div className="content-library-controls-stack">
+            <div className="content-library-slot" ref={setMediaControlsTarget} />
+            <div className="content-library-slot" ref={setCommercialControlsTarget} />
+          </div>
+
+          <div className="content-library-galleries-stack">
+            <div className="content-library-slot" ref={setMediaGalleryTarget} />
+            <div className="content-library-slot" ref={setCommercialGalleryTarget} />
+          </div>
+
+          <ContentLibraryCore
+            {...props}
+            controlsTarget={mediaControlsTarget}
+            galleryTarget={mediaGalleryTarget}
+          />
+          <StructuredContent
+            {...props}
+            controlsTarget={commercialControlsTarget}
+            galleryTarget={commercialGalleryTarget}
+          />
         </div>
 
         <div className="software-module module-posters">
