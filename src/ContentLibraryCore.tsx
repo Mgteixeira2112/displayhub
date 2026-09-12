@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from './lib/supabase'
 
 type ContentItem = {
@@ -18,6 +19,8 @@ type ContentItem = {
 type Props = {
   companyId: string
   role: string
+  controlsTarget: HTMLElement | null
+  galleryTarget: HTMLElement | null
 }
 
 type MediaCreateMode = 'image' | 'youtube' | 'hls' | null
@@ -47,7 +50,7 @@ function isValidHlsUrl(value: string) {
   }
 }
 
-export default function ContentLibraryCore({ companyId, role }: Props) {
+export default function ContentLibraryCore({ companyId, role, controlsTarget, galleryTarget }: Props) {
   const [items, setItems] = useState<ContentItem[]>([])
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({})
   const [imageTitle, setImageTitle] = useState('')
@@ -231,8 +234,8 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
     setCreateMode((current) => current === mode ? null : mode)
   }
 
-  return (
-    <section className="workspace-section">
+  const controls = (
+    <section className="workspace-section content-controls-section content-controls-media">
       <div className="section-heading">
         <div><p className="eyebrow">Mídia</p><h2>Biblioteca de conteúdo</h2></div>
         <button className="secondary-button compact" type="button" onClick={() => void loadItems()} disabled={busy}>Atualizar</button>
@@ -284,7 +287,15 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
       )}
 
       {message && <p className="form-message content-message">{message}</p>}
+    </section>
+  )
 
+  const gallery = (
+    <section className="workspace-section content-gallery-section content-gallery-media">
+      <div className="content-gallery-heading">
+        <h3>Mídias cadastradas</h3>
+        <span>{items.length}</span>
+      </div>
       <div className="content-list">
         {items.length === 0 && <p className="empty-state">Nenhum conteúdo cadastrado.</p>}
         {items.map((item) => (
@@ -306,5 +317,12 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
         ))}
       </div>
     </section>
+  )
+
+  return (
+    <>
+      {controlsTarget && createPortal(controls, controlsTarget)}
+      {galleryTarget && createPortal(gallery, galleryTarget)}
+    </>
   )
 }
