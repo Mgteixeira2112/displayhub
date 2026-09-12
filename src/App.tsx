@@ -322,13 +322,13 @@ function App() {
 
           <section className="workspace-section">
             <div className="section-heading">
-              <div><p className="eyebrow">Displays</p><h2>{displays.length} cadastrado{displays.length === 1 ? '' : 's'}</h2></div>
-              <button className="secondary-button compact" type="button" onClick={() => void loadDisplays()}>Atualizar</button>
+              <div><p className="eyebrow">Displays</p><h2>{displays.length} {displays.length === 1 ? 'tela ativa' : 'telas ativas'}</h2></div>
+              <button className="secondary-button compact" type="button" onClick={() => void loadDisplays()}>Atualizar status</button>
             </div>
 
             {message && <p className="form-message">{message}</p>}
             <div className="display-list">
-              {displays.length === 0 && <p className="empty-state">Nenhum display cadastrado.</p>}
+              {displays.length === 0 && <p className="empty-state">Nenhuma tela ativa.</p>}
               {displays.map((display) => {
                 const online = !!display.last_seen_at && Date.now() - new Date(display.last_seen_at).getTime() < 90000
                 const revoked = !!display.revoked_at || !display.is_active
