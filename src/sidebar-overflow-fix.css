@@ -1,0 +1,13 @@
+.modern-software-shell .software-sidebar,
+.modern-software-shell .software-nav {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.modern-software-shell .software-nav-item,
+.modern-software-shell .software-nav-advanced,
+.modern-software-shell .software-nav-submenu,
+.modern-software-shell .software-nav-divider {
+  max-width: 100%;
+  box-sizing: border-box;
+}
