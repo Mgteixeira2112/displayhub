@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import PromotionPosterView, { type PromotionPosterData } from './PromotionPosterView'
 
-export const DEMO_BEER_VIDEO_URL = 'https://upload.wikimedia.org/wikipedia/commons/2/2b/Jane_pouring_beer_fast.webm'
+export const DEMO_BEER_VIDEO_URL = 'https://upload.wikimedia.org/wikipedia/commons/transcoded/2/2b/Jane_pouring_beer_fast.webm/Jane_pouring_beer_fast.webm.720p.vp9.webm'
 
 export type PromotionVideoMetadata = {
   background_video_url?: string
