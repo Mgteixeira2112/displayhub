@@ -33,21 +33,12 @@ function sectorLabel(template: Template) {
   return templateTags(template).has('drinks') ? 'Bebidas' : 'Ofertas gerais'
 }
 
-function isLandscapeOnly(template: Template) {
-  return template.theme === 'animated_beer_video'
-}
-
-function effectiveOrientation(template: Template, orientation: Orientation): Orientation {
-  return isLandscapeOnly(template) ? 'landscape' : orientation
-}
-
 function orientationLabel(orientation: Orientation) {
   return orientation === 'portrait' ? 'Vertical' : 'Horizontal'
 }
 
-function samplePoster(template: Template, requestedOrientation: Orientation) {
+function samplePoster(template: Template, orientation: Orientation) {
   const drinks = templateTags(template).has('drinks')
-  const orientation = effectiveOrientation(template, requestedOrientation)
   return {
     id: `gallery:${template.key}:${orientation}`,
     template_key: template.key,
@@ -98,7 +89,7 @@ export default function PromotionTemplateGallery() {
 
   function selectTemplate(template: Template) {
     window.dispatchEvent(new CustomEvent('displayhub:use-promotion-template', {
-      detail: { key: template.key, orientation: effectiveOrientation(template, orientation) },
+      detail: { key: template.key, orientation },
     }))
   }
 
@@ -148,7 +139,6 @@ export default function PromotionTemplateGallery() {
       <div className="promotion-gallery-grid">
         {visible.map((template) => {
           const poster = samplePoster(template, orientation)
-          const locked = isLandscapeOnly(template)
           return (
             <article className="promotion-gallery-card" key={template.key}>
               <div className="promotion-gallery-card-preview">
@@ -165,7 +155,6 @@ export default function PromotionTemplateGallery() {
                 <div className="promotion-gallery-meta">
                   <span>{orientationLabel(poster.orientation)}</span>
                   <span>{typeLabel(template)}</span>
-                  {locked && <span>Somente horizontal</span>}
                 </div>
                 <div className="promotion-gallery-actions">
                   <button type="button" className="secondary-button" onClick={() => setPreview(template)}>Pré-visualizar</button>
@@ -184,8 +173,7 @@ export default function PromotionTemplateGallery() {
               <div><span>{sectorLabel(preview)} · {typeLabel(preview)}</span><strong>{preview.name}</strong></div>
               <button type="button" aria-label="Fechar pré-visualização" onClick={() => setPreview(null)}>×</button>
             </header>
-            {!isLandscapeOnly(preview) && orientationControl('promotion-gallery-modal-orientation')}
-            {isLandscapeOnly(preview) && <div className="promotion-gallery-orientation-note">Este template de vídeo permanece horizontal para preservar a reprodução já homologada.</div>}
+            {orientationControl('promotion-gallery-modal-orientation')}
             <div className="promotion-gallery-modal-preview"><PromotionPosterView poster={samplePoster(preview, orientation)} /></div>
             <footer>
               <p>{preview.description || 'Template promocional pronto para personalização.'}</p>
