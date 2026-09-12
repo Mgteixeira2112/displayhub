@@ -1,5 +1,6 @@
 import { FormEvent, PointerEvent as ReactPointerEvent, type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { DEMO_BEER_VIDEO_URL } from './PromotionVideoPoster'
 
 type Props = { companyId: string; role: string }
 type Orientation = 'portrait' | 'landscape'
@@ -8,8 +9,8 @@ type TextAlign = 'left' | 'center' | 'right'
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 type ElementLayout = { x?: number; y?: number; width?: number; height?: number; align?: TextAlign; color?: string; fontSize?: number; rotation?: number }
 type OrientationLayout = Partial<Record<ElementKey, ElementLayout>>
-type LayoutPositions = Partial<Record<Orientation, OrientationLayout>>
-type Template = { key: string; name: string; description: string | null; theme: 'hot_red' | 'burst_yellow' | 'price_blast'; aspect_ratio: 'portrait' | 'landscape' | 'square' }
+type LayoutPositions = Partial<Record<Orientation, OrientationLayout>> & { background_video_url?: string; background_overlay_opacity?: number }
+type Template = { key: string; name: string; description: string | null; theme: string; aspect_ratio: 'portrait' | 'landscape' | 'square' }
 type Poster = { id: string; template_key: string; product_name: string; price: number; unit: string | null; headline: string; footer: string | null; orientation: Orientation; layout_positions: LayoutPositions; created_at: string }
 type Interaction = {
   mode: 'drag' | 'resize'
@@ -70,6 +71,10 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
+function isHttpsUrl(value: string) {
+  try { return new URL(value).protocol === 'https:' } catch { return false }
+}
+
 function manualFontSize(key: ElementKey, orientation: Orientation, fontSize?: number) {
   if (typeof fontSize !== 'number') return undefined
   const rule = fontRules[orientation][key]
@@ -83,7 +88,7 @@ function manualFontSize(key: ElementKey, orientation: Orientation, fontSize?: nu
   return `${((previewPx / previewWidths[orientation]) * 100).toFixed(4)}cqw`
 }
 
-function templateColor(theme: Template['theme'] | undefined, key: ElementKey, orientation: Orientation) {
+function templateColor(theme: string | undefined, key: ElementKey, orientation: Orientation) {
   if (theme === 'hot_red') {
     if (key === 'headline') return '#ffffff'
     if (key === 'product' && orientation === 'landscape') return '#ffffff'
@@ -98,6 +103,7 @@ function templateColor(theme: Template['theme'] | undefined, key: ElementKey, or
     if (key === 'headline' || key === 'price') return '#d91e28'
     return '#111111'
   }
+  if (theme === 'animated_beer_video') return '#fff8e7'
   return '#111827'
 }
 
@@ -105,6 +111,11 @@ function normalizeLayoutPositions(value: unknown): LayoutPositions {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
   const source = value as Record<string, unknown>
   const result: LayoutPositions = {}
+  const rawVideoUrl = typeof source.background_video_url === 'string' ? source.background_video_url.trim() : ''
+  if (rawVideoUrl && isHttpsUrl(rawVideoUrl)) result.background_video_url = rawVideoUrl.slice(0, 2048)
+  if (typeof source.background_overlay_opacity === 'number' && Number.isFinite(source.background_overlay_opacity)) {
+    result.background_overlay_opacity = clamp(source.background_overlay_opacity, 0, 0.8)
+  }
   for (const orientation of ['portrait', 'landscape'] as Orientation[]) {
     const rawLayout = source[orientation]
     if (!rawLayout || typeof rawLayout !== 'object' || Array.isArray(rawLayout)) continue
@@ -156,6 +167,9 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
   const selectedColor = selectedElementLayout.color ?? templateColor(selectedTemplate?.theme, selectedElement, orientation)
   const selectedFontSize = selectedElementLayout.fontSize ?? designFontSizes[orientation][selectedElement]
   const selectedRotation = selectedElementLayout.rotation ?? 0
+  const isVideoTemplate = selectedTemplate?.theme === 'animated_beer_video'
+  const videoUrl = layoutPositions.background_video_url || ''
+  const videoOverlayOpacity = layoutPositions.background_overlay_opacity ?? 0.38
 
   const load = useCallback(async () => {
     const [templateResult, posterResult] = await Promise.all([
@@ -172,6 +186,32 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
 
   function resetForm() {
     setEditingId(null); setTemplateKey('oferta_quente'); setOrientation('portrait'); setProductName('ARROZ TIPO 1'); setPrice('24,90'); setUnit('5 KG'); setHeadline('OFERTA QUENTE!'); setFooter('Aproveite!'); setLayoutPositions({}); setSelectedElement('product'); setSelectionActive(false)
+  }
+
+  function changeTemplate(nextKey: string) {
+    const nextTemplate = templates.find((item) => item.key === nextKey)
+    setTemplateKey(nextKey)
+    setSelectionActive(false)
+    if (nextTemplate?.theme === 'animated_beer_video') {
+      setOrientation('landscape')
+      setLayoutPositions((current) => ({
+        ...current,
+        background_video_url: current.background_video_url || DEMO_BEER_VIDEO_URL,
+        background_overlay_opacity: current.background_overlay_opacity ?? 0.38,
+      }))
+      setHeadline((current) => current === 'OFERTA QUENTE!' ? 'PROMOÇÃO DE CERVEJA' : current)
+      setProductName((current) => current === 'ARROZ TIPO 1' ? 'LAGER GELADA' : current)
+      setPrice((current) => current === '24,90' ? '7,99' : current)
+      setUnit((current) => current === '5 KG' ? '600 ML' : current)
+      setFooter((current) => current === 'Aproveite!' ? 'SÓ NESTA SEMANA' : current)
+      return
+    }
+    setLayoutPositions((current) => {
+      const next = { ...current }
+      delete next.background_video_url
+      delete next.background_overlay_opacity
+      return next
+    })
   }
 
   function updateElementLayout(targetOrientation: Orientation, key: ElementKey, changes: Partial<ElementLayout>) {
@@ -299,9 +339,19 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
     if (!canManage) return
     const parsedPrice = moneyInput(price)
     if (parsedPrice === null || parsedPrice < 0) { setMessage('Informe um preço válido.'); return }
+    const nextLayout: LayoutPositions = { ...layoutPositions }
+    if (isVideoTemplate) {
+      const normalizedUrl = videoUrl.trim()
+      if (!isHttpsUrl(normalizedUrl)) { setMessage('Informe uma URL HTTPS válida para o vídeo de fundo.'); return }
+      nextLayout.background_video_url = normalizedUrl
+      nextLayout.background_overlay_opacity = clamp(videoOverlayOpacity, 0, 0.8)
+    } else {
+      delete nextLayout.background_video_url
+      delete nextLayout.background_overlay_opacity
+    }
     setBusy(true); setMessage('')
     try {
-      const payload = { template_key: templateKey, product_name: productName.trim(), price: parsedPrice, unit: unit.trim() || null, headline: headline.trim(), footer: footer.trim() || null, orientation, layout_positions: layoutPositions }
+      const payload = { template_key: templateKey, product_name: productName.trim(), price: parsedPrice, unit: unit.trim() || null, headline: headline.trim(), footer: footer.trim() || null, orientation, layout_positions: nextLayout }
       const result = editingId ? await supabase.from('promotion_posters').update(payload).eq('id', editingId) : await supabase.from('promotion_posters').insert({ company_id: companyId, ...payload })
       if (result.error) throw result.error
       await load(); setMessage(editingId ? 'Cartaz atualizado com sucesso.' : 'Cartaz salvo com sucesso.'); resetForm()
@@ -332,6 +382,8 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
 
   function posterPreview(theme: string, posterOrientation: Orientation, values: { product_name: string; price: number; unit: string | null; headline: string; footer: string | null }, positions: LayoutPositions = {}, editable = false) {
     const currentLayout = positions[posterOrientation] || {}
+    const previewVideoUrl = theme === 'animated_beer_video' ? positions.background_video_url : undefined
+    const previewOverlayOpacity = positions.background_overlay_opacity ?? 0.38
     const renderElement = (key: ElementKey, baseClass: string, tag: 'span' | 'strong' | 'div' | 'em', text: string) => {
       const item = currentLayout[key] || {}
       const hasPosition = typeof item.x === 'number' && typeof item.y === 'number'
@@ -362,7 +414,7 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
       return <span {...props}>{text}{handles}</span>
     }
 
-    return <div className={`promo-poster promo-${posterOrientation} promo-theme-${theme}${editable ? ' promo-editable' : ''}`} onPointerDown={editable ? () => setSelectionActive(false) : undefined}><div className="promo-poster-shape" aria-hidden="true" /><div className="promo-poster-content">{renderElement('headline', 'promo-headline', 'span', values.headline)}{renderElement('product', 'promo-product', 'strong', values.product_name)}{renderElement('price', 'promo-price', 'div', moneyLabel(values.price))}{values.unit && renderElement('unit', 'promo-unit', 'span', values.unit)}{values.footer && renderElement('footer', 'promo-footer', 'em', values.footer)}</div></div>
+    return <div className={`promo-poster promo-${posterOrientation} promo-theme-${theme}${editable ? ' promo-editable' : ''}`} onPointerDown={editable ? () => setSelectionActive(false) : undefined}>{previewVideoUrl && <video className="promo-video-background" src={previewVideoUrl} autoPlay muted loop playsInline preload="metadata" aria-hidden="true" />}{previewVideoUrl && <div className="promo-video-overlay" style={{ opacity: previewOverlayOpacity }} aria-hidden="true" />}<div className="promo-poster-shape" aria-hidden="true" /><div className="promo-poster-content">{renderElement('headline', 'promo-headline', 'span', values.headline)}{renderElement('product', 'promo-product', 'strong', values.product_name)}{renderElement('price', 'promo-price', 'div', moneyLabel(values.price))}{values.unit && renderElement('unit', 'promo-unit', 'span', values.unit)}{values.footer && renderElement('footer', 'promo-footer', 'em', values.footer)}</div>{previewVideoUrl === DEMO_BEER_VIDEO_URL && <small className="promo-video-credit">Vídeo de demonstração: Angulidayaaluta / Wikimedia Commons · CC BY-SA 4.0</small>}</div>
   }
 
   return <section className="workspace-section promotion-workspace">
@@ -371,9 +423,16 @@ export default function PromotionPosterManager({ companyId, role }: Props) {
     <div className="promotion-editor-grid">
       <form className="promotion-form" onSubmit={savePoster}>
         <h3>{editingId ? 'Editar cartaz' : 'Novo cartaz'}</h3>
-        <label>Fundo / template<select value={templateKey} onChange={(e) => setTemplateKey(e.target.value)} disabled={!canManage}>{templates.map((template) => <option value={template.key} key={template.key}>{template.name}</option>)}</select></label>
+        <label>Fundo / template<select value={templateKey} onChange={(e) => changeTemplate(e.target.value)} disabled={!canManage}>{templates.map((template) => <option value={template.key} key={template.key}>{template.name}</option>)}</select></label>
         {selectedTemplate?.description && <small className="promotion-template-help">{selectedTemplate.description}</small>}
-        <label>Orientação<select value={orientation} onChange={(e) => setOrientation(e.target.value as Orientation)} disabled={!canManage}><option value="portrait">Vertical · 1080×1920</option><option value="landscape">Horizontal · 1920×1080</option></select></label>
+        <label>Orientação<select value={orientation} onChange={(e) => setOrientation(e.target.value as Orientation)} disabled={!canManage || isVideoTemplate}><option value="portrait">Vertical · 1080×1920</option><option value="landscape">Horizontal · 1920×1080</option></select></label>
+        {isVideoTemplate && <div className="promotion-video-controls">
+          <strong>Vídeo de fundo externo</strong>
+          <label>URL pública do vídeo<input type="url" value={videoUrl} onChange={(e) => setLayoutPositions((current) => ({ ...current, background_video_url: e.target.value }))} placeholder="https://.../video.mp4" required /></label>
+          <small>O arquivo não é enviado ao Supabase. O cartaz salva somente esta URL.</small>
+          <label>Escurecimento do vídeo<div className="promotion-video-range"><input type="range" min="0" max="0.8" step="0.05" value={videoOverlayOpacity} onChange={(e) => setLayoutPositions((current) => ({ ...current, background_overlay_opacity: clamp(Number(e.target.value), 0, 0.8) }))} /><strong>{Math.round(videoOverlayOpacity * 100)}%</strong></div></label>
+          <button className="secondary-button compact" type="button" onClick={() => setLayoutPositions((current) => ({ ...current, background_video_url: DEMO_BEER_VIDEO_URL, background_overlay_opacity: current.background_overlay_opacity ?? 0.38 }))}>Usar vídeo de cerveja de demonstração</button>
+        </div>}
         <label>Chamada<input value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={60} required /></label>
         <label>Produto<input value={productName} onChange={(e) => setProductName(e.target.value)} maxLength={120} required /></label>
         <div className="inline-fields"><label>Preço<input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} required /></label><label>Unidade<input value={unit} onChange={(e) => setUnit(e.target.value)} maxLength={30} placeholder="KG, UN, 2L..." /></label></div>
