@@ -1,68 +1,74 @@
-/* Organização do módulo Conteúdo:
-   todos os controles de criação aparecem antes de qualquer galeria. */
+/* Layout estrutural do módulo Conteúdo.
+   Os controles são renderizados primeiro e as galerias depois, via slots React. */
 
 .view-library .module-library {
+  display: block;
+}
+
+.view-library .content-library-controls-stack,
+.view-library .content-library-galleries-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.view-library .content-library-galleries-stack {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.view-library .content-library-slot:empty {
+  display: none;
+}
+
+.view-library .content-controls-section,
+.view-library .content-gallery-section {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-top: 0 !important;
+}
+
+.view-library .content-controls-commercial {
+  margin-top: 2px !important;
+  padding-top: 10px !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+.view-library .content-gallery-commercial {
+  margin-top: 4px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+.view-library .content-gallery-heading {
+  min-height: 26px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
-/* As duas seções deixam de criar caixas próprias apenas nesta view.
-   Seus filhos passam a participar diretamente da coluna principal. */
-.view-library .module-library > .workspace-section {
-  display: contents !important;
+.view-library .content-gallery-heading h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: .78rem;
+  font-weight: 800;
 }
 
-/* 1) Todos os menus no início da página. */
-.view-library .module-library > .workspace-section:first-child > .section-heading {
-  order: 1 !important;
-}
-
-.view-library .module-library > .workspace-section:first-child > .content-create-toolbar {
-  order: 2 !important;
-}
-
-.view-library .module-library > .workspace-section:nth-child(2) > .section-heading {
-  order: 3 !important;
-  margin-top: 2px;
-  padding-top: 9px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.view-library .module-library > .workspace-section:nth-child(2) > .content-create-toolbar {
-  order: 4 !important;
-}
-
-/* 2) Se algum cadastro estiver aberto, ele vem depois de todos os menus. */
-.view-library .module-library > .workspace-section:first-child > .content-create-workspace {
-  order: 5 !important;
-}
-
-.view-library .module-library > .workspace-section:nth-child(2) > .content-create-workspace {
-  order: 6 !important;
-}
-
-.view-library .module-library > .workspace-section:first-child > .content-message {
-  order: 7 !important;
-}
-
-.view-library .module-library > .workspace-section:nth-child(2) > .content-message {
-  order: 8 !important;
-}
-
-/* 3) Só depois dos controles e formulários começam as galerias. */
-.view-library .module-library > .workspace-section:first-child > .content-list {
-  order: 20 !important;
-  margin-top: 5px;
-  padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.view-library .module-library > .workspace-section:nth-child(2) > .structured-list {
-  order: 21 !important;
-  margin-top: 5px;
-  padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+.view-library .content-gallery-heading span {
+  min-width: 24px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border: 1px solid #dbe3ec;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: .6rem;
+  font-weight: 750;
 }
 
 /* Biblioteca preparada para volume alto: 7 posições reais por linha no desktop. */
@@ -103,7 +109,6 @@
   font-size: .56rem;
 }
 
-/* Mantém 7 colunas em notebooks comuns; reduz apenas quando o viewport fica realmente estreito. */
 @media (max-width: 860px) {
   .view-library .content-list {
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
