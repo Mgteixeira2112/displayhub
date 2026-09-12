@@ -59,7 +59,13 @@ function resetAppScroll() {
   })
 }
 
+function keepCampaignCreatePanelVisible() {
+  const panel = document.querySelector<HTMLDetailsElement>('.view-campaigns .playlist-create-panel')
+  if (panel && !panel.open) panel.open = true
+}
+
 window.addEventListener('displayhub:navigate', resetAppScroll)
+window.addEventListener('displayhub:navigate', () => window.requestAnimationFrame(keepCampaignCreatePanelVisible))
 window.addEventListener('displayhub:use-promotion-template', resetAppScroll)
 document.addEventListener('click', (event) => {
   const target = event.target instanceof Element ? event.target : null
@@ -67,9 +73,16 @@ document.addEventListener('click', (event) => {
 })
 
 const publicToken = getPublicToken()
+const root = document.getElementById('root')!
 
-createRoot(document.getElementById('root')!).render(
+createRoot(root).render(
   <StrictMode>
     {publicToken ? <PublicPlayer token={publicToken} /> : <App />}
   </StrictMode>,
 )
+
+if (!publicToken) {
+  const observer = new MutationObserver(() => keepCampaignCreatePanelVisible())
+  observer.observe(root, { childList: true, subtree: true })
+  window.requestAnimationFrame(keepCampaignCreatePanelVisible)
+}
