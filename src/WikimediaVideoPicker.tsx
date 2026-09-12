@@ -215,7 +215,7 @@ function WikimediaVideoPicker({ container }: { container: HTMLElement }) {
     }
   }
 
-  function useVideo(item: VideoResult) {
+  function selectVideo(item: VideoResult) {
     const changed = updateReactUrlInput(container, withCommonsAttribution(item))
     setMessage(changed ? `Selecionado: ${item.fileTitle} · ${item.quality}${item.bitrate ? ` · ${item.bitrate}` : ''}` : 'Não foi possível atualizar a URL do cartaz.')
   }
@@ -263,7 +263,7 @@ function WikimediaVideoPicker({ container }: { container: HTMLElement }) {
             <small>{preview.quality}{preview.bitrate ? ` · ${preview.bitrate}` : ''}</small>
             {(preview.author || preview.license) && <small>{preview.author || 'Autor não informado'}{preview.license ? ` · ${preview.license}` : ''}</small>}
             <div className="wikimedia-picker-actions">
-              <button className="primary-button compact" type="button" onClick={() => useVideo(preview)}>Usar este vídeo</button>
+              <button className="primary-button compact" type="button" onClick={() => selectVideo(preview)}>Usar este vídeo</button>
               <a href={preview.pageUrl} target="_blank" rel="noreferrer">Abrir no Wikimedia</a>
             </div>
           </div>
@@ -281,7 +281,7 @@ function WikimediaVideoPicker({ container }: { container: HTMLElement }) {
               {(item.author || item.license) && <small>{item.author || 'Autor não informado'}{item.license ? ` · ${item.license}` : ''}</small>}
               <div className="wikimedia-picker-actions">
                 <button type="button" onClick={() => setPreviewing(item.pageId)}>Pré-visualizar</button>
-                <button className="primary-button compact" type="button" onClick={() => useVideo(item)}>Usar</button>
+                <button className="primary-button compact" type="button" onClick={() => selectVideo(item)}>Usar</button>
               </div>
               {item.licenseUrl && <a className="wikimedia-license-link" href={item.licenseUrl} target="_blank" rel="noreferrer">Ver licença</a>}
             </div>
