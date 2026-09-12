@@ -58,7 +58,7 @@ export function SeamlessPromotionVideo({ src }: { src: string }) {
     if (!current || !next) return
 
     const remaining = Number.isFinite(current.duration) ? current.duration - current.currentTime : Number.POSITIVE_INFINITY
-    if (!force && remaining > 0.9) return
+    if (!force && remaining > 0.55) return
 
     const activateNext = () => {
       if (switchingRef.current) return
@@ -73,7 +73,7 @@ export function SeamlessPromotionVideo({ src }: { src: string }) {
           try { current.currentTime = 0 } catch { /* no-op */ }
           switchingRef.current = false
           cleanupTimerRef.current = null
-        }, 420)
+        }, 340)
       }).catch(() => {
         switchingRef.current = false
       })
