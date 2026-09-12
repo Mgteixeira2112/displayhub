@@ -21,7 +21,7 @@ export function readPromotionVideoMetadata(layoutPositions: unknown): PromotionV
   }
 }
 
-function SeamlessPromotionVideo({ src }: { src: string }) {
+export function SeamlessPromotionVideo({ src }: { src: string }) {
   const firstRef = useRef<HTMLVideoElement | null>(null)
   const secondRef = useRef<HTMLVideoElement | null>(null)
   const activeRef = useRef<0 | 1>(0)
@@ -63,7 +63,7 @@ function SeamlessPromotionVideo({ src }: { src: string }) {
     const activateNext = () => {
       if (switchingRef.current) return
       switchingRef.current = true
-      try { next.currentTime = 0 } catch { /* media metadata may still be loading */ }
+      try { next.currentTime = 0 } catch { /* metadata may still be loading */ }
       void next.play().then(() => {
         const nextIndex: 0 | 1 = index === 0 ? 1 : 0
         activeRef.current = nextIndex
