@@ -44,6 +44,7 @@ import './campaigns-create-panel-compact.css'
 import './campaigns-playlist-cards-compact.css'
 import './campaigns-playlist-cards-expandable.css'
 import './campaigns-playlist-scheduling-inline.css'
+import './campaigns-playlist-add-content-inline.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
@@ -69,6 +70,38 @@ function keepCampaignCreatePanelVisible() {
 
 function getCampaignPlaylistName(card: HTMLElement) {
   return card.querySelector<HTMLElement>('.playlist-card-head strong')?.textContent?.trim() || ''
+}
+
+function getCampaignAddContentForm(workspace: HTMLElement) {
+  return workspace.querySelector<HTMLFormElement>('.campaign-inline-add-content')
+    || workspace.querySelector<HTMLFormElement>('.playlist-create-panel .playlist-create-grid > form.content-form:nth-of-type(2)')
+}
+
+function attachCampaignAddContent(card: HTMLElement) {
+  const workspace = card.closest<HTMLElement>('.playlist-workspace')
+  if (!workspace) return
+
+  const addContentForm = getCampaignAddContentForm(workspace)
+  if (!addContentForm) return
+
+  addContentForm.classList.add('campaign-inline-add-content')
+  const heading = addContentForm.querySelector<HTMLElement>('h3')
+  if (heading) heading.textContent = 'Adicionar conteúdo'
+
+  const playlistName = getCampaignPlaylistName(card)
+  const playlistSelect = addContentForm.querySelector<HTMLSelectElement>('label:first-of-type select')
+  if (playlistSelect && playlistName) {
+    const matchingOption = Array.from(playlistSelect.options).find((option) => option.textContent?.trim() === playlistName)
+    if (matchingOption && playlistSelect.value !== matchingOption.value) {
+      playlistSelect.value = matchingOption.value
+      playlistSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+  }
+
+  const playlistItems = card.querySelector<HTMLElement>('.playlist-items')
+  if (playlistItems && addContentForm.parentElement !== card) {
+    playlistItems.insertAdjacentElement('afterend', addContentForm)
+  }
 }
 
 function getCampaignPublicationCards(card: HTMLElement, publicationList: HTMLElement) {
@@ -189,7 +222,10 @@ function setCampaignPlaylistExpanded(card: HTMLElement, expanded: boolean) {
   const head = card.querySelector<HTMLElement>('.playlist-card-head')
   head?.setAttribute('aria-expanded', expanded ? 'true' : 'false')
 
-  if (expanded) attachCampaignScheduling(card)
+  if (expanded) {
+    attachCampaignAddContent(card)
+    attachCampaignScheduling(card)
+  }
 }
 
 function toggleCampaignPlaylistFromTarget(target: Element) {
