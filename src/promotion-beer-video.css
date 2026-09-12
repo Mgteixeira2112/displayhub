@@ -1,6 +1,21 @@
 /* Template experimental com vídeo externo real no fundo.
    O vídeo fica fora do Supabase; somente a URL é persistida no JSONB do cartaz. */
 
+.promotion-video-controls {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--dh-border);
+  border-radius: 14px;
+  background: rgba(245,158,11,.08);
+}
+
+.promotion-video-controls > strong { font-size: .86rem; }
+.promotion-video-controls > small { color: var(--dh-muted); line-height: 1.4; }
+.promotion-video-range { display: grid; grid-template-columns: 1fr 54px; gap: 10px; align-items: center; }
+.promotion-video-range input[type='range'] { width: 100%; }
+.promotion-video-range strong { text-align: right; font-size: .82rem; }
+
 .promo-theme-animated_beer_video {
   color: #fff8e7;
   background: linear-gradient(128deg, #160801 0%, #4f1b01 38%, #a34d07 72%, #1d0b02 100%);
