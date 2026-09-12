@@ -1,0 +1,126 @@
+/* Formulário inferior do Criar: densidade maior no desktop sem alterar a lógica. */
+
+@media (min-width: 1101px) {
+  .promotion-workspace .promotion-form {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 6px 8px !important;
+    padding: 8px !important;
+    border-radius: 12px;
+  }
+
+  .promotion-workspace .promotion-form > label,
+  .promotion-workspace .promotion-form > .inline-fields,
+  .promotion-workspace .promotion-video-controls,
+  .promotion-workspace .promotion-actions {
+    margin: 0;
+  }
+
+  .promotion-workspace .promotion-form > label {
+    gap: 2px;
+    font-size: .625rem;
+    line-height: 1.25;
+  }
+
+  .promotion-workspace .promotion-form > label:nth-of-type(1) {
+    grid-column: span 3;
+    order: 1;
+  }
+
+  .promotion-workspace .promotion-form > label:nth-of-type(2) {
+    grid-column: span 2;
+    order: 1;
+  }
+
+  .promotion-workspace .promotion-form > label:nth-of-type(3) {
+    grid-column: span 3;
+    order: 1;
+  }
+
+  .promotion-workspace .promotion-form > label:nth-of-type(4) {
+    grid-column: span 4;
+    order: 1;
+  }
+
+  .promotion-workspace .promotion-form > .inline-fields {
+    grid-column: span 4;
+    order: 2;
+    gap: 6px;
+  }
+
+  .promotion-workspace .promotion-form > .inline-fields > label {
+    gap: 2px;
+    font-size: .625rem;
+    line-height: 1.25;
+  }
+
+  .promotion-workspace .promotion-form > label:nth-of-type(5) {
+    grid-column: span 8;
+    order: 2;
+  }
+
+  .promotion-workspace .promotion-form input,
+  .promotion-workspace .promotion-form select {
+    min-height: 30px;
+    height: 30px;
+    padding: 4px 8px;
+    border-radius: 7px;
+    font-size: .71875rem;
+    line-height: 1.2;
+  }
+
+  .promotion-workspace .promotion-video-controls {
+    grid-column: 1 / -1;
+    order: 3;
+    grid-template-columns: minmax(0, 2.4fr) minmax(190px, .8fr) auto;
+    gap: 6px;
+    align-items: end;
+    padding: 6px 8px;
+    border-radius: 8px;
+  }
+
+  .promotion-workspace .promotion-video-controls > label {
+    gap: 2px;
+    font-size: .625rem;
+    line-height: 1.25;
+  }
+
+  .promotion-workspace .promotion-video-controls > .secondary-button {
+    min-height: 30px;
+    height: 30px;
+    padding: 4px 8px;
+    border-radius: 7px;
+    font-size: .65625rem;
+    white-space: nowrap;
+  }
+
+  .promotion-workspace .promotion-video-range {
+    gap: 5px;
+    min-height: 30px;
+    align-items: center;
+  }
+
+  .promotion-workspace .promotion-video-range input[type='range'] {
+    min-height: 0;
+    height: auto;
+  }
+
+  .promotion-workspace .promotion-actions {
+    grid-column: 1 / -1;
+    order: 4;
+    gap: 5px;
+    min-height: 0;
+  }
+
+  .promotion-workspace .promotion-actions .primary-button,
+  .promotion-workspace .promotion-actions .secondary-button {
+    min-height: 30px;
+    height: 30px;
+    padding: 4px 9px;
+    border-radius: 7px;
+    font-size: .6875rem;
+  }
+
+  .promotion-workspace .promotion-actions .primary-button {
+    min-width: 108px;
+  }
+}
