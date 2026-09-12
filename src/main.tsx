@@ -36,6 +36,7 @@ import './promotion-creator-toolbar-compact.css'
 import './promotion-creator-form-dense.css'
 import './promotion-creator-hide-demo-button.css'
 import './promotion-creator-inline-actions.css'
+import './promotion-creator-saved-cards.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
