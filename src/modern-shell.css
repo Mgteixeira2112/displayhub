@@ -1,0 +1,352 @@
+.modern-software-shell {
+  --dh-primary: #2563eb;
+  --dh-primary-strong: #1d4ed8;
+  --dh-text: #172033;
+  --dh-muted: #69768a;
+  --dh-border: #e5eaf1;
+  --dh-surface: #ffffff;
+  --dh-bg: #f6f8fb;
+  grid-template-columns: 272px minmax(0, 1fr);
+  background: var(--dh-bg);
+}
+
+.modern-software-shell .software-sidebar {
+  padding: 20px 16px 18px;
+  background: #0d1525;
+  border-right: 0;
+  box-shadow: 8px 0 30px rgba(15, 23, 42, .06);
+}
+
+.modern-software-shell .software-brand {
+  gap: 12px;
+  padding: 2px 8px 25px;
+}
+
+.modern-software-shell .software-brand .brand-mark {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #3b82f6, #2563eb 58%, #1d4ed8);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, .28);
+  font-size: .82rem;
+  font-weight: 850;
+  letter-spacing: -.02em;
+}
+
+.modern-software-shell .software-brand strong {
+  color: #f8fafc;
+  font-size: 1.02rem;
+  letter-spacing: -.02em;
+}
+
+.modern-software-shell .software-brand span {
+  color: #7f8ca1;
+  font-size: .69rem;
+}
+
+.modern-software-shell .software-nav {
+  display: grid;
+  gap: 3px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #263247 transparent;
+}
+
+.modern-software-shell .software-nav-group {
+  margin: 8px 12px 7px;
+  color: #66748b;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
+.modern-software-shell .software-nav-item {
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  padding: 9px 11px;
+  background: transparent;
+  color: #a3afc2;
+  font-size: .84rem;
+  font-weight: 650;
+  line-height: 1.15;
+  transition: background-color .16s ease, color .16s ease, border-color .16s ease, transform .16s ease;
+}
+
+.modern-software-shell .software-nav-item:hover {
+  background: rgba(255, 255, 255, .055);
+  border-color: rgba(255, 255, 255, .035);
+  color: #f8fafc;
+  transform: translateX(1px);
+}
+
+.modern-software-shell .software-nav-item.active {
+  background: rgba(37, 99, 235, .17);
+  border-color: rgba(96, 165, 250, .16);
+  color: #dbeafe;
+  box-shadow: none;
+}
+
+.modern-software-shell .software-nav-item.active::before { display: none; }
+
+.modern-software-shell .software-nav-icon {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  opacity: .9;
+}
+
+.modern-software-shell .software-nav-item.active .software-nav-icon { color: #60a5fa; }
+
+.modern-software-shell .software-nav-advanced {
+  margin-top: 3px;
+}
+
+.modern-software-shell .software-nav-advanced-toggle {
+  position: relative;
+}
+
+.modern-software-shell .software-nav-advanced-toggle.active-parent {
+  color: #e2e8f0;
+}
+
+.modern-software-shell .software-nav-chevron {
+  margin-left: auto;
+  color: #65738a;
+  font-size: 1rem;
+  transform: rotate(-90deg);
+  transition: transform .16s ease;
+}
+
+.modern-software-shell .software-nav-advanced.open .software-nav-chevron { transform: rotate(0); }
+
+.modern-software-shell .software-nav-submenu {
+  display: none;
+  gap: 2px;
+  margin: 4px 0 3px 14px;
+  padding-left: 11px;
+  border-left: 1px solid #263247;
+}
+
+.modern-software-shell .software-nav-advanced.open .software-nav-submenu { display: grid; }
+
+.modern-software-shell .software-nav-item.nested {
+  min-height: 37px;
+  padding: 7px 9px;
+  font-size: .77rem;
+}
+
+.modern-software-shell .software-nav-item.nested .software-nav-icon {
+  width: 16px;
+  height: 16px;
+  flex-basis: 16px;
+}
+
+.modern-software-shell .software-nav-divider {
+  height: 1px;
+  margin: 10px 8px 7px;
+  background: #222e41;
+}
+
+.modern-software-shell .software-sidebar-footer {
+  gap: 11px;
+  margin-top: auto;
+  padding: 15px 8px 0;
+  border-top: 1px solid #222e41;
+}
+
+.modern-software-shell .software-company-summary,
+.modern-software-shell .software-user {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.modern-software-shell .software-company-summary span {
+  color: #65738a;
+  font-size: .61rem;
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.modern-software-shell .software-company-summary strong,
+.modern-software-shell .software-user strong {
+  overflow: hidden;
+  color: #dbe3ef;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .79rem;
+}
+
+.modern-software-shell .software-user span {
+  color: #718097;
+  font-size: .69rem;
+}
+
+.modern-software-shell .software-signout {
+  width: fit-content;
+  padding: 7px 10px;
+  border: 1px solid #2b374b;
+  border-radius: 8px;
+  background: transparent;
+  color: #8795aa;
+  font-size: .71rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.modern-software-shell .software-signout:hover {
+  border-color: #3b485d;
+  color: #dbe3ef;
+}
+
+.modern-software-shell .software-main {
+  min-width: 0;
+  background: #f6f8fb;
+}
+
+.modern-software-shell .software-topbar {
+  height: 86px;
+  padding: 0 36px;
+  background: rgba(255, 255, 255, .94);
+  border-bottom: 1px solid #e9edf3;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, .015);
+}
+
+.modern-software-shell .software-topbar-copy {
+  gap: 1px;
+}
+
+.modern-software-shell .software-page-kicker {
+  color: #9aa5b5;
+  font-size: .59rem;
+  font-weight: 850;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.modern-software-shell .software-topbar-copy strong {
+  color: #172033;
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: -.025em;
+}
+
+.modern-software-shell .software-topbar-copy p {
+  margin-top: 2px;
+  color: #778397;
+  font-size: .72rem;
+}
+
+.modern-software-shell .software-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modern-software-shell .software-company-pill {
+  max-width: 230px;
+  overflow: hidden;
+  padding: 8px 11px;
+  border: 1px solid #e4e9f0;
+  border-radius: 10px;
+  background: #fafbfc;
+  color: #69768a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .73rem;
+  font-weight: 650;
+}
+
+.modern-software-shell .software-topbar-create {
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 14px;
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(37, 99, 235, .16);
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+.modern-software-shell .software-topbar-create:hover { background: #1d4ed8; }
+
+.modern-software-shell .software-content {
+  max-width: 1540px;
+  margin: 0 auto;
+  padding: 32px 36px 58px;
+}
+
+.modern-software-shell .account-grid article,
+.modern-software-shell .display-card,
+.modern-software-shell .content-card,
+.modern-software-shell .content-form,
+.modern-software-shell .structured-card,
+.modern-software-shell .template-card,
+.modern-software-shell .playlist-card,
+.modern-software-shell .monitor-card,
+.modern-software-shell .history-list article {
+  border-radius: 15px;
+  border-color: #e4e9f0;
+  box-shadow: 0 5px 18px rgba(20, 32, 51, .045);
+}
+
+.modern-software-shell .primary-button {
+  border-radius: 10px;
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, .12);
+}
+
+.modern-software-shell .secondary-button { border-radius: 10px; }
+
+.view-campaigns .module-playlists {
+  display: block;
+  animation: module-in .16s ease-out;
+}
+
+@media (max-width: 1000px) {
+  .modern-software-shell { grid-template-columns: 230px minmax(0, 1fr); }
+  .modern-software-shell .software-sidebar { padding-inline: 12px; }
+  .modern-software-shell .software-brand { padding-inline: 7px; }
+  .modern-software-shell .software-brand > div:last-child,
+  .modern-software-shell .software-nav-group,
+  .modern-software-shell .software-nav-item:not(.active),
+  .modern-software-shell .software-user { display: grid; }
+  .modern-software-shell .software-nav-item { display: flex; }
+  .modern-software-shell .software-topbar { padding-inline: 24px; }
+  .modern-software-shell .software-content { padding-inline: 24px; }
+}
+
+@media (max-width: 720px) {
+  .modern-software-shell { display: block; }
+  .modern-software-shell .software-sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 12px 14px;
+    flex-direction: row;
+    align-items: center;
+  }
+  .modern-software-shell .software-brand { padding: 0; }
+  .modern-software-shell .software-brand > div:last-child { display: grid; }
+  .modern-software-shell .software-nav { display: none; }
+  .modern-software-shell .software-sidebar-footer { margin: 0 0 0 auto; padding: 0; border: 0; }
+  .modern-software-shell .software-company-summary,
+  .modern-software-shell .software-user { display: none; }
+  .modern-software-shell .software-topbar { height: 76px; padding-inline: 16px; }
+  .modern-software-shell .software-company-pill { display: none; }
+  .modern-software-shell .software-content { padding: 22px 16px 42px; }
+}
+
+@media (max-width: 500px) {
+  .modern-software-shell .software-topbar-copy p { display: none; }
+  .modern-software-shell .software-topbar-create { padding-inline: 10px; }
+}
