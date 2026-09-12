@@ -1,24 +1,11 @@
-/* Refinamento do cadastro de display: resolução tratada como um único grupo visual. */
+/* Refinamento do cadastro de display: formulário sempre visível e resolução tratada como um único grupo visual. */
 
 .view-displays .create-panel-display > summary {
-  position: relative;
-  font-size: 0;
+  display: none !important;
 }
 
-.view-displays .create-panel-display > summary::marker {
-  content: '';
-}
-
-.view-displays .create-panel-display > summary::after {
-  content: 'Novo display';
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #1d4ed8;
-  font-size: .75rem;
-  font-weight: 750;
-  line-height: 1;
-  pointer-events: none;
+.view-displays .create-panel-display:not([open]) > .display-form {
+  display: grid !important;
 }
 
 .view-displays .display-form {
