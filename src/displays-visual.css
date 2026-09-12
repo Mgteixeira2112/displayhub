@@ -1,4 +1,4 @@
-/* Fundação visual da view Telas. Mantém a estrutura funcional existente. */
+/* Visual consolidado da view Telas. Mantém a estrutura funcional existente. */
 
 .view-displays .software-content {
   padding-top: 18px;
@@ -11,9 +11,10 @@
 }
 
 .view-displays .software-dashboard-panel > .workspace-section + .workspace-section {
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
+/* Cadastro sempre visível */
 .view-displays .create-panel-display {
   margin: 0;
   overflow: hidden;
@@ -23,53 +24,13 @@
   box-shadow: 0 4px 14px rgba(15, 23, 42, .04);
 }
 
-.view-displays .create-panel-display > summary {
-  min-height: 38px;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  color: #1d4ed8;
-  font-size: .75rem;
-  font-weight: 750;
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-}
-
-.view-displays .create-panel-display > summary::-webkit-details-marker {
-  display: none;
-}
-
-.view-displays .create-panel-display > summary::before {
-  content: '+';
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  margin-right: 7px;
-  border-radius: 7px;
-  background: #eff6ff;
-  color: #2563eb;
-  font-size: .92rem;
-  line-height: 1;
-}
-
-.view-displays .create-panel-display[open] > summary {
-  border-bottom: 1px solid #edf1f5;
-  background: #fbfdff;
-}
-
-.view-displays .create-panel-display[open] > summary::before {
-  content: '−';
-}
-
 .view-displays .display-form {
   display: grid;
-  grid-template-columns: minmax(130px, 1.05fr) minmax(140px, 1.1fr) minmax(145px, 1fr) minmax(105px, .72fr) minmax(72px, .52fr) minmax(72px, .52fr) 104px;
+  grid-template-columns: minmax(150px, 1.2fr) minmax(150px, 1.2fr) minmax(150px, 1fr) minmax(110px, .72fr) 80px 80px 104px;
   align-items: end;
   gap: 6px;
   margin: 0;
-  padding: 8px 9px;
+  padding: 10px 12px;
 }
 
 .view-displays .display-form label {
@@ -106,10 +67,11 @@
   width: 100%;
   min-height: 30px;
   height: 30px;
+  margin-top: 0;
   padding-inline: 8px;
   border-radius: 8px;
-  background: #2563eb;
   border-color: #2563eb;
+  background: #2563eb;
   color: #ffffff;
   font-size: .68rem;
   font-weight: 750;
@@ -117,13 +79,76 @@
 }
 
 .view-displays .display-form .primary-button:hover:not(:disabled) {
-  background: #1d4ed8;
   border-color: #1d4ed8;
+  background: #1d4ed8;
 }
 
+/* Resolução tratada como um único grupo visual no desktop */
+.view-displays .display-form > label:nth-of-type(5),
+.view-displays .display-form > label:nth-of-type(6) {
+  position: relative;
+  font-size: 0;
+}
+
+.view-displays .display-form > label:nth-of-type(5) {
+  padding-right: 4px;
+}
+
+.view-displays .display-form > label:nth-of-type(6) {
+  padding-left: 4px;
+}
+
+.view-displays .display-form > label:nth-of-type(5)::before,
+.view-displays .display-form > label:nth-of-type(6)::before {
+  display: block;
+  min-height: .78rem;
+  color: #475569;
+  font-size: .64rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.view-displays .display-form > label:nth-of-type(5)::before {
+  content: 'Resolução';
+}
+
+.view-displays .display-form > label:nth-of-type(6)::before {
+  content: '\00a0';
+}
+
+.view-displays .display-form > label:nth-of-type(5)::after {
+  content: '×';
+  position: absolute;
+  right: -7px;
+  bottom: 8px;
+  z-index: 2;
+  color: #94a3b8;
+  font-size: .68rem;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.view-displays .display-form > label:nth-of-type(5) input,
+.view-displays .display-form > label:nth-of-type(6) input {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.view-displays .display-form > label:nth-of-type(5) input {
+  border-radius: 8px 5px 5px 8px;
+}
+
+.view-displays .display-form > label:nth-of-type(6) input {
+  border-radius: 5px 8px 8px 5px;
+}
+
+/* Barra da lista */
 .view-displays .workspace-section > .section-heading {
-  min-height: 32px;
+  min-height: 30px;
+  align-items: center;
   gap: 10px;
+  margin-bottom: 8px;
   padding: 0 2px;
 }
 
@@ -140,25 +165,26 @@
 }
 
 .view-displays .workspace-section > .section-heading .secondary-button {
-  min-height: 30px;
-  height: 30px;
+  min-height: 28px;
+  height: 28px;
+  margin: 0;
   padding: 0 10px;
   border: 1px solid #dbe3ec;
   border-radius: 8px;
   background: #f8fafc;
   color: #475569;
-  font-size: .66rem;
+  font-size: .65rem;
   font-weight: 700;
   box-shadow: none;
 }
 
 .view-displays .workspace-section > .section-heading .secondary-button:hover {
-  background: #f1f5f9;
   border-color: #cbd5e1;
+  background: #f1f5f9;
 }
 
 .view-displays .form-message {
-  margin: 8px 0 0;
+  margin: 0 0 8px;
   padding: 8px 10px;
   border: 1px solid #dbeafe;
   border-radius: 9px;
@@ -167,11 +193,12 @@
   font-size: .7rem;
 }
 
+/* Cards operacionais */
 .view-displays .display-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
   gap: 10px;
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 .view-displays .display-card {
@@ -180,18 +207,18 @@
   align-content: start;
   gap: 6px 8px;
   min-width: 0;
+  min-height: 128px;
   padding: 11px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #ffffff;
   box-shadow: 0 3px 12px rgba(15, 23, 42, .035);
-  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+  transition: border-color .16s ease, box-shadow .16s ease;
 }
 
 .view-displays .display-card:hover {
   border-color: #cbd5e1;
   box-shadow: 0 6px 18px rgba(15, 23, 42, .055);
-  transform: translateY(-1px);
 }
 
 .view-displays .display-card > div:first-child,
@@ -239,6 +266,7 @@
 
 .view-displays .display-status {
   width: fit-content;
+  max-width: 100%;
   margin: 1px 0 2px;
   padding: 4px 7px;
   border: 1px solid #e2e8f0;
@@ -247,6 +275,7 @@
   color: #64748b;
   font-size: .62rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   line-height: 1.2;
 }
 
@@ -276,6 +305,7 @@
   align-items: center;
   justify-content: center;
   align-self: end;
+  margin-top: 2px;
   padding: 0 10px;
   border-radius: 8px;
   font-size: .65rem;
@@ -324,6 +354,25 @@
 @media (max-width: 1080px) {
   .view-displays .display-form {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .view-displays .display-form > label:nth-of-type(5),
+  .view-displays .display-form > label:nth-of-type(6) {
+    padding-inline: 0;
+    font-size: .64rem;
+  }
+
+  .view-displays .display-form > label:nth-of-type(5)::before,
+  .view-displays .display-form > label:nth-of-type(6)::before,
+  .view-displays .display-form > label:nth-of-type(5)::after {
+    display: none;
+  }
+
+  .view-displays .display-form > label:nth-of-type(5) input,
+  .view-displays .display-form > label:nth-of-type(6) input {
+    border-radius: 8px;
+    text-align: left;
   }
 
   .view-displays .display-form .primary-button {
@@ -349,6 +398,7 @@
 
   .view-displays .display-card {
     grid-template-columns: 1fr;
+    min-height: 0;
   }
 
   .view-displays .display-card > div:first-child,
