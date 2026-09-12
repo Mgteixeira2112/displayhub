@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import DisplayGroupsManager from './DisplayGroupsManager'
 
-type View = 'overview' | 'displays' | 'groups' | 'library' | 'posters' | 'campaigns' | 'playlists' | 'schedule' | 'templates' | 'history' | 'settings'
+type View = 'overview' | 'displays' | 'groups' | 'library' | 'posters' | 'campaigns' | 'playlists' | 'schedule' | 'templates' | 'technical-templates' | 'history' | 'settings'
 type IconName = 'home' | 'create' | 'campaigns' | 'gallery' | 'screens' | 'content' | 'advanced' | 'wall' | 'playlists' | 'schedule' | 'history' | 'settings'
 
 type Props = {
@@ -23,6 +23,7 @@ const labels: Record<View, string> = {
   playlists: 'Playlists avançadas',
   schedule: 'Programação avançada',
   templates: 'Galeria',
+  'technical-templates': 'Templates técnicos',
   history: 'Histórico técnico',
   settings: 'Configurações',
 }
@@ -36,13 +37,14 @@ const descriptions: Record<View, string> = {
   campaigns: 'Organize sequências de conteúdo e campanhas em exibição',
   playlists: 'Controle técnico das sequências de conteúdo do player',
   schedule: 'Defina regras avançadas de onde e quando o conteúdo será exibido',
-  templates: 'Escolha e gerencie modelos para suas campanhas',
+  templates: 'Escolha modelos promocionais prontos para campanhas de supermercado',
+  'technical-templates': 'Gerencie modelos técnicos usados na apresentação dos itens das playlists',
   history: 'Consulte eventos e alterações registradas na operação',
   settings: 'Dados da conta, acesso e preferências do sistema',
 }
 
-const advancedViews: View[] = ['groups', 'playlists', 'schedule', 'history']
-const allViews = new Set<View>(['overview', 'displays', 'groups', 'library', 'posters', 'campaigns', 'playlists', 'schedule', 'templates', 'history', 'settings'])
+const advancedViews: View[] = ['groups', 'playlists', 'schedule', 'technical-templates', 'history']
+const allViews = new Set<View>(['overview', 'displays', 'groups', 'library', 'posters', 'campaigns', 'playlists', 'schedule', 'templates', 'technical-templates', 'history', 'settings'])
 
 function NavIcon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
@@ -63,6 +65,17 @@ function NavIcon({ name }: { name: IconName }) {
   return <svg className="software-nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
 }
 
+function selectPromotionTemplate(key: string) {
+  window.setTimeout(() => {
+    const selects = Array.from(document.querySelectorAll<HTMLSelectElement>('.promotion-workspace select'))
+    const select = selects.find((candidate) => Array.from(candidate.options).some((option) => option.value === key))
+    if (!select) return
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
+    setter?.call(select, key)
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+  }, 0)
+}
+
 export default function AppLayout({ companyName, userName, roleLabel, busy, onSignOut, children }: Props) {
   const [view, setView] = useState<View>('overview')
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -75,8 +88,17 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
       setView(target)
       if (advancedViews.includes(target)) setAdvancedOpen(true)
     }
+    const handleUseTemplate = (event: Event) => {
+      const key = (event as CustomEvent<{ key?: string }>).detail?.key
+      setView('posters')
+      if (key) selectPromotionTemplate(key)
+    }
     window.addEventListener('displayhub:navigate', handleNavigate)
-    return () => window.removeEventListener('displayhub:navigate', handleNavigate)
+    window.addEventListener('displayhub:use-promotion-template', handleUseTemplate)
+    return () => {
+      window.removeEventListener('displayhub:navigate', handleNavigate)
+      window.removeEventListener('displayhub:use-promotion-template', handleUseTemplate)
+    }
   }, [])
 
   const nav = (target: View, label: string, icon: IconName, nested = false) => (
@@ -126,6 +148,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
               {nav('groups', 'Video Wall e Grupos', 'wall', true)}
               {nav('playlists', 'Playlists', 'playlists', true)}
               {nav('schedule', 'Programação', 'schedule', true)}
+              {nav('technical-templates', 'Templates técnicos', 'gallery', true)}
               {nav('history', 'Histórico técnico', 'history', true)}
             </div>
           </div>
