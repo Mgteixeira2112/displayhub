@@ -73,22 +73,37 @@ function setNativeSelectValue(select: HTMLSelectElement, value: string) {
 }
 
 function selectPromotionTemplate(key: string, orientation?: PromotionOrientation) {
-  window.setTimeout(() => {
+  const tryApply = (attemptsLeft: number) => {
     const selects = Array.from(document.querySelectorAll<HTMLSelectElement>('.promotion-workspace select'))
     const templateSelect = selects.find((candidate) => Array.from(candidate.options).some((option) => option.value === key))
-    if (!templateSelect) return
-    setNativeSelectValue(templateSelect, key)
 
+    if (!templateSelect) {
+      if (attemptsLeft > 0) window.setTimeout(() => tryApply(attemptsLeft - 1), 100)
+      return
+    }
+
+    setNativeSelectValue(templateSelect, key)
     if (!orientation) return
-    window.setTimeout(() => {
+
+    const applyOrientation = (orientationAttemptsLeft: number) => {
       const currentSelects = Array.from(document.querySelectorAll<HTMLSelectElement>('.promotion-workspace select'))
       const orientationSelect = currentSelects.find((candidate) => {
         const values = new Set(Array.from(candidate.options).map((option) => option.value))
         return values.has('portrait') && values.has('landscape')
       })
-      if (orientationSelect) setNativeSelectValue(orientationSelect, orientation)
-    }, 0)
-  }, 0)
+
+      if (!orientationSelect) {
+        if (orientationAttemptsLeft > 0) window.setTimeout(() => applyOrientation(orientationAttemptsLeft - 1), 100)
+        return
+      }
+
+      setNativeSelectValue(orientationSelect, orientation)
+    }
+
+    window.setTimeout(() => applyOrientation(20), 0)
+  }
+
+  window.setTimeout(() => tryApply(40), 0)
 }
 
 export default function AppLayout({ companyName, userName, roleLabel, busy, onSignOut, children }: Props) {
