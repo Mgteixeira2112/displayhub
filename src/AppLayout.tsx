@@ -30,7 +30,7 @@ const labels: Record<View, string> = {
 const descriptions: Record<View, string> = {
   overview: 'Acompanhe a operação e acesse rapidamente o que precisa de atenção',
   displays: 'Gerencie as TVs, setores, links públicos e disponibilidade',
-  groups: 'Configure Video Wall, grupos, grades e posições de telas',
+  groups: 'Organize grupos, grades e Video Walls',
   library: 'Organize imagens, vídeos e outros conteúdos da operação',
   posters: 'Crie ofertas e peças promocionais a partir dos modelos disponíveis',
   campaigns: 'Organize sequências de conteúdo e campanhas em exibição',
@@ -150,7 +150,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           </div>
           <div className="software-topbar-actions">
             <span className="software-company-pill">{companyName}</span>
-            <button className="software-topbar-create" type="button" onClick={() => setView('posters')}>+ Criar</button>
+            {view !== 'groups' && <button className="software-topbar-create" type="button" onClick={() => setView('posters')}>+ Criar</button>}
           </div>
         </header>
         <main key={view} className="software-content">{view === 'groups' ? <DisplayGroupsManager /> : children}</main>
