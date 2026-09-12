@@ -20,6 +20,8 @@ type Props = {
   role: string
 }
 
+type MediaCreateMode = 'image' | 'youtube' | 'hls' | null
+
 const allowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 function extractYouTubeId(value: string) {
@@ -59,6 +61,7 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
   const [hlsUrl, setHlsUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [createMode, setCreateMode] = useState<MediaCreateMode>(null)
   const canManage = role === 'admin' || role === 'manager'
 
   const loadItems = useCallback(async () => {
@@ -128,6 +131,7 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
       const input = document.getElementById('content-image-file') as HTMLInputElement | null
       if (input) input.value = ''
       await loadItems()
+      setCreateMode(null)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Não foi possível enviar a imagem.')
     } finally {
@@ -161,6 +165,7 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
       setVideoCategory('')
       setVideoUrl('')
       await loadItems()
+      setCreateMode(null)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Não foi possível cadastrar o vídeo.')
     } finally {
@@ -193,6 +198,7 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
       setHlsCategory('')
       setHlsUrl('')
       await loadItems()
+      setCreateMode(null)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Não foi possível cadastrar o HLS.')
     } finally {
@@ -220,6 +226,11 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
     }
   }
 
+  function toggleCreateMode(mode: Exclude<MediaCreateMode, null>) {
+    setMessage('')
+    setCreateMode((current) => current === mode ? null : mode)
+  }
+
   return (
     <section className="workspace-section">
       <div className="section-heading">
@@ -228,41 +239,48 @@ export default function ContentLibraryCore({ companyId, role }: Props) {
       </div>
 
       {canManage && (
-        <div className="create-actions-grid">
-          <details className="create-panel">
-            <summary>+ Nova imagem</summary>
-            <form className="content-form" onSubmit={uploadImage}>
-              <h3>Enviar imagem</h3>
-              <label>Título<input value={imageTitle} onChange={(event) => setImageTitle(event.target.value)} required minLength={2} placeholder="Promoção de verão" /></label>
-              <label>Categoria<input value={imageCategory} onChange={(event) => setImageCategory(event.target.value)} placeholder="Promoções" /></label>
-              <label>Arquivo<input id="content-image-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImageFile(event.target.files?.[0] || null)} required /></label>
-              <button className="primary-button" type="submit" disabled={busy}>Enviar imagem</button>
-            </form>
-          </details>
+        <>
+          <div className="content-create-toolbar" role="group" aria-label="Adicionar mídia">
+            <button className={`content-create-choice${createMode === 'image' ? ' active' : ''}`} type="button" aria-pressed={createMode === 'image'} onClick={() => toggleCreateMode('image')}>+ Imagem</button>
+            <button className={`content-create-choice${createMode === 'youtube' ? ' active' : ''}`} type="button" aria-pressed={createMode === 'youtube'} onClick={() => toggleCreateMode('youtube')}>+ YouTube</button>
+            <button className={`content-create-choice${createMode === 'hls' ? ' active' : ''}`} type="button" aria-pressed={createMode === 'hls'} onClick={() => toggleCreateMode('hls')}>+ HLS</button>
+          </div>
 
-          <details className="create-panel">
-            <summary>+ Novo vídeo</summary>
-            <form className="content-form" onSubmit={addYouTube}>
-              <h3>Adicionar YouTube</h3>
-              <label>Título<input value={videoTitle} onChange={(event) => setVideoTitle(event.target.value)} required minLength={2} placeholder="Vídeo institucional" /></label>
-              <label>Categoria<input value={videoCategory} onChange={(event) => setVideoCategory(event.target.value)} placeholder="Institucional" /></label>
-              <label>Link do YouTube<input type="url" value={videoUrl} onChange={(event) => setVideoUrl(event.target.value)} required placeholder="https://www.youtube.com/watch?v=..." /></label>
-              <button className="primary-button" type="submit" disabled={busy}>Cadastrar vídeo</button>
-            </form>
-          </details>
+          {createMode && (
+            <div className="content-create-workspace">
+              {createMode === 'image' && (
+                <form className="content-form" onSubmit={uploadImage}>
+                  <div className="content-form-head"><h3>Enviar imagem</h3><button className="content-create-close" type="button" onClick={() => setCreateMode(null)}>Fechar</button></div>
+                  <label>Título<input value={imageTitle} onChange={(event) => setImageTitle(event.target.value)} required minLength={2} placeholder="Promoção de verão" /></label>
+                  <label>Categoria<input value={imageCategory} onChange={(event) => setImageCategory(event.target.value)} placeholder="Promoções" /></label>
+                  <label>Arquivo<input id="content-image-file" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImageFile(event.target.files?.[0] || null)} required /></label>
+                  <button className="primary-button" type="submit" disabled={busy}>Enviar imagem</button>
+                </form>
+              )}
 
-          <details className="create-panel">
-            <summary>+ HLS / Video Wall</summary>
-            <form className="content-form" onSubmit={addHls}>
-              <h3>Adicionar vídeo HLS</h3>
-              <label>Título<input value={hlsTitle} onChange={(event) => setHlsTitle(event.target.value)} required minLength={2} placeholder="Campanha Video Wall" /></label>
-              <label>Categoria<input value={hlsCategory} onChange={(event) => setHlsCategory(event.target.value)} placeholder="Video Wall" /></label>
-              <label>Manifesto HLS<input type="url" value={hlsUrl} onChange={(event) => setHlsUrl(event.target.value)} required placeholder="https://cdn.exemplo.com/video/master.m3u8" /></label>
-              <small>Use um manifesto HTTPS controlado pelo cliente/CDN. Não use URLs internas extraídas do YouTube.</small>
-              <button className="primary-button" type="submit" disabled={busy}>Cadastrar HLS</button>
-            </form>
-          </details>
-        </div>
+              {createMode === 'youtube' && (
+                <form className="content-form" onSubmit={addYouTube}>
+                  <div className="content-form-head"><h3>Adicionar YouTube</h3><button className="content-create-close" type="button" onClick={() => setCreateMode(null)}>Fechar</button></div>
+                  <label>Título<input value={videoTitle} onChange={(event) => setVideoTitle(event.target.value)} required minLength={2} placeholder="Vídeo institucional" /></label>
+                  <label>Categoria<input value={videoCategory} onChange={(event) => setVideoCategory(event.target.value)} placeholder="Institucional" /></label>
+                  <label>Link do YouTube<input type="url" value={videoUrl} onChange={(event) => setVideoUrl(event.target.value)} required placeholder="https://www.youtube.com/watch?v=..." /></label>
+                  <button className="primary-button" type="submit" disabled={busy}>Cadastrar vídeo</button>
+                </form>
+              )}
+
+              {createMode === 'hls' && (
+                <form className="content-form" onSubmit={addHls}>
+                  <div className="content-form-head"><h3>Adicionar vídeo HLS</h3><button className="content-create-close" type="button" onClick={() => setCreateMode(null)}>Fechar</button></div>
+                  <label>Título<input value={hlsTitle} onChange={(event) => setHlsTitle(event.target.value)} required minLength={2} placeholder="Campanha Video Wall" /></label>
+                  <label>Categoria<input value={hlsCategory} onChange={(event) => setHlsCategory(event.target.value)} placeholder="Video Wall" /></label>
+                  <label>Manifesto HLS<input type="url" value={hlsUrl} onChange={(event) => setHlsUrl(event.target.value)} required placeholder="https://cdn.exemplo.com/video/master.m3u8" /></label>
+                  <small>Use um manifesto HTTPS controlado pelo cliente/CDN. Não use URLs internas extraídas do YouTube.</small>
+                  <button className="primary-button" type="submit" disabled={busy}>Cadastrar HLS</button>
+                </form>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {message && <p className="form-message content-message">{message}</p>}

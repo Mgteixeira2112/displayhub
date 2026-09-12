@@ -29,6 +29,8 @@ type Props = {
   role: string
 }
 
+type CommercialCreateMode = 'product' | 'simple' | 'collection' | 'row' | null
+
 const kindLabels: Record<StructuredContent['kind'], string> = {
   product: 'Produto',
   menu: 'Cardápio',
@@ -48,6 +50,7 @@ export default function StructuredContent({ companyId, role }: Props) {
   const [rows, setRows] = useState<StructuredRow[]>([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [createMode, setCreateMode] = useState<CommercialCreateMode>(null)
 
   const [productTitle, setProductTitle] = useState('')
   const [productCategory, setProductCategory] = useState('')
@@ -123,6 +126,7 @@ export default function StructuredContent({ companyId, role }: Props) {
       setProductPrice('')
       setProductPromo('')
       await load()
+      setCreateMode(null)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Não foi possível cadastrar o produto.')
     } finally {
@@ -149,6 +153,7 @@ export default function StructuredContent({ companyId, role }: Props) {
       setSimpleTitle('')
       setSimpleValue('')
       await load()
+      setCreateMode(null)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Não foi possível cadastrar o conteúdo.')
     } finally {
@@ -172,6 +177,7 @@ export default function StructuredContent({ companyId, role }: Props) {
       setCollectionTitle('')
       setCollectionDescription('')
       await load()
+      setCreateMode(null)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Não foi possível criar a coleção.')
     } finally {
@@ -209,6 +215,7 @@ export default function StructuredContent({ companyId, role }: Props) {
       setRowPrice('')
       setRowPromo('')
       await load()
+      setCreateMode(null)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Não foi possível adicionar o item.')
     } finally {
@@ -236,6 +243,11 @@ export default function StructuredContent({ companyId, role }: Props) {
     setBusy(false)
   }
 
+  function toggleCreateMode(mode: Exclude<CommercialCreateMode, null>) {
+    setMessage('')
+    setCreateMode((current) => current === mode ? null : mode)
+  }
+
   return (
     <section className="workspace-section">
       <div className="section-heading">
@@ -244,51 +256,67 @@ export default function StructuredContent({ companyId, role }: Props) {
       </div>
 
       {canManage && (
-        <details className="create-panel structured-create-panel">
-          <summary>+ Novo conteúdo comercial</summary>
-          <div className="structured-create-grid">
-            <form className="content-form" onSubmit={addProduct}>
-              <h3>Novo produto</h3>
-              <label>Nome<input value={productTitle} onChange={(event) => setProductTitle(event.target.value)} required minLength={2} placeholder="Café expresso" /></label>
-              <label>Categoria<input value={productCategory} onChange={(event) => setProductCategory(event.target.value)} placeholder="Bebidas" /></label>
-              <label>Descrição<input value={productDescription} onChange={(event) => setProductDescription(event.target.value)} placeholder="Opcional" /></label>
-              <div className="inline-fields">
-                <label>Preço<input type="number" min="0" step="0.01" value={productPrice} onChange={(event) => setProductPrice(event.target.value)} required /></label>
-                <label>Promocional<input type="number" min="0" step="0.01" value={productPromo} onChange={(event) => setProductPromo(event.target.value)} /></label>
-              </div>
-              <button className="primary-button" type="submit" disabled={busy}>Cadastrar produto</button>
-            </form>
-
-            <form className="content-form" onSubmit={addSimple}>
-              <h3>Aviso, texto ou QR</h3>
-              <label>Tipo<select value={simpleKind} onChange={(event) => setSimpleKind(event.target.value as 'notice' | 'text' | 'qr')}><option value="notice">Aviso</option><option value="text">Texto</option><option value="qr">QR</option></select></label>
-              <label>Título<input value={simpleTitle} onChange={(event) => setSimpleTitle(event.target.value)} required minLength={2} /></label>
-              <label>{simpleKind === 'qr' ? 'Destino do QR' : 'Conteúdo'}<input value={simpleValue} onChange={(event) => setSimpleValue(event.target.value)} required placeholder={simpleKind === 'qr' ? 'https://...' : 'Mensagem exibida'} /></label>
-              <button className="primary-button" type="submit" disabled={busy}>Cadastrar</button>
-            </form>
-
-            <form className="content-form" onSubmit={addCollection}>
-              <h3>Novo cardápio ou tabela</h3>
-              <label>Tipo<select value={collectionKind} onChange={(event) => setCollectionKind(event.target.value as 'menu' | 'price_table')}><option value="menu">Cardápio</option><option value="price_table">Tabela de preços</option></select></label>
-              <label>Título<input value={collectionTitle} onChange={(event) => setCollectionTitle(event.target.value)} required minLength={2} placeholder="Cardápio principal" /></label>
-              <label>Descrição<input value={collectionDescription} onChange={(event) => setCollectionDescription(event.target.value)} placeholder="Opcional" /></label>
-              <button className="primary-button" type="submit" disabled={busy}>Criar estrutura</button>
-            </form>
-
-            <form className="content-form" onSubmit={addRow}>
-              <h3>Adicionar item</h3>
-              <label>Cardápio/tabela<select value={rowParent} onChange={(event) => setRowParent(event.target.value)} required><option value="">Selecione</option>{collections.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
-              <label>Item<input value={rowTitle} onChange={(event) => setRowTitle(event.target.value)} required minLength={2} /></label>
-              <label>Categoria<input value={rowCategory} onChange={(event) => setRowCategory(event.target.value)} /></label>
-              <label>Descrição<input value={rowDescription} onChange={(event) => setRowDescription(event.target.value)} /></label>
-              <div className="inline-fields">
-                <label>Preço<input type="number" min="0" step="0.01" value={rowPrice} onChange={(event) => setRowPrice(event.target.value)} required /></label>
-                <label>Promocional<input type="number" min="0" step="0.01" value={rowPromo} onChange={(event) => setRowPromo(event.target.value)} /></label>
-              </div>
-              <button className="primary-button" type="submit" disabled={busy || collections.length === 0}>Adicionar item</button>
-            </form>
+        <>
+          <div className="content-create-toolbar content-create-toolbar-commercial" role="group" aria-label="Adicionar conteúdo comercial">
+            <button className={`content-create-choice${createMode === 'product' ? ' active' : ''}`} type="button" aria-pressed={createMode === 'product'} onClick={() => toggleCreateMode('product')}>+ Produto</button>
+            <button className={`content-create-choice${createMode === 'simple' ? ' active' : ''}`} type="button" aria-pressed={createMode === 'simple'} onClick={() => toggleCreateMode('simple')}>+ Aviso / Texto / QR</button>
+            <button className={`content-create-choice${createMode === 'collection' ? ' active' : ''}`} type="button" aria-pressed={createMode === 'collection'} onClick={() => toggleCreateMode('collection')}>+ Cardápio / Tabela</button>
+            <button className={`content-create-choice${createMode === 'row' ? ' active' : ''}`} type="button" aria-pressed={createMode === 'row'} onClick={() => toggleCreateMode('row')}>+ Adicionar item</button>
           </div>
-        </details>
+
+          {createMode && (
+            <div className="content-create-workspace content-create-workspace-commercial">
+              {createMode === 'product' && (
+                <form className="content-form" onSubmit={addProduct}>
+                  <div className="content-form-head"><h3>Novo produto</h3><button className="content-create-close" type="button" onClick={() => setCreateMode(null)}>Fechar</button></div>
+                  <label>Nome<input value={productTitle} onChange={(event) => setProductTitle(event.target.value)} required minLength={2} placeholder="Café expresso" /></label>
+                  <label>Categoria<input value={productCategory} onChange={(event) => setProductCategory(event.target.value)} placeholder="Bebidas" /></label>
+                  <label>Descrição<input value={productDescription} onChange={(event) => setProductDescription(event.target.value)} placeholder="Opcional" /></label>
+                  <div className="inline-fields">
+                    <label>Preço<input type="number" min="0" step="0.01" value={productPrice} onChange={(event) => setProductPrice(event.target.value)} required /></label>
+                    <label>Promocional<input type="number" min="0" step="0.01" value={productPromo} onChange={(event) => setProductPromo(event.target.value)} /></label>
+                  </div>
+                  <button className="primary-button" type="submit" disabled={busy}>Cadastrar produto</button>
+                </form>
+              )}
+
+              {createMode === 'simple' && (
+                <form className="content-form" onSubmit={addSimple}>
+                  <div className="content-form-head"><h3>Aviso, texto ou QR</h3><button className="content-create-close" type="button" onClick={() => setCreateMode(null)}>Fechar</button></div>
+                  <label>Tipo<select value={simpleKind} onChange={(event) => setSimpleKind(event.target.value as 'notice' | 'text' | 'qr')}><option value="notice">Aviso</option><option value="text">Texto</option><option value="qr">QR</option></select></label>
+                  <label>Título<input value={simpleTitle} onChange={(event) => setSimpleTitle(event.target.value)} required minLength={2} /></label>
+                  <label>{simpleKind === 'qr' ? 'Destino do QR' : 'Conteúdo'}<input value={simpleValue} onChange={(event) => setSimpleValue(event.target.value)} required placeholder={simpleKind === 'qr' ? 'https://...' : 'Mensagem exibida'} /></label>
+                  <button className="primary-button" type="submit" disabled={busy}>Cadastrar</button>
+                </form>
+              )}
+
+              {createMode === 'collection' && (
+                <form className="content-form" onSubmit={addCollection}>
+                  <div className="content-form-head"><h3>Novo cardápio ou tabela</h3><button className="content-create-close" type="button" onClick={() => setCreateMode(null)}>Fechar</button></div>
+                  <label>Tipo<select value={collectionKind} onChange={(event) => setCollectionKind(event.target.value as 'menu' | 'price_table')}><option value="menu">Cardápio</option><option value="price_table">Tabela de preços</option></select></label>
+                  <label>Título<input value={collectionTitle} onChange={(event) => setCollectionTitle(event.target.value)} required minLength={2} placeholder="Cardápio principal" /></label>
+                  <label>Descrição<input value={collectionDescription} onChange={(event) => setCollectionDescription(event.target.value)} placeholder="Opcional" /></label>
+                  <button className="primary-button" type="submit" disabled={busy}>Criar estrutura</button>
+                </form>
+              )}
+
+              {createMode === 'row' && (
+                <form className="content-form" onSubmit={addRow}>
+                  <div className="content-form-head"><h3>Adicionar item</h3><button className="content-create-close" type="button" onClick={() => setCreateMode(null)}>Fechar</button></div>
+                  <label>Cardápio/tabela<select value={rowParent} onChange={(event) => setRowParent(event.target.value)} required><option value="">Selecione</option>{collections.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+                  <label>Item<input value={rowTitle} onChange={(event) => setRowTitle(event.target.value)} required minLength={2} /></label>
+                  <label>Categoria<input value={rowCategory} onChange={(event) => setRowCategory(event.target.value)} /></label>
+                  <label>Descrição<input value={rowDescription} onChange={(event) => setRowDescription(event.target.value)} /></label>
+                  <div className="inline-fields">
+                    <label>Preço<input type="number" min="0" step="0.01" value={rowPrice} onChange={(event) => setRowPrice(event.target.value)} required /></label>
+                    <label>Promocional<input type="number" min="0" step="0.01" value={rowPromo} onChange={(event) => setRowPromo(event.target.value)} /></label>
+                  </div>
+                  <button className="primary-button" type="submit" disabled={busy || collections.length === 0}>Adicionar item</button>
+                </form>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {message && <p className="form-message content-message">{message}</p>}
