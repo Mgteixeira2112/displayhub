@@ -11,6 +11,7 @@ type Template = {
 }
 
 type Filter = 'all' | 'offers' | 'drinks' | 'animated' | 'video'
+type Orientation = 'portrait' | 'landscape'
 
 function templateTags(template: Template) {
   const haystack = `${template.key} ${template.name} ${template.description || ''} ${template.theme}`.toLowerCase()
@@ -32,16 +33,23 @@ function sectorLabel(template: Template) {
   return templateTags(template).has('drinks') ? 'Bebidas' : 'Ofertas gerais'
 }
 
-function orientationLabel(template: Template) {
-  if (template.aspect_ratio === 'portrait') return 'Vertical'
-  if (template.aspect_ratio === 'square') return 'Quadrado'
-  return 'Horizontal'
+function isLandscapeOnly(template: Template) {
+  return template.theme === 'animated_beer_video'
 }
 
-function samplePoster(template: Template) {
+function effectiveOrientation(template: Template, orientation: Orientation): Orientation {
+  return isLandscapeOnly(template) ? 'landscape' : orientation
+}
+
+function orientationLabel(orientation: Orientation) {
+  return orientation === 'portrait' ? 'Vertical' : 'Horizontal'
+}
+
+function samplePoster(template: Template, requestedOrientation: Orientation) {
   const drinks = templateTags(template).has('drinks')
+  const orientation = effectiveOrientation(template, requestedOrientation)
   return {
-    id: `gallery:${template.key}`,
+    id: `gallery:${template.key}:${orientation}`,
     template_key: template.key,
     theme: template.theme,
     product_name: drinks ? 'CERVEJA 600 ML' : 'OFERTA ESPECIAL',
@@ -49,7 +57,7 @@ function samplePoster(template: Template) {
     unit: 'UN',
     headline: drinks ? 'GELADA E EM OFERTA' : 'PREÇO BAIXO DE VERDADE',
     footer: 'APROVEITE HOJE',
-    orientation: template.aspect_ratio === 'portrait' ? 'portrait' as const : 'landscape' as const,
+    orientation,
     layout_positions: {},
   }
 }
@@ -57,6 +65,7 @@ function samplePoster(template: Template) {
 export default function PromotionTemplateGallery() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [filter, setFilter] = useState<Filter>('all')
+  const [orientation, setOrientation] = useState<Orientation>('landscape')
   const [query, setQuery] = useState('')
   const [preview, setPreview] = useState<Template | null>(null)
   const [loading, setLoading] = useState(false)
@@ -88,8 +97,20 @@ export default function PromotionTemplateGallery() {
   }, [filter, query, templates])
 
   function selectTemplate(template: Template) {
-    window.dispatchEvent(new CustomEvent('displayhub:use-promotion-template', { detail: { key: template.key } }))
+    window.dispatchEvent(new CustomEvent('displayhub:use-promotion-template', {
+      detail: { key: template.key, orientation: effectiveOrientation(template, orientation) },
+    }))
   }
+
+  const orientationControl = (className = '') => (
+    <div className={`promotion-gallery-orientation ${className}`.trim()} aria-label="Orientação do template">
+      <span>Orientação</span>
+      <div>
+        <button type="button" className={orientation === 'landscape' ? 'active' : ''} onClick={() => setOrientation('landscape')}>Horizontal</button>
+        <button type="button" className={orientation === 'portrait' ? 'active' : ''} onClick={() => setOrientation('portrait')}>Vertical</button>
+      </div>
+    </div>
+  )
 
   return (
     <section className="promotion-gallery" aria-label="Galeria de templates">
@@ -97,7 +118,7 @@ export default function PromotionTemplateGallery() {
         <div>
           <p className="eyebrow">Campanhas prontas para supermercado</p>
           <h1>Escolha um visual e comece a criar</h1>
-          <p>Modelos prontos para ofertas, promoções e campanhas. Escolha um template, preencha seus dados e publique.</p>
+          <p>Modelos prontos para ofertas, promoções e campanhas. Escolha a orientação, visualize o template e comece a preencher.</p>
         </div>
         <button type="button" className="secondary-button compact" onClick={() => void load()} disabled={loading}>{loading ? 'Atualizando...' : 'Atualizar galeria'}</button>
       </header>
@@ -107,6 +128,7 @@ export default function PromotionTemplateGallery() {
           <span>Buscar template</span>
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: cerveja, oferta, vídeo..." />
         </label>
+        {orientationControl()}
         <div className="promotion-gallery-filters" aria-label="Filtrar templates">
           {([
             ['all', 'Todos'],
@@ -125,7 +147,8 @@ export default function PromotionTemplateGallery() {
 
       <div className="promotion-gallery-grid">
         {visible.map((template) => {
-          const poster = samplePoster(template)
+          const poster = samplePoster(template, orientation)
+          const locked = isLandscapeOnly(template)
           return (
             <article className="promotion-gallery-card" key={template.key}>
               <div className="promotion-gallery-card-preview">
@@ -139,7 +162,11 @@ export default function PromotionTemplateGallery() {
                   <strong>{template.name}</strong>
                   <p>{template.description || 'Template promocional pronto para personalização.'}</p>
                 </div>
-                <div className="promotion-gallery-meta"><span>{orientationLabel(template)}</span><span>{typeLabel(template)}</span></div>
+                <div className="promotion-gallery-meta">
+                  <span>{orientationLabel(poster.orientation)}</span>
+                  <span>{typeLabel(template)}</span>
+                  {locked && <span>Somente horizontal</span>}
+                </div>
                 <div className="promotion-gallery-actions">
                   <button type="button" className="secondary-button" onClick={() => setPreview(template)}>Pré-visualizar</button>
                   <button type="button" className="primary-button" onClick={() => selectTemplate(template)}>Usar template</button>
@@ -157,7 +184,9 @@ export default function PromotionTemplateGallery() {
               <div><span>{sectorLabel(preview)} · {typeLabel(preview)}</span><strong>{preview.name}</strong></div>
               <button type="button" aria-label="Fechar pré-visualização" onClick={() => setPreview(null)}>×</button>
             </header>
-            <div className="promotion-gallery-modal-preview"><PromotionPosterView poster={samplePoster(preview)} /></div>
+            {!isLandscapeOnly(preview) && orientationControl('promotion-gallery-modal-orientation')}
+            {isLandscapeOnly(preview) && <div className="promotion-gallery-orientation-note">Este template de vídeo permanece horizontal para preservar a reprodução já homologada.</div>}
+            <div className="promotion-gallery-modal-preview"><PromotionPosterView poster={samplePoster(preview, orientation)} /></div>
             <footer>
               <p>{preview.description || 'Template promocional pronto para personalização.'}</p>
               <div><button type="button" className="secondary-button" onClick={() => setPreview(null)}>Voltar</button><button type="button" className="primary-button" onClick={() => { setPreview(null); selectTemplate(preview) }}>Usar este template</button></div>
