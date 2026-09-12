@@ -306,8 +306,7 @@ function App() {
 
           {canManage && (
             <section className="workspace-section">
-              <details className="create-panel create-panel-display">
-                <summary>+ Novo display</summary>
+              <div className="create-panel create-panel-display">
                 <form className="display-form" onSubmit={handleCreateDisplay}>
                   <label>Nome<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required minLength={2} placeholder="TV Entrada" /></label>
                   <label>Local<input value={displayLocation} onChange={(event) => setDisplayLocation(event.target.value)} placeholder="Entrada principal" /></label>
@@ -317,7 +316,7 @@ function App() {
                   <label>Altura<input type="number" min="320" max="16384" value={resolutionHeight} onChange={(event) => setResolutionHeight(Number(event.target.value))} required /></label>
                   <button className="primary-button" type="submit" disabled={busy}>Criar display</button>
                 </form>
-              </details>
+              </div>
             </section>
           )}
 
