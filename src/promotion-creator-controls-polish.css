@@ -1,0 +1,169 @@
+/* Acabamento final dos controles do módulo Criar.
+   Não altera layout, dimensões ou lógica; apenas unifica estados visuais. */
+
+.promotion-workspace {
+  --creator-primary: #2563eb;
+  --creator-primary-hover: #1d4ed8;
+  --creator-surface: #ffffff;
+  --creator-surface-soft: #f8fafc;
+  --creator-border: #dbe3ec;
+  --creator-border-hover: #cbd5e1;
+  --creator-text: #0f172a;
+  --creator-muted: #64748b;
+  --creator-focus: rgba(37, 99, 235, .14);
+}
+
+.promotion-workspace .promotion-form input:not([type='range']):not([type='color']),
+.promotion-workspace .promotion-form select,
+.promotion-workspace .promotion-editor-tools input[type='number'] {
+  background: var(--creator-surface-soft);
+  border-color: var(--creator-border);
+  color: var(--creator-text);
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, .02);
+  transition: border-color .14s ease, background-color .14s ease, box-shadow .14s ease;
+}
+
+.promotion-workspace .promotion-form input:not([type='range']):not([type='color']):hover:not(:disabled),
+.promotion-workspace .promotion-form select:hover:not(:disabled),
+.promotion-workspace .promotion-editor-tools input[type='number']:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: var(--creator-border-hover);
+}
+
+.promotion-workspace .promotion-form input:not([type='range']):not([type='color']):focus,
+.promotion-workspace .promotion-form select:focus,
+.promotion-workspace .promotion-editor-tools input[type='number']:focus,
+.promotion-workspace .promotion-editor-tools input[type='color']:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: var(--creator-primary);
+  box-shadow: 0 0 0 3px var(--creator-focus);
+}
+
+.promotion-workspace .promotion-form input:disabled,
+.promotion-workspace .promotion-form select:disabled,
+.promotion-workspace .promotion-editor-tools input:disabled {
+  opacity: .58;
+  cursor: not-allowed;
+}
+
+.promotion-workspace .promotion-element-tab,
+.promotion-workspace .promotion-align-button {
+  background: var(--creator-surface-soft);
+  border-color: #e2e8f0;
+  color: #475569;
+  box-shadow: none;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
+}
+
+.promotion-workspace .promotion-element-tab:hover:not(:disabled),
+.promotion-workspace .promotion-align-button:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.promotion-workspace .promotion-element-tab.is-active,
+.promotion-workspace .promotion-align-button.is-active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .08);
+}
+
+.promotion-workspace .promotion-element-tab:focus-visible,
+.promotion-workspace .promotion-align-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--creator-focus);
+}
+
+.promotion-workspace .promotion-editor-tools .secondary-button {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  box-shadow: none;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
+}
+
+.promotion-workspace .promotion-editor-tools .secondary-button:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.promotion-workspace .promotion-editor-tools .secondary-button:focus-visible {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px var(--creator-focus);
+}
+
+.promotion-workspace .promotion-form .promotion-actions .primary-button {
+  background: var(--creator-primary);
+  border: 1px solid var(--creator-primary);
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, .18);
+  transition: background-color .14s ease, border-color .14s ease, box-shadow .14s ease, transform .14s ease;
+}
+
+.promotion-workspace .promotion-form .promotion-actions .primary-button:hover:not(:disabled) {
+  background: var(--creator-primary-hover);
+  border-color: var(--creator-primary-hover);
+  box-shadow: 0 3px 8px rgba(37, 99, 235, .18);
+}
+
+.promotion-workspace .promotion-form .promotion-actions .primary-button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, .14);
+}
+
+.promotion-workspace .promotion-form .promotion-actions .secondary-button {
+  background: #eaf0f7;
+  border: 1px solid #d8e2ee;
+  color: #486581;
+  box-shadow: none;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
+}
+
+.promotion-workspace .promotion-form .promotion-actions .secondary-button:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.promotion-workspace .promotion-form .promotion-actions .primary-button:focus-visible,
+.promotion-workspace .promotion-form .promotion-actions .secondary-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--creator-focus);
+}
+
+.promotion-workspace .promotion-form .promotion-actions button:disabled,
+.promotion-workspace .promotion-editor-tools button:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.promotion-workspace > .form-message,
+.promotion-workspace .promotion-form + .form-message {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #dbe3ec;
+  border-left: 3px solid #60a5fa;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: .75rem;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promotion-workspace .promotion-form input,
+  .promotion-workspace .promotion-form select,
+  .promotion-workspace .promotion-element-tab,
+  .promotion-workspace .promotion-align-button,
+  .promotion-workspace .promotion-editor-tools .secondary-button,
+  .promotion-workspace .promotion-form .promotion-actions button {
+    transition: none;
+  }
+}
