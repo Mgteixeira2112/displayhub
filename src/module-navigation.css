@@ -7,7 +7,8 @@
 .view-posters .module-posters,
 .view-playlists .module-playlists,
 .view-schedule .module-schedule,
-.view-templates .module-templates,
+.view-templates .module-gallery,
+.view-technical-templates .module-templates,
 .view-history .module-history { display: block; }
 
 .view-displays .software-dashboard-panel > .workspace-section { display: block; }
@@ -112,7 +113,8 @@
 .view-posters .module-posters,
 .view-playlists .module-playlists,
 .view-schedule .module-schedule,
-.view-templates .module-templates,
+.view-templates .module-gallery,
+.view-technical-templates .module-templates,
 .view-history .module-history,
 .view-settings .account-grid {
   animation: module-in .16s ease-out;
