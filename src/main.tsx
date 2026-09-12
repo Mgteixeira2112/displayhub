@@ -13,7 +13,6 @@ import './module-navigation.css'
 import './modern-shell.css'
 import './sidebar-overflow-fix.css'
 import './home-dashboard.css'
-import './promotion-gallery.css'
 import './ux-actions.css'
 import './display-groups.css'
 import './promotion-posters.css'
@@ -242,7 +241,6 @@ window.addEventListener('displayhub:navigate', () => window.requestAnimationFram
   keepCampaignCreatePanelVisible()
   prepareCampaignPlaylistCards()
 }))
-window.addEventListener('displayhub:use-promotion-template', resetAppScroll)
 document.addEventListener('click', (event) => {
   const target = event.target instanceof Element ? event.target : null
   if (target?.closest('.software-nav-item:not(.software-nav-advanced-toggle), .software-topbar-create')) resetAppScroll()
