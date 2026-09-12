@@ -199,7 +199,8 @@ export default function PublicPlayer({ token }: { token: string }) {
       return
     }
     const previous = lastItemRef.current
-    const canTransition = !wall && transitionType !== 'none' && transitionDurationMs > 0 && previous?.id !== item.id && Boolean(previous?.poster && item.poster)
+    const previousIsMediaVideo = previous?.duration_mode === 'media' && previous.poster?.theme === 'animated_beer_video'
+    const canTransition = !previousIsMediaVideo && !wall && transitionType !== 'none' && transitionDurationMs > 0 && previous?.id !== item.id && Boolean(previous?.poster && item.poster)
     if (canTransition && previous) {
       if (transitionTimerRef.current != null) window.clearTimeout(transitionTimerRef.current)
       setPreviousPosterItem(previous)
