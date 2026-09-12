@@ -1,0 +1,101 @@
+/* Playlists de Campanhas: resumo compacto por padrão e detalhes sob demanda. */
+
+.view-campaigns .playlist-card {
+  overflow: hidden;
+}
+
+.view-campaigns .playlist-card-head {
+  position: relative;
+  min-height: 38px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.view-campaigns .playlist-card-head > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.view-campaigns .playlist-card-head strong {
+  flex: 0 0 auto;
+}
+
+.view-campaigns .playlist-card-head p {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-campaigns .playlist-card-head::after {
+  content: '⌄';
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: .85rem;
+  line-height: 1;
+  transition: transform .16s ease, background-color .16s ease, border-color .16s ease;
+}
+
+.view-campaigns .playlist-card-head:hover::after {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-card-head::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.view-campaigns .playlist-card-head > .danger-button {
+  flex: 0 0 auto;
+  margin-right: 34px;
+}
+
+.view-campaigns .playlist-card:not(.is-expanded) .playlist-transition-controls,
+.view-campaigns .playlist-card:not(.is-expanded) .playlist-items {
+  display: none !important;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-transition-controls,
+.view-campaigns .playlist-card.is-expanded .playlist-items {
+  display: grid;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-card-head {
+  padding-bottom: 7px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.view-campaigns .playlist-card-head:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+@media (max-width: 720px) {
+  .view-campaigns .playlist-card-head {
+    align-items: center;
+  }
+
+  .view-campaigns .playlist-card-head > div {
+    display: grid;
+    gap: 2px;
+  }
+
+  .view-campaigns .playlist-card-head > .danger-button {
+    margin-right: 32px;
+  }
+}
