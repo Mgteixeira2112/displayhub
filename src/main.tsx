@@ -43,6 +43,7 @@ import './campaigns-visual.css'
 import './campaigns-create-panel-compact.css'
 import './campaigns-playlist-cards-compact.css'
 import './campaigns-playlist-cards-expandable.css'
+import './campaigns-playlist-scheduling-inline.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
@@ -76,6 +77,59 @@ function prepareCampaignPlaylistCards() {
   })
 }
 
+function getCampaignPlaylistName(card: HTMLElement) {
+  return card.querySelector<HTMLElement>('.playlist-card-head strong')?.textContent?.trim() || ''
+}
+
+function syncCampaignPublicationList(card: HTMLElement, publicationList: HTMLElement) {
+  const playlistName = getCampaignPlaylistName(card)
+  let visibleCount = 0
+
+  publicationList.querySelectorAll<HTMLElement>('.publication-card').forEach((publicationCard) => {
+    const label = publicationCard.querySelector<HTMLElement>('strong')?.textContent?.trim() || ''
+    const matchesPlaylist = Boolean(playlistName) && label.startsWith(`${playlistName} →`)
+    publicationCard.hidden = !matchesPlaylist
+    if (matchesPlaylist) visibleCount += 1
+  })
+
+  publicationList.querySelectorAll<HTMLElement>('.empty-state').forEach((emptyState) => {
+    emptyState.hidden = true
+  })
+
+  const heading = publicationList.querySelector<HTMLElement>('h3')
+  if (heading) heading.textContent = 'Exibições ativas'
+  publicationList.dataset.campaignHasPublications = visibleCount > 0 ? 'true' : 'false'
+}
+
+function attachCampaignScheduling(card: HTMLElement) {
+  const workspace = card.closest<HTMLElement>('.playlist-workspace')
+  if (!workspace) return
+
+  const schedulePanel = workspace.querySelector<HTMLDetailsElement>('.schedule-create-panel')
+  const publicationList = workspace.querySelector<HTMLElement>('.publication-list')
+  if (!schedulePanel || !publicationList) return
+
+  schedulePanel.classList.add('campaign-inline-schedule')
+  publicationList.classList.add('campaign-inline-publications')
+  schedulePanel.open = true
+
+  const heading = schedulePanel.querySelector<HTMLElement>('h3')
+  if (heading) heading.textContent = 'Onde e quando exibir'
+
+  const playlistName = getCampaignPlaylistName(card)
+  const playlistSelect = schedulePanel.querySelector<HTMLSelectElement>('.publication-grid label:first-child select')
+  if (playlistSelect && playlistName) {
+    const matchingOption = Array.from(playlistSelect.options).find((option) => option.textContent?.trim() === playlistName)
+    if (matchingOption && playlistSelect.value !== matchingOption.value) {
+      playlistSelect.value = matchingOption.value
+      playlistSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+  }
+
+  card.append(schedulePanel, publicationList)
+  syncCampaignPublicationList(card, publicationList)
+}
+
 function setCampaignPlaylistExpanded(card: HTMLElement, expanded: boolean) {
   if (expanded) {
     document.querySelectorAll<HTMLElement>('.view-campaigns .playlist-card.is-expanded').forEach((otherCard) => {
@@ -89,6 +143,8 @@ function setCampaignPlaylistExpanded(card: HTMLElement, expanded: boolean) {
   card.classList.toggle('is-expanded', expanded)
   const head = card.querySelector<HTMLElement>('.playlist-card-head')
   head?.setAttribute('aria-expanded', expanded ? 'true' : 'false')
+
+  if (expanded) attachCampaignScheduling(card)
 }
 
 function toggleCampaignPlaylistFromTarget(target: Element) {
