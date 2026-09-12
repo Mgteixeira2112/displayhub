@@ -58,7 +58,7 @@ export function preloadPromotionVideoToMemory(src: string) {
   return entry.promise
 }
 
-function BufferedPromotionVideo({ src }: { src: string }) {
+function BufferedPromotionVideo({ src, loop, onEnded }: { src: string; loop: boolean; onEnded?: () => void }) {
   const [playbackSrc, setPlaybackSrc] = useState(() => getCachedPromotionVideoUrl(src) || src)
 
   useEffect(() => {
@@ -75,15 +75,16 @@ function BufferedPromotionVideo({ src }: { src: string }) {
       src={playbackSrc}
       autoPlay
       muted
-      loop
+      loop={loop}
       playsInline
       preload="auto"
       aria-hidden="true"
+      onEnded={onEnded}
     />
   )
 }
 
-export default function PromotionVideoPoster({ poster, className = '' }: { poster: PromotionPosterData; className?: string }) {
+export default function PromotionVideoPoster({ poster, className = '', loop = true, onVideoEnded }: { poster: PromotionPosterData; className?: string; loop?: boolean; onVideoEnded?: () => void }) {
   const metadata = readPromotionVideoMetadata(poster.layout_positions)
   const videoUrl = metadata.background_video_url
   const overlayOpacity = metadata.background_overlay_opacity ?? 0.38
@@ -94,7 +95,7 @@ export default function PromotionVideoPoster({ poster, className = '' }: { poste
 
   return (
     <div className="promo-video-stage">
-      <BufferedPromotionVideo key={videoUrl} src={videoUrl} />
+      <BufferedPromotionVideo key={`${videoUrl}:${loop ? 'loop' : 'once'}`} src={videoUrl} loop={loop} onEnded={onVideoEnded} />
       <div className="promo-video-overlay" style={{ opacity: overlayOpacity }} aria-hidden="true" />
       <PromotionPosterView poster={poster} className={`${className} promo-video-poster`.trim()} />
       {videoUrl === DEMO_BEER_VIDEO_URL && <small className="promo-video-credit">Vídeo de demonstração: Angulidayaaluta / Wikimedia Commons · CC BY-SA 4.0</small>}
