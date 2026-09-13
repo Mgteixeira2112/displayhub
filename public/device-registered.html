@@ -13,7 +13,9 @@
     .mark { width: 54px; height: 54px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 15px; background: #2563eb; font-weight: 900; }
     h1 { margin: 0 0 10px; font-size: clamp(1.5rem, 5vw, 2.2rem); }
     p { color: #9fb0c6; line-height: 1.6; }
-    .status { margin-top: 22px; padding: 16px; border-radius: 14px; background: rgba(20,83,45,.3); color: #bbf7d0; }
+    .status { margin-top: 22px; padding: 16px; border-radius: 14px; background: rgba(30,41,59,.8); color: #bfdbfe; }
+    .success { background: rgba(20,83,45,.3); color: #bbf7d0; }
+    .error { background: rgba(127,29,29,.28); color: #fecaca; }
   </style>
 </head>
 <body>
@@ -21,7 +23,64 @@
     <div class="mark">DH</div>
     <h1>Dispositivo registrado</h1>
     <p>Este aparelho já faz parte do DisplayHub. Nenhuma tela foi criada automaticamente.</p>
-    <div class="status">Agora associe este dispositivo a uma tela pelo painel administrativo.</div>
+    <div id="status" class="status">Aguardando o administrador associar uma tela a este dispositivo...</div>
   </main>
+
+  <script>
+    const SUPABASE_URL = 'https://meqeluddtwthqmrtbhbr.supabase.co'
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_yjnvIPUmi8-Kt7yTFibw3w_DQlawViE'
+    const IDENTITY_KEY = 'displayhub_generic_device_identity_v1'
+    const status = document.getElementById('status')
+    let timer = null
+
+    function getIdentity() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(IDENTITY_KEY) || 'null')
+        if (saved?.deviceId && saved?.deviceSecret) return saved
+      } catch {
+        return null
+      }
+      return null
+    }
+
+    async function pollAssignment() {
+      const identity = getIdentity()
+      if (!identity) {
+        status.textContent = 'A identidade deste dispositivo não foi encontrada. Leia um novo QR de instalação.'
+        status.className = 'status error'
+        if (timer) window.clearInterval(timer)
+        return
+      }
+
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/poll_registered_device_assignment`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            p_device_id: identity.deviceId,
+            p_device_secret: identity.deviceSecret,
+          }),
+        })
+
+        if (!response.ok) throw new Error('poll_failed')
+        const result = await response.json()
+        if (result?.status !== 'assigned' || !result?.display_url) return
+
+        status.textContent = `Tela associada: ${result.display_name || 'DisplayHub'}. Abrindo o Player...`
+        status.className = 'status success'
+        if (timer) window.clearInterval(timer)
+        window.setTimeout(() => window.location.replace(result.display_url), 700)
+      } catch {
+        status.textContent = 'Aguardando associação. Tentando novamente automaticamente...'
+      }
+    }
+
+    void pollAssignment()
+    timer = window.setInterval(() => void pollAssignment(), 3000)
+  </script>
 </body>
 </html>
