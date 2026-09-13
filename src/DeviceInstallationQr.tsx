@@ -56,15 +56,15 @@ export default function DeviceInstallationQr() {
     const checkInstallation = async () => {
       const { data, error } = await supabase
         .from('device_installation_requests')
-        .select('status,display_id')
+        .select('status,device_id')
         .eq('id', installation.request_id)
         .maybeSingle()
 
       if (!active || error || !data) return
 
-      if (data.status === 'consumed' && data.display_id && !activationDetectedRef.current) {
+      if (data.status === 'consumed' && data.device_id && !activationDetectedRef.current) {
         activationDetectedRef.current = true
-        setFeedback('Dispositivo ativado e nova tela criada. Atualizando a lista...')
+        setFeedback('Dispositivo registrado. Atualizando a lista de dispositivos...')
         window.setTimeout(() => window.location.reload(), 700)
       }
     }
@@ -93,7 +93,7 @@ export default function DeviceInstallationQr() {
       activationDetectedRef.current = false
       setInstallation(next)
       setNow(Date.now())
-      setFeedback('QR pronto. Ao ser lido pelo dispositivo, uma nova tela será criada e associada automaticamente.')
+      setFeedback('QR pronto. Ao ser lido, o aparelho será registrado como dispositivo. Nenhuma tela será criada automaticamente.')
     } catch (error) {
       setInstallation(null)
       setFeedback(error instanceof Error ? error.message : 'Não foi possível gerar o QR de instalação.')
@@ -117,7 +117,7 @@ export default function DeviceInstallationQr() {
       <div className="windows-pairing-copy">
         <p className="eyebrow">Instalação sem login</p>
         <h2>Gerar QR para novo dispositivo</h2>
-        <p>Mostre este QR ao dispositivo que será usado como Player. Ao abrir o QR, o DisplayHub cria uma nova tela e associa o dispositivo automaticamente, sem pedir e-mail ou senha.</p>
+        <p>Mostre este QR ao aparelho que será usado como Player. Ao abrir o QR, o DisplayHub registra o dispositivo automaticamente, sem criar uma tela e sem pedir e-mail ou senha.</p>
       </div>
 
       {!installation ? (
@@ -129,7 +129,7 @@ export default function DeviceInstallationQr() {
           <div className="windows-pairing-preview-head">
             <div>
               <strong>QR de instalação</strong>
-              <span>Uso único · cria 1 tela automaticamente</span>
+              <span>Uso único · registra 1 dispositivo</span>
             </div>
             <span>{remainingSeconds > 0 ? `Expira em ${remainingLabel}` : 'QR expirado'}</span>
           </div>
@@ -137,7 +137,7 @@ export default function DeviceInstallationQr() {
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 260px) minmax(0, 1fr)', gap: 22, alignItems: 'center' }}>
             <div ref={qrRef} style={{ width: 230, minHeight: 230, padding: 10, borderRadius: 16, background: '#fff', display: 'grid', placeItems: 'center' }} />
             <div>
-              <p style={{ marginTop: 0 }}>Depois da leitura, o dispositivo é registrado, uma tela com nome provisório é criada e o conteúdo público dessa tela é aberto automaticamente.</p>
+              <p style={{ marginTop: 0 }}>Depois da leitura, o aparelho entra na lista de dispositivos. A associação a uma tela será feita separadamente no painel.</p>
               <div className="windows-device-actions">
                 <button type="button" onClick={() => void copyLink()}>Copiar link</button>
                 <button type="button" disabled={busy} onClick={() => void generate()}>Gerar outro QR</button>
