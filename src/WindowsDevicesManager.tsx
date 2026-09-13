@@ -180,8 +180,8 @@ export default function WindowsDevicesManager() {
       }))
       .filter((mapping) => mapping.display_id)
 
-    if (mappings.length !== pairingPreview.monitors.length) {
-      setPairingFeedback('Escolha uma tela do DisplayHub para cada monitor detectado.')
+    if (mappings.length === 0) {
+      setPairingFeedback('Escolha pelo menos um monitor para exibir uma tela do DisplayHub.')
       return
     }
 
@@ -193,7 +193,7 @@ export default function WindowsDevicesManager() {
         p_mappings: mappings,
       })
       if (error) throw error
-      setPairingFeedback('Ativação autorizada. O Player receberá a configuração e iniciará automaticamente em alguns segundos.')
+      setPairingFeedback(`Ativação autorizada para ${mappings.length} ${mappings.length === 1 ? 'monitor' : 'monitores'}. Monitores não selecionados ficarão livres.`)
       setPairingPreview(null)
       setPairingSelections({})
       setPairingCode('')
@@ -253,7 +253,7 @@ export default function WindowsDevicesManager() {
         <div className="windows-pairing-copy">
           <p className="eyebrow">Nova instalação</p>
           <h2>Ativar Player por código</h2>
-          <p>Digite o código de 6 caracteres exibido no computador. Depois escolha qual tela do DisplayHub cada monitor deve abrir.</p>
+          <p>Digite o código de 6 caracteres exibido no computador. Escolha apenas os monitores que devem exibir o DisplayHub; os demais podem ficar sem seleção.</p>
         </div>
         <div className="windows-pairing-code-row">
           <input
@@ -288,7 +288,7 @@ export default function WindowsDevicesManager() {
                     value={pairingSelections[String(monitor.id)] || ''}
                     onChange={(event) => setPairingSelections((current) => ({ ...current, [String(monitor.id)]: event.target.value }))}
                   >
-                    <option value="">Escolha a tela DisplayHub</option>
+                    <option value="">Não usar este monitor</option>
                     {displays.map((display) => (
                       <option key={display.id} value={display.id}>{display.name}{display.location ? ` · ${display.location}` : ''}</option>
                     ))}
