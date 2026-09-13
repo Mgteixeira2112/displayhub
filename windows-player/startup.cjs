@@ -3,10 +3,12 @@ const crypto = require('crypto')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
+const QRCode = require('qrcode')
 
 const SUPABASE_URL = 'https://meqeluddtwthqmrtbhbr.supabase.co'
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_yjnvIPUmi8-Kt7yTFibw3w_DQlawViE'
 const DISPLAYHUB_DISPLAY_BASE = 'https://mgteixeira2112.github.io/displayhub/display/'
+const DISPLAYHUB_PAIRING_BASE = 'https://mgteixeira2112.github.io/displayhub/'
 const DEFAULT_SETTINGS = { autoStart: true, kioskMode: true }
 
 function configPath() {
@@ -122,11 +124,19 @@ ipcMain.handle('player:start-pairing', async () => {
     p_hostname: os.hostname(),
     p_monitors: pairingMonitors(),
   })
+  const code = result?.code || null
+  const activationUrl = code ? `${DISPLAYHUB_PAIRING_BASE}?pairing=${encodeURIComponent(code)}` : null
+  const qrDataUrl = activationUrl
+    ? await QRCode.toDataURL(activationUrl, { errorCorrectionLevel: 'M', margin: 1, width: 280 })
+    : null
+
   return {
     ok: Boolean(result?.ok),
     pairingId: result?.pairing_id || null,
-    code: result?.code || null,
+    code,
     expiresAt: result?.expires_at || null,
+    activationUrl,
+    qrDataUrl,
   }
 })
 

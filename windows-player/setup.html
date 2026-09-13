@@ -16,10 +16,14 @@
     p { color: #9fb0c6; line-height: 1.55; }
     .pairing-panel { margin: 0 0 22px; padding: 22px; border: 1px solid rgba(96,165,250,.4); border-radius: 18px; background: linear-gradient(135deg, rgba(37,99,235,.18), rgba(15,23,42,.9)); }
     .pairing-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-    .pairing-code { margin: 18px 0 10px; font-size: clamp(2.2rem, 7vw, 4.8rem); line-height: 1; letter-spacing: .18em; font-weight: 900; color: #eff6ff; text-align: center; font-variant-numeric: tabular-nums; }
+    .pairing-grid { display: grid; grid-template-columns: minmax(0,1fr) 220px; gap: 22px; align-items: center; margin-top: 16px; }
+    .pairing-code { margin: 8px 0 10px; font-size: clamp(2.2rem, 7vw, 4.8rem); line-height: 1; letter-spacing: .18em; font-weight: 900; color: #eff6ff; text-align: center; font-variant-numeric: tabular-nums; }
     .pairing-copy { margin: 0; text-align: center; color: #bfdbfe; }
     .pairing-status { margin-top: 14px; text-align: center; font-size: .9rem; color: #93c5fd; }
     .pairing-expiry { margin-top: 6px; text-align: center; font-size: .8rem; color: #7f91aa; }
+    .pairing-qr-wrap { display: grid; place-items: center; gap: 8px; }
+    .pairing-qr { width: 200px; height: 200px; padding: 10px; border-radius: 16px; background: #fff; object-fit: contain; }
+    .pairing-qr-label { margin: 0; color: #bfdbfe; font-size: .78rem; text-align: center; }
     .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 22px 0 14px; }
     .settings-panel { margin: 0 0 22px; padding: 16px; border: 1px solid #26364d; border-radius: 14px; background: #101a2b; }
     .settings-panel h2 { margin-bottom: 12px; }
@@ -55,7 +59,7 @@
     .empty { padding: 22px; text-align: center; border: 1px dashed #314158; border-radius: 12px; color: #9fb0c6; }
     code { color: #bfdbfe; }
     [hidden] { display: none !important; }
-    @media (max-width: 760px) { .monitor-card { grid-template-columns: 1fr; } .toolbar, .pairing-head { align-items: flex-start; flex-direction: column; } }
+    @media (max-width: 760px) { .monitor-card { grid-template-columns: 1fr; } .toolbar, .pairing-head { align-items: flex-start; flex-direction: column; } .pairing-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -64,13 +68,21 @@
 
     <section id="pairingPanel" class="pairing-panel" hidden>
       <div class="pairing-head">
-        <div><h2>Ativação rápida</h2><p style="margin:6px 0 0">No painel do DisplayHub, informe este código e escolha qual tela será vinculada a este computador.</p></div>
+        <div><h2>Ativação rápida</h2><p style="margin:6px 0 0">Escaneie o QR Code com o celular ou informe o código no painel do DisplayHub.</p></div>
         <button id="newPairing" class="ghost" type="button">Gerar novo código</button>
       </div>
-      <div id="pairingCode" class="pairing-code">------</div>
-      <p class="pairing-copy">Não é necessário copiar o link público da tela.</p>
-      <div id="pairingStatus" class="pairing-status">Preparando ativação...</div>
-      <div id="pairingExpiry" class="pairing-expiry"></div>
+      <div class="pairing-grid">
+        <div>
+          <div id="pairingCode" class="pairing-code">------</div>
+          <p class="pairing-copy">Não é necessário copiar o link público da tela.</p>
+          <div id="pairingStatus" class="pairing-status">Preparando ativação...</div>
+          <div id="pairingExpiry" class="pairing-expiry"></div>
+        </div>
+        <div id="pairingQrWrap" class="pairing-qr-wrap" hidden>
+          <img id="pairingQr" class="pairing-qr" alt="QR Code para ativar este Player" />
+          <p class="pairing-qr-label">Abra o DisplayHub no celular com o código já preenchido.</p>
+        </div>
+      </div>
     </section>
 
     <section class="settings-panel">
@@ -116,6 +128,8 @@
     const pairingCode = document.getElementById('pairingCode')
     const pairingStatus = document.getElementById('pairingStatus')
     const pairingExpiry = document.getElementById('pairingExpiry')
+    const pairingQrWrap = document.getElementById('pairingQrWrap')
+    const pairingQr = document.getElementById('pairingQr')
     const newPairing = document.getElementById('newPairing')
     let mappings = []
     let pairingId = null
@@ -197,6 +211,8 @@
       pairingCode.textContent = '------'
       pairingStatus.textContent = 'Gerando código seguro...'
       pairingExpiry.textContent = ''
+      pairingQr.removeAttribute('src')
+      pairingQrWrap.hidden = true
       newPairing.disabled = true
       try {
         const result = await window.displayHubPlayer.startPairing()
@@ -204,6 +220,10 @@
         pairingId = result.pairingId
         pairingExpiresAt = result.expiresAt
         pairingCode.textContent = result.code
+        if (result.qrDataUrl) {
+          pairingQr.src = result.qrDataUrl
+          pairingQrWrap.hidden = false
+        }
         pairingStatus.textContent = 'Aguardando ativação no painel do DisplayHub...'
         updateExpiry()
         pairingTimer = window.setInterval(() => void pollPairing(), 3000)
