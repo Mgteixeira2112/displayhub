@@ -23,6 +23,29 @@ type DeviceCommand = {
   completed_at: string | null
 }
 
+type DisplayOption = {
+  id: string
+  name: string
+  location: string | null
+}
+
+type PairingMonitor = {
+  id: string
+  label?: string
+  primary?: boolean
+  width?: number
+  height?: number
+  x?: number
+  y?: number
+}
+
+type PairingPreview = {
+  pairing_id: string
+  hostname: string | null
+  monitors: PairingMonitor[]
+  expires_at: string
+}
+
 type RemoteCommand = 'reload_displays' | 'restart_player' | 'enter_kiosk' | 'exit_kiosk' | 'reboot_device'
 
 const commandLabels: Record<RemoteCommand, string> = {
@@ -48,13 +71,23 @@ function formatLastSeen(lastSeenAt: string) {
 export default function WindowsDevicesManager() {
   const [devices, setDevices] = useState<Device[]>([])
   const [commands, setCommands] = useState<DeviceCommand[]>([])
+  const [displays, setDisplays] = useState<DisplayOption[]>([])
   const [loading, setLoading] = useState(true)
   const [busyDeviceId, setBusyDeviceId] = useState<string | null>(null)
   const [globalError, setGlobalError] = useState('')
   const [feedbackByDevice, setFeedbackByDevice] = useState<Record<string, string>>({})
+  const [pairingCode, setPairingCode] = useState('')
+  const [pairingPreview, setPairingPreview] = useState<PairingPreview | null>(null)
+  const [pairingSelections, setPairingSelections] = useState<Record<string, string>>({})
+  const [pairingFeedback, setPairingFeedback] = useState('')
+  const [pairingBusy, setPairingBusy] = useState(false)
 
   const load = useCallback(async () => {
-    const [{ data: deviceRows, error: deviceError }, { data: commandRows, error: commandError }] = await Promise.all([
+    const [
+      { data: deviceRows, error: deviceError },
+      { data: commandRows, error: commandError },
+      { data: displayRows, error: displayError },
+    ] = await Promise.all([
       supabase
         .from('player_devices')
         .select('id,hostname,app_version,os_release,monitor_count,kiosk_mode,auto_start,last_seen_at')
@@ -65,12 +98,20 @@ export default function WindowsDevicesManager() {
         .select('id,device_id,command,status,result,created_at,completed_at')
         .order('created_at', { ascending: false })
         .limit(40),
+      supabase
+        .from('displays')
+        .select('id,name,location')
+        .eq('is_active', true)
+        .is('revoked_at', null)
+        .order('name', { ascending: true }),
     ])
 
     if (deviceError) throw deviceError
     if (commandError) throw commandError
+    if (displayError) throw displayError
     setDevices((deviceRows || []) as Device[])
     setCommands((commandRows || []) as DeviceCommand[])
+    setDisplays((displayRows || []) as DisplayOption[])
   }, [])
 
   useEffect(() => {
@@ -101,6 +142,68 @@ export default function WindowsDevicesManager() {
     }
     return map
   }, [commands])
+
+  const lookupPairingCode = async () => {
+    const normalizedCode = pairingCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+    setPairingCode(normalizedCode)
+    setPairingFeedback('')
+    setPairingPreview(null)
+    setPairingSelections({})
+
+    if (normalizedCode.length !== 6) {
+      setPairingFeedback('Informe os 6 caracteres exibidos no Player Windows.')
+      return
+    }
+
+    setPairingBusy(true)
+    try {
+      const { data, error } = await supabase.rpc('preview_windows_player_pairing', { p_code: normalizedCode })
+      if (error) throw error
+      const preview = data as PairingPreview
+      const monitors = Array.isArray(preview?.monitors) ? preview.monitors : []
+      if (!preview?.pairing_id || monitors.length === 0) throw new Error('O código não possui monitores disponíveis para ativação.')
+      setPairingPreview({ ...preview, monitors })
+      setPairingSelections(Object.fromEntries(monitors.map((monitor) => [String(monitor.id), ''])))
+    } catch (error) {
+      setPairingFeedback(error instanceof Error ? error.message : 'Código de ativação não encontrado ou expirado.')
+    } finally {
+      setPairingBusy(false)
+    }
+  }
+
+  const activatePairing = async () => {
+    if (!pairingPreview) return
+    const mappings = pairingPreview.monitors
+      .map((monitor) => ({
+        physical_display_id: String(monitor.id),
+        display_id: pairingSelections[String(monitor.id)] || '',
+      }))
+      .filter((mapping) => mapping.display_id)
+
+    if (mappings.length !== pairingPreview.monitors.length) {
+      setPairingFeedback('Escolha uma tela do DisplayHub para cada monitor detectado.')
+      return
+    }
+
+    setPairingBusy(true)
+    setPairingFeedback('Ativando o Player...')
+    try {
+      const { error } = await supabase.rpc('claim_windows_player_pairing', {
+        p_code: pairingCode,
+        p_mappings: mappings,
+      })
+      if (error) throw error
+      setPairingFeedback('Ativação autorizada. O Player receberá a configuração e iniciará automaticamente em alguns segundos.')
+      setPairingPreview(null)
+      setPairingSelections({})
+      setPairingCode('')
+      window.setTimeout(() => void load(), 4000)
+    } catch (error) {
+      setPairingFeedback(error instanceof Error ? error.message : 'Não foi possível concluir a ativação.')
+    } finally {
+      setPairingBusy(false)
+    }
+  }
 
   const sendCommand = async (device: Device, command: RemoteCommand) => {
     if (command === 'reboot_device') {
@@ -139,12 +242,69 @@ export default function WindowsDevicesManager() {
         <div>
           <p className="eyebrow">Operação remota</p>
           <h1>Players Windows</h1>
-          <p>Veja quais computadores estão online e envie comandos seguros para o Player instalado.</p>
+          <p>Veja quais computadores estão online, ative novos Players e envie comandos seguros para instalações existentes.</p>
         </div>
         <button className="secondary-button compact" type="button" onClick={() => void load()}>Atualizar</button>
       </div>
 
       {globalError && <div className="windows-devices-feedback">{globalError}</div>}
+
+      <section className="windows-pairing-card">
+        <div className="windows-pairing-copy">
+          <p className="eyebrow">Nova instalação</p>
+          <h2>Ativar Player por código</h2>
+          <p>Digite o código de 6 caracteres exibido no computador. Depois escolha qual tela do DisplayHub cada monitor deve abrir.</p>
+        </div>
+        <div className="windows-pairing-code-row">
+          <input
+            value={pairingCode}
+            onChange={(event) => setPairingCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+            onKeyDown={(event) => { if (event.key === 'Enter') void lookupPairingCode() }}
+            placeholder="A7K2P9"
+            maxLength={6}
+            aria-label="Código de ativação"
+          />
+          <button type="button" disabled={pairingBusy} onClick={() => void lookupPairingCode()}>Localizar Player</button>
+        </div>
+
+        {pairingPreview && (
+          <div className="windows-pairing-preview">
+            <div className="windows-pairing-preview-head">
+              <div>
+                <strong>{pairingPreview.hostname || 'Computador Windows'}</strong>
+                <span>{pairingPreview.monitors.length} {pairingPreview.monitors.length === 1 ? 'monitor detectado' : 'monitores detectados'}</span>
+              </div>
+              <span>Código válido até {new Date(pairingPreview.expires_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+
+            <div className="windows-pairing-monitor-list">
+              {pairingPreview.monitors.map((monitor, index) => (
+                <label className="windows-pairing-monitor" key={String(monitor.id)}>
+                  <span>
+                    <strong>{monitor.label || `Monitor ${index + 1}`}{monitor.primary ? ' · Principal' : ''}</strong>
+                    <small>{monitor.width && monitor.height ? `${monitor.width} × ${monitor.height}` : `ID ${monitor.id}`}</small>
+                  </span>
+                  <select
+                    value={pairingSelections[String(monitor.id)] || ''}
+                    onChange={(event) => setPairingSelections((current) => ({ ...current, [String(monitor.id)]: event.target.value }))}
+                  >
+                    <option value="">Escolha a tela DisplayHub</option>
+                    {displays.map((display) => (
+                      <option key={display.id} value={display.id}>{display.name}{display.location ? ` · ${display.location}` : ''}</option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+
+            <button className="windows-pairing-activate" type="button" disabled={pairingBusy || displays.length === 0} onClick={() => void activatePairing()}>
+              Ativar e enviar configuração
+            </button>
+          </div>
+        )}
+
+        {pairingFeedback && <div className="windows-devices-feedback">{pairingFeedback}</div>}
+      </section>
 
       {devices.length === 0 ? (
         <div className="windows-device-empty">Nenhum Player Windows registrado ainda.</div>
