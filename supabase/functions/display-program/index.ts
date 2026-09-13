@@ -116,7 +116,7 @@ Deno.serve(async (req: Request) => {
       })).filter((item) => item.content || item.structured || item.poster),
     }]))
 
-    const syncSession = groupPublication?.mode === 'video_wall'
+    const syncSession = groupPublication && ['mirror', 'video_wall'].includes(groupPublication.mode)
       ? await getOrCreateSyncSession(db, display.company_id, groupPublication.groupId, String(groupPublication.publication.playlist_id))
       : null
     const groupLaunch = groupPublication && ['video_wall', 'coordinated'].includes(groupPublication.mode)
