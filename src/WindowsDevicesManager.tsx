@@ -50,14 +50,16 @@ export default function WindowsDevicesManager() {
   const [commands, setCommands] = useState<DeviceCommand[]>([])
   const [loading, setLoading] = useState(true)
   const [busyDeviceId, setBusyDeviceId] = useState<string | null>(null)
-  const [feedback, setFeedback] = useState('')
+  const [globalError, setGlobalError] = useState('')
+  const [feedbackByDevice, setFeedbackByDevice] = useState<Record<string, string>>({})
 
   const load = useCallback(async () => {
     const [{ data: deviceRows, error: deviceError }, { data: commandRows, error: commandError }] = await Promise.all([
       supabase
         .from('player_devices')
         .select('id,hostname,app_version,os_release,monitor_count,kiosk_mode,auto_start,last_seen_at')
-        .order('last_seen_at', { ascending: false }),
+        .order('hostname', { ascending: true, nullsFirst: false })
+        .order('id', { ascending: true }),
       supabase
         .from('player_device_commands')
         .select('id,device_id,command,status,result,created_at,completed_at')
@@ -76,8 +78,9 @@ export default function WindowsDevicesManager() {
     const refresh = async () => {
       try {
         await load()
+        if (active) setGlobalError('')
       } catch (error) {
-        if (active) setFeedback(error instanceof Error ? error.message : 'Não foi possível carregar os Players Windows.')
+        if (active) setGlobalError(error instanceof Error ? error.message : 'Não foi possível carregar os Players Windows.')
       } finally {
         if (active) setLoading(false)
       }
@@ -106,17 +109,23 @@ export default function WindowsDevicesManager() {
     }
 
     setBusyDeviceId(device.id)
-    setFeedback('')
+    setFeedbackByDevice((current) => ({ ...current, [device.id]: '' }))
     try {
       const { error } = await supabase.rpc('queue_windows_player_command', {
         p_device_id: device.id,
         p_command: command,
       })
       if (error) throw error
-      setFeedback(`${commandLabels[command]} enviado para ${device.hostname || 'o Player'}.`)
+      setFeedbackByDevice((current) => ({
+        ...current,
+        [device.id]: `${commandLabels[command]} enviado para ${device.hostname || 'o Player'}.`,
+      }))
       await load()
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Não foi possível enviar o comando.')
+      setFeedbackByDevice((current) => ({
+        ...current,
+        [device.id]: error instanceof Error ? error.message : 'Não foi possível enviar o comando.',
+      }))
     } finally {
       setBusyDeviceId(null)
     }
@@ -135,7 +144,7 @@ export default function WindowsDevicesManager() {
         <button className="secondary-button compact" type="button" onClick={() => void load()}>Atualizar</button>
       </div>
 
-      {feedback && <div className="windows-devices-feedback">{feedback}</div>}
+      {globalError && <div className="windows-devices-feedback">{globalError}</div>}
 
       {devices.length === 0 ? (
         <div className="windows-device-empty">Nenhum Player Windows registrado ainda.</div>
@@ -146,6 +155,7 @@ export default function WindowsDevicesManager() {
             const latest = latestCommandByDevice.get(device.id)
             const busy = busyDeviceId === device.id
             const kioskCommand: RemoteCommand = device.kiosk_mode ? 'exit_kiosk' : 'enter_kiosk'
+            const deviceFeedback = feedbackByDevice[device.id]
 
             return (
               <article className="windows-device-card" key={device.id}>
@@ -165,6 +175,8 @@ export default function WindowsDevicesManager() {
                 </div>
 
                 <p className="windows-device-last-seen">Último contato {formatLastSeen(device.last_seen_at)}</p>
+
+                {deviceFeedback && <div className="windows-devices-feedback">{deviceFeedback}</div>}
 
                 {latest && (
                   <div className={`windows-device-command-status status-${latest.status}`}>
