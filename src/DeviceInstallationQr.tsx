@@ -18,6 +18,7 @@ export default function DeviceInstallationQr() {
   const [feedback, setFeedback] = useState('')
   const [now, setNow] = useState(Date.now())
   const qrRef = useRef<HTMLDivElement | null>(null)
+  const activationDetectedRef = useRef(false)
 
   const activationUrl = useMemo(() => {
     if (!installation?.token) return ''
@@ -47,6 +48,35 @@ export default function DeviceInstallationQr() {
     })
   }, [activationUrl])
 
+  useEffect(() => {
+    if (!installation?.request_id) return
+    activationDetectedRef.current = false
+    let active = true
+
+    const checkInstallation = async () => {
+      const { data, error } = await supabase
+        .from('device_installation_requests')
+        .select('status,display_id')
+        .eq('id', installation.request_id)
+        .maybeSingle()
+
+      if (!active || error || !data) return
+
+      if (data.status === 'consumed' && data.display_id && !activationDetectedRef.current) {
+        activationDetectedRef.current = true
+        setFeedback('Dispositivo ativado e nova tela criada. Atualizando a lista...')
+        window.setTimeout(() => window.location.reload(), 700)
+      }
+    }
+
+    void checkInstallation()
+    const timer = window.setInterval(() => void checkInstallation(), 1500)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [installation?.request_id])
+
   const remainingSeconds = installation
     ? Math.max(0, Math.ceil((new Date(installation.expires_at).getTime() - now) / 1000))
     : 0
@@ -60,6 +90,7 @@ export default function DeviceInstallationQr() {
       if (error) throw error
       const next = data as Installation
       if (!next?.token || !next?.expires_at) throw new Error('Não foi possível criar a instalação.')
+      activationDetectedRef.current = false
       setInstallation(next)
       setNow(Date.now())
       setFeedback('QR pronto. Ao ser lido pelo dispositivo, uma nova tela será criada e associada automaticamente.')
