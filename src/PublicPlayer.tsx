@@ -153,7 +153,7 @@ export default function PublicPlayer({ token }: { token: string }) {
   const publication = useMemo(() => program?.publications.find((row) => publicationMatches(row)) || null, [program])
   const items = publication?.playlist.items || []
   const preloadVideoUrls = useMemo(() => promotionVideoUrls(items), [items])
-  const syncSession = program?.group_mode === 'video_wall' ? program.sync_session || null : null
+  const syncSession = program && ['mirror', 'video_wall'].includes(program.group_mode || '') ? program.sync_session || null : null
   const launch = program && ['video_wall', 'coordinated'].includes(program.group_mode || '') ? program.group_launch || null : null
   const coordinatedLaunch = program?.group_mode === 'coordinated' ? launch : null
   const launchHolding = launch?.status === 'preparing'
