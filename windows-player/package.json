@@ -1,12 +1,15 @@
 {
   "name": "displayhub-windows-player",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "private": true,
   "description": "DisplayHub Player para Windows",
   "main": "startup.cjs",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4"
   },
   "devDependencies": {
     "electron": "37.2.6",
