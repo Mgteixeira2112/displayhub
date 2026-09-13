@@ -1,0 +1,46 @@
+{
+  "name": "displayhub-windows-player",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DisplayHub Player para Windows",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "37.2.6",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "br.com.displayhub.player",
+    "productName": "DisplayHub Player",
+    "asar": true,
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "setup.html"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "shortcutName": "DisplayHub Player"
+    },
+    "artifactName": "DisplayHub-Player-Setup-${version}.${ext}",
+    "directories": {
+      "output": "dist"
+    }
+  }
+}
