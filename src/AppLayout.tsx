@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import DisplayGroupsManager from './DisplayGroupsManager'
+import WindowsDevicesManager from './WindowsDevicesManager'
 
-type View = 'overview' | 'displays' | 'groups' | 'library' | 'posters' | 'campaigns' | 'playlists' | 'schedule' | 'technical-templates' | 'history' | 'settings'
+type View = 'overview' | 'displays' | 'devices' | 'groups' | 'library' | 'posters' | 'campaigns' | 'playlists' | 'schedule' | 'technical-templates' | 'history' | 'settings'
 type IconName = 'home' | 'create' | 'campaigns' | 'gallery' | 'screens' | 'content' | 'advanced' | 'wall' | 'playlists' | 'schedule' | 'history' | 'settings'
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
 const labels: Record<View, string> = {
   overview: 'Início',
   displays: 'Telas',
+  devices: 'Players Windows',
   groups: 'Video Wall e Grupos',
   library: 'Conteúdo',
   posters: 'Criar',
@@ -30,6 +32,7 @@ const labels: Record<View, string> = {
 const descriptions: Record<View, string> = {
   overview: 'Acompanhe a operação e acesse rapidamente o que precisa de atenção',
   displays: 'Gerencie as TVs, setores, links públicos e disponibilidade',
+  devices: 'Acompanhe computadores Windows e envie comandos remotos para os Players',
   groups: 'Organize grupos, grades e Video Walls',
   library: 'Organize imagens, vídeos e outros conteúdos da operação',
   posters: 'Crie ofertas e peças promocionais a partir dos modelos disponíveis',
@@ -41,8 +44,8 @@ const descriptions: Record<View, string> = {
   settings: 'Dados da conta, acesso e preferências do sistema',
 }
 
-const advancedViews: View[] = ['groups', 'playlists', 'schedule', 'technical-templates', 'history']
-const allViews = new Set<View>(['overview', 'displays', 'groups', 'library', 'posters', 'campaigns', 'playlists', 'schedule', 'technical-templates', 'history', 'settings'])
+const advancedViews: View[] = ['devices', 'groups', 'playlists', 'schedule', 'technical-templates', 'history']
+const allViews = new Set<View>(['overview', 'displays', 'devices', 'groups', 'library', 'posters', 'campaigns', 'playlists', 'schedule', 'technical-templates', 'history', 'settings'])
 
 function NavIcon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
@@ -122,6 +125,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
               <span className="software-nav-chevron" aria-hidden="true">⌄</span>
             </button>
             <div className="software-nav-submenu">
+              {nav('devices', 'Players Windows', 'screens', true)}
               {nav('groups', 'Video Wall e Grupos', 'wall', true)}
               {nav('playlists', 'Playlists', 'playlists', true)}
               {nav('schedule', 'Programação', 'schedule', true)}
@@ -150,10 +154,12 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           </div>
           <div className="software-topbar-actions">
             <span className="software-company-pill">{companyName}</span>
-            {view !== 'groups' && <button className="software-topbar-create" type="button" onClick={() => setView('posters')}>+ Criar</button>}
+            {view !== 'groups' && view !== 'devices' && <button className="software-topbar-create" type="button" onClick={() => setView('posters')}>+ Criar</button>}
           </div>
         </header>
-        <main key={view} className="software-content">{view === 'groups' ? <DisplayGroupsManager /> : children}</main>
+        <main key={view} className="software-content">
+          {view === 'groups' ? <DisplayGroupsManager /> : view === 'devices' ? <WindowsDevicesManager /> : children}
+        </main>
       </div>
     </div>
   )

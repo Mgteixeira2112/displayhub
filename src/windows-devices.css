@@ -1,0 +1,172 @@
+.windows-devices-panel {
+  display: grid;
+  gap: 20px;
+}
+
+.windows-devices-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.windows-devices-heading h1,
+.windows-device-card h2 {
+  margin: 0;
+}
+
+.windows-devices-heading p:last-child {
+  margin: 8px 0 0;
+  color: var(--dh-muted);
+}
+
+.windows-devices-feedback,
+.windows-device-empty {
+  padding: 14px 16px;
+  border: 1px solid var(--dh-border);
+  border-radius: 14px;
+  background: var(--dh-panel);
+}
+
+.windows-device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.windows-device-card {
+  padding: 18px;
+  border: 1px solid var(--dh-border);
+  border-radius: 18px;
+  background: var(--dh-panel);
+  box-shadow: 0 16px 36px rgba(5, 8, 17, 0.08);
+}
+
+.windows-device-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.windows-device-card h2 {
+  margin-top: 8px;
+  font-size: 1.12rem;
+}
+
+.windows-device-status,
+.windows-device-version {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.windows-device-status.online {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.windows-device-status.offline {
+  background: rgba(100, 116, 139, 0.13);
+  color: #64748b;
+}
+
+.windows-device-version {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.windows-device-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.windows-device-facts span {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--dh-muted);
+  font-size: 0.82rem;
+}
+
+.windows-device-facts strong {
+  color: var(--dh-text);
+  font-size: 0.9rem;
+}
+
+.windows-device-last-seen {
+  margin: 14px 0 0;
+  color: var(--dh-muted);
+  font-size: 0.82rem;
+}
+
+.windows-device-command-status {
+  margin-top: 12px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--dh-muted);
+  font-size: 0.78rem;
+}
+
+.windows-device-command-status.status-completed {
+  background: rgba(22, 163, 74, 0.08);
+  color: #15803d;
+}
+
+.windows-device-command-status.status-failed,
+.windows-device-command-status.status-expired {
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+}
+
+.windows-device-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.windows-device-actions button {
+  min-height: 40px;
+  border: 1px solid var(--dh-border);
+  border-radius: 12px;
+  background: var(--dh-surface, #fff);
+  color: var(--dh-text);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.windows-device-actions button:hover:not(:disabled) {
+  border-color: rgba(37, 99, 235, 0.45);
+  color: #2563eb;
+}
+
+.windows-device-actions button.danger:hover:not(:disabled) {
+  border-color: rgba(220, 38, 38, 0.45);
+  color: #b91c1c;
+}
+
+.windows-device-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .windows-devices-heading {
+    flex-direction: column;
+  }
+
+  .windows-device-facts,
+  .windows-device-actions {
+    grid-template-columns: 1fr;
+  }
+}

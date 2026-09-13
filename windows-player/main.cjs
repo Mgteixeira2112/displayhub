@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, safeStorage, shell, screen, session } = require('electron')
 const crypto = require('crypto')
+const { execFile } = require('child_process')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
@@ -10,6 +11,7 @@ const SUPABASE_URL = 'https://meqeluddtwthqmrtbhbr.supabase.co'
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_yjnvIPUmi8-Kt7yTFibw3w_DQlawViE'
 const RETRY_MS = 5000
 const HEARTBEAT_MS = 60000
+const COMMAND_POLL_MS = 5000
 const PLAYER_PARTITION = 'persist:displayhub-player'
 const DISK_CACHE_BYTES = 1024 * 1024 * 1024
 const MEDIA_CACHE_BYTES = 512 * 1024 * 1024
@@ -27,6 +29,8 @@ const playerWindows = new Map()
 const retryTimers = new Map()
 let playerSession = null
 let heartbeatTimer = null
+let commandPollTimer = null
+let commandPollInFlight = false
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -298,6 +302,22 @@ function heartbeatMappings(config) {
     .filter((mapping) => mapping.physical_display_id && mapping.public_token)
 }
 
+async function callSupabaseRpc(functionName, body) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) throw new Error(`${functionName}_http_${response.status}`)
+  const text = await response.text()
+  return text ? JSON.parse(text) : null
+}
+
 async function sendHeartbeat() {
   if (!safeStorage.isEncryptionAvailable()) return false
 
@@ -305,27 +325,17 @@ async function sendHeartbeat() {
     const identity = readOrCreateDeviceIdentity()
     const config = readConfig()
     const settings = config?.settings || { ...DEFAULT_SETTINGS }
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/heartbeat_windows_player`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_PUBLISHABLE_KEY,
-        Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        p_device_id: identity.deviceId,
-        p_device_secret: identity.deviceSecret,
-        p_hostname: os.hostname(),
-        p_app_version: app.getVersion(),
-        p_os_release: os.release(),
-        p_monitors: heartbeatMonitors(),
-        p_mappings: heartbeatMappings(config),
-        p_kiosk_mode: settings.kioskMode,
-        p_auto_start: settings.autoStart,
-      }),
+    await callSupabaseRpc('heartbeat_windows_player', {
+      p_device_id: identity.deviceId,
+      p_device_secret: identity.deviceSecret,
+      p_hostname: os.hostname(),
+      p_app_version: app.getVersion(),
+      p_os_release: os.release(),
+      p_monitors: heartbeatMonitors(),
+      p_mappings: heartbeatMappings(config),
+      p_kiosk_mode: settings.kioskMode,
+      p_auto_start: settings.autoStart,
     })
-
-    if (!response.ok) throw new Error(`heartbeat_http_${response.status}`)
     return true
   } catch (error) {
     console.warn('[DisplayHub] heartbeat não enviado:', error?.message || error)
@@ -337,6 +347,102 @@ function startHeartbeatLoop() {
   if (heartbeatTimer) clearInterval(heartbeatTimer)
   void sendHeartbeat()
   heartbeatTimer = setInterval(() => void sendHeartbeat(), HEARTBEAT_MS)
+}
+
+async function completeRemoteCommand(identity, commandId, success, result) {
+  try {
+    await callSupabaseRpc('complete_windows_player_command', {
+      p_device_id: identity.deviceId,
+      p_device_secret: identity.deviceSecret,
+      p_command_id: commandId,
+      p_success: success,
+      p_result: String(result || '').slice(0, 500),
+    })
+  } catch (error) {
+    console.warn('[DisplayHub] não foi possível confirmar comando remoto:', error?.message || error)
+  }
+}
+
+async function setRemoteKioskMode(enabled) {
+  const config = readConfig()
+  if (!config?.mappings?.length) throw new Error('player_not_configured')
+  const nextConfig = writeConfig(config.mappings, { ...config.settings, kioskMode: Boolean(enabled) })
+  applyLoginLaunch(nextConfig.settings)
+  await launchConfiguredDisplays(nextConfig)
+  void sendHeartbeat()
+}
+
+async function executeRemoteCommand(identity, command) {
+  const commandId = command?.id
+  const commandName = command?.command
+  if (!commandId || !commandName) return
+
+  try {
+    if (commandName === 'reload_displays') {
+      for (const playerWindow of playerWindows.values()) {
+        if (!playerWindow.isDestroyed()) playerWindow.webContents.reloadIgnoringCache()
+      }
+      await completeRemoteCommand(identity, commandId, true, `reloaded_${playerWindows.size}_windows`)
+      return
+    }
+
+    if (commandName === 'enter_kiosk') {
+      await setRemoteKioskMode(true)
+      await completeRemoteCommand(identity, commandId, true, 'kiosk_enabled')
+      return
+    }
+
+    if (commandName === 'exit_kiosk') {
+      await setRemoteKioskMode(false)
+      await completeRemoteCommand(identity, commandId, true, 'kiosk_disabled')
+      return
+    }
+
+    if (commandName === 'restart_player') {
+      await completeRemoteCommand(identity, commandId, true, 'player_restarting')
+      setTimeout(() => {
+        app.relaunch()
+        app.exit(0)
+      }, 500)
+      return
+    }
+
+    if (commandName === 'reboot_device') {
+      if (process.platform !== 'win32') throw new Error('reboot_supported_only_on_windows')
+      await completeRemoteCommand(identity, commandId, true, 'windows_reboot_scheduled')
+      execFile('shutdown.exe', ['/r', '/t', '5', '/f'], (error) => {
+        if (error) console.warn('[DisplayHub] reinício do Windows falhou:', error.message)
+      })
+      return
+    }
+
+    throw new Error('unsupported_command')
+  } catch (error) {
+    await completeRemoteCommand(identity, commandId, false, error?.message || String(error))
+  }
+}
+
+async function pollRemoteCommand() {
+  if (commandPollInFlight || !safeStorage.isEncryptionAvailable()) return
+  commandPollInFlight = true
+  try {
+    const identity = readOrCreateDeviceIdentity()
+    const command = await callSupabaseRpc('poll_windows_player_command', {
+      p_device_id: identity.deviceId,
+      p_device_secret: identity.deviceSecret,
+    })
+    if (command?.id) await executeRemoteCommand(identity, command)
+  } catch (error) {
+    console.warn('[DisplayHub] consulta de comandos remotos falhou:', error?.message || error)
+  } finally {
+    commandPollInFlight = false
+  }
+}
+
+function startRemoteCommandLoop() {
+  if (commandPollTimer) clearInterval(commandPollTimer)
+  void pollRemoteCommand()
+  commandPollTimer = setInterval(() => void pollRemoteCommand(), COMMAND_POLL_MS)
 }
 
 function resolvePhysicalDisplay(displayId) {
@@ -482,6 +588,7 @@ app.whenReady().then(() => {
   getPlayerSession()
   createSetupWindow()
   startHeartbeatLoop()
+  startRemoteCommandLoop()
 
   screen.on('display-added', () => {
     void sendHeartbeat()
@@ -511,6 +618,7 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   if (heartbeatTimer) clearInterval(heartbeatTimer)
+  if (commandPollTimer) clearInterval(commandPollTimer)
 })
 
 app.on('window-all-closed', () => {
