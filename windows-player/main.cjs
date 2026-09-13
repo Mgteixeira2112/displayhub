@@ -1,14 +1,34 @@
-const { app, BrowserWindow, ipcMain, safeStorage, shell, screen } = require('electron')
+const { app, BrowserWindow, ipcMain, safeStorage, shell, screen, session } = require('electron')
 const fs = require('fs')
 const path = require('path')
 
 const DISPLAYHUB_ORIGIN = 'https://mgteixeira2112.github.io'
 const DISPLAYHUB_BASE = '/displayhub/'
 const RETRY_MS = 5000
+const PLAYER_PARTITION = 'persist:displayhub-player'
+const DISK_CACHE_BYTES = 1024 * 1024 * 1024
+const MEDIA_CACHE_BYTES = 512 * 1024 * 1024
+const STARTUP_STAGGER_MS = 700
+
+app.commandLine.appendSwitch('disk-cache-size', String(DISK_CACHE_BYTES))
+app.commandLine.appendSwitch('media-cache-size', String(MEDIA_CACHE_BYTES))
+app.commandLine.appendSwitch('disable-renderer-backgrounding')
+app.commandLine.appendSwitch('disable-background-timer-throttling')
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
 
 let setupWindow = null
 const playerWindows = new Map()
 const retryTimers = new Map()
+let playerSession = null
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function getPlayerSession() {
+  if (!playerSession) playerSession = session.fromPartition(PLAYER_PARTITION, { cache: true })
+  return playerSession
+}
 
 function configPath() {
   return path.join(app.getPath('userData'), 'player-config.json')
@@ -224,9 +244,11 @@ function createPlayerWindow(mapping) {
     backgroundColor: '#050811',
     show: false,
     webPreferences: {
+      session: getPlayerSession(),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      backgroundThrottling: false,
       devTools: !app.isPackaged,
     },
   })
@@ -247,7 +269,10 @@ async function launchConfiguredDisplays(config = readConfig()) {
   closePlayerWindows()
   let launched = 0
   for (const mapping of config.mappings) {
-    if (createPlayerWindow(mapping)) launched += 1
+    if (createPlayerWindow(mapping)) {
+      launched += 1
+      if (config.mappings.length > 1) await sleep(STARTUP_STAGGER_MS)
+    }
   }
 
   if (launched === 0) {
@@ -298,6 +323,7 @@ ipcMain.handle('player:get-status', () => {
     monitors: getPhysicalDisplays(),
     encryptionAvailable: safeStorage.isEncryptionAvailable(),
     packaged: app.isPackaged,
+    sharedCache: true,
   }
 })
 
@@ -317,6 +343,7 @@ ipcMain.handle('player:reset', async () => {
 
 app.whenReady().then(() => {
   setupLoginLaunch()
+  getPlayerSession()
   createSetupWindow()
 
   screen.on('display-added', () => {
