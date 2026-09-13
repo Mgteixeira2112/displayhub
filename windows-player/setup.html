@@ -15,6 +15,19 @@
     h2 { margin: 0; font-size: 1rem; }
     p { color: #9fb0c6; line-height: 1.55; }
     .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 22px 0 14px; }
+    .settings-panel { margin: 0 0 22px; padding: 16px; border: 1px solid #26364d; border-radius: 14px; background: #101a2b; }
+    .settings-panel h2 { margin-bottom: 12px; }
+    .setting-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.06); }
+    .setting-row:first-of-type { border-top: 0; }
+    .setting-copy { display: grid; gap: 4px; }
+    .setting-copy strong { font-size: .94rem; }
+    .setting-copy span { color: #93a4bb; font-size: .83rem; line-height: 1.45; }
+    .switch { position: relative; width: 48px; height: 28px; flex: 0 0 auto; }
+    .switch input { position: absolute; opacity: 0; pointer-events: none; }
+    .slider { position: absolute; inset: 0; border-radius: 999px; background: #334155; cursor: pointer; transition: .18s ease; }
+    .slider::after { content: ''; position: absolute; width: 20px; height: 20px; left: 4px; top: 4px; border-radius: 50%; background: white; transition: .18s ease; }
+    .switch input:checked + .slider { background: #2563eb; }
+    .switch input:checked + .slider::after { transform: translateX(20px); }
     .monitor-list { display: grid; gap: 12px; }
     .monitor-card { display: grid; grid-template-columns: minmax(210px,.7fr) minmax(0,1.3fr); gap: 16px; align-items: center; padding: 16px; border: 1px solid #26364d; border-radius: 14px; background: #111c2e; }
     .monitor-meta { display: grid; gap: 5px; }
@@ -22,8 +35,8 @@
     .monitor-meta span { color: #93a4bb; font-size: .84rem; }
     .badge { display: inline-flex; width: fit-content; padding: 4px 8px; border-radius: 999px; background: rgba(37,99,235,.18); color: #bfdbfe; font-size: .72rem; font-weight: 800; }
     label { display: grid; gap: 7px; font-weight: 700; font-size: .88rem; }
-    input { width: 100%; height: 44px; padding: 0 13px; border: 1px solid #314158; border-radius: 10px; background: #0d1728; color: #eef4ff; font: inherit; outline: none; }
-    input:focus { border-color: #60a5fa; }
+    input[type="url"] { width: 100%; height: 44px; padding: 0 13px; border: 1px solid #314158; border-radius: 10px; background: #0d1728; color: #eef4ff; font: inherit; outline: none; }
+    input[type="url"]:focus { border-color: #60a5fa; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
     button { height: 42px; border: 0; border-radius: 10px; padding: 0 16px; font: inherit; font-weight: 800; cursor: pointer; }
     .primary { background: #2563eb; color: white; }
@@ -39,10 +52,23 @@
 <body>
   <main>
     <div class="brand"><div class="mark">DH</div><div><h1>DisplayHub Player</h1><p style="margin:4px 0 0">Configuração de monitores do Windows</p></div></div>
+
+    <section class="settings-panel">
+      <h2>Inicialização do Player</h2>
+      <div class="setting-row">
+        <div class="setting-copy"><strong>Iniciar com o Windows</strong><span>Abre o DisplayHub Player automaticamente ao entrar no Windows.</span></div>
+        <label class="switch" aria-label="Iniciar com o Windows"><input id="autoStart" type="checkbox" /><span class="slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-copy"><strong>Abrir em modo quiosque</strong><span>Ocupa as telas configuradas em tela cheia, sem moldura. Desative para manutenção em janelas normais.</span></div>
+        <label class="switch" aria-label="Abrir em modo quiosque"><input id="kioskMode" type="checkbox" /><span class="slider"></span></label>
+      </div>
+    </section>
+
     <p>O Player detecta os monitores conectados a este computador. Você pode vincular cada monitor físico a uma tela diferente do DisplayHub. Monitores sem link ficam livres.</p>
 
     <div class="toolbar">
-      <div><h2 id="monitorCount">Detectando monitores...</h2><p style="margin:4px 0 0">Cada monitor configurado abrirá seu próprio player em tela cheia.</p></div>
+      <div><h2 id="monitorCount">Detectando monitores...</h2><p style="margin:4px 0 0">Cada monitor configurado abrirá seu próprio player.</p></div>
       <button id="refresh" class="ghost" type="button">Detectar novamente</button>
     </div>
 
@@ -64,6 +90,8 @@
     const reset = document.getElementById('reset')
     const refreshButton = document.getElementById('refresh')
     const status = document.getElementById('status')
+    const autoStart = document.getElementById('autoStart')
+    const kioskMode = document.getElementById('kioskMode')
     let mappings = []
 
     function mappingFor(displayId) {
@@ -104,6 +132,8 @@
     async function refresh() {
       const current = await window.displayHubPlayer.getStatus()
       mappings = current.mappings || []
+      autoStart.checked = current.settings?.autoStart !== false
+      kioskMode.checked = current.settings?.kioskMode !== false
       renderMonitors(current.monitors || [])
       reset.hidden = !current.configured
       if (!current.encryptionAvailable) {
@@ -122,10 +152,13 @@
         return
       }
 
-      status.textContent = 'Validando e iniciando os players...'
+      status.textContent = 'Salvando configurações e iniciando os players...'
       save.disabled = true
       try {
-        await window.displayHubPlayer.saveMappings(nextMappings)
+        await window.displayHubPlayer.saveMappings(nextMappings, {
+          autoStart: autoStart.checked,
+          kioskMode: kioskMode.checked,
+        })
       } catch (error) {
         status.textContent = error?.message || 'Não foi possível salvar a configuração.'
         save.disabled = false
@@ -135,8 +168,10 @@
     reset.addEventListener('click', async () => {
       await window.displayHubPlayer.reset()
       mappings = []
+      autoStart.checked = false
+      kioskMode.checked = false
       reset.hidden = true
-      status.textContent = 'Configuração removida.'
+      status.textContent = 'Configuração removida e inicialização automática desativada.'
       await refreshMonitors()
     })
 
