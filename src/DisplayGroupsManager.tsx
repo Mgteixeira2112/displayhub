@@ -161,9 +161,22 @@ export default function DisplayGroupsManager() {
     if (!profile || !selectedGroup || !['mirror', 'video_wall'].includes(selectedGroup.mode) || !canManage) return
     setBusy(true); setMessage('')
     try {
-      const { error: deleteError } = await supabase.from('display_group_publications').delete().eq('group_id', selectedGroup.id); if (deleteError) throw deleteError
-      if (groupPlaylistId) { const { error } = await supabase.from('display_group_publications').insert({ company_id: profile.company_id, group_id: selectedGroup.id, playlist_id: groupPlaylistId, is_active: true }); if (error) throw error }
-      await load(); setPlaylistDirty(false); setMessage(groupPlaylistId ? 'Playlist do grupo salva.' : 'Grupo sem playlist ativa.')
+      if (!groupPlaylistId) {
+        const { error } = await supabase.from('display_group_publications').delete().eq('group_id', selectedGroup.id)
+        if (error) throw error
+        await load(); setPlaylistDirty(false); setMessage('Grupo sem playlist ativa.')
+        return
+      }
+
+      const { data: saved, error } = await supabase
+        .from('display_group_publications')
+        .upsert({ company_id: profile.company_id, group_id: selectedGroup.id, playlist_id: groupPlaylistId, is_active: true }, { onConflict: 'group_id' })
+        .select('id, group_id, playlist_id, is_active')
+        .single()
+      if (error) throw error
+      if (!saved || saved.group_id !== selectedGroup.id || saved.playlist_id !== groupPlaylistId || !saved.is_active) throw new Error('O banco não confirmou a playlist selecionada.')
+
+      await load(); setPlaylistDirty(false); setMessage('Playlist do grupo salva e confirmada.')
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível salvar a playlist do grupo.') } finally { setBusy(false) }
   }
 
