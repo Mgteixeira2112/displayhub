@@ -16,6 +16,9 @@ const PLAYER_PARTITION = 'persist:displayhub-player'
 const DISK_CACHE_BYTES = 1024 * 1024 * 1024
 const MEDIA_CACHE_BYTES = 512 * 1024 * 1024
 const STARTUP_STAGGER_MS = 700
+const WINDOWS_LOGIN_SETTLE_MS = 4000
+const KIOSK_REASSERT_MS = 1500
+const WINDOWS_LOGIN_ARG = '--displayhub-login-start'
 const DEFAULT_SETTINGS = { autoStart: true, kioskMode: true }
 
 app.commandLine.appendSwitch('disk-cache-size', String(DISK_CACHE_BYTES))
@@ -195,7 +198,18 @@ function applyLoginLaunch(settings = DEFAULT_SETTINGS) {
     openAtLogin: Boolean(settings.autoStart),
     openAsHidden: false,
     path: process.execPath,
+    args: [WINDOWS_LOGIN_ARG],
   })
+}
+
+function wasStartedByWindowsLogin() {
+  if (process.argv.includes(WINDOWS_LOGIN_ARG)) return true
+  if (process.platform !== 'win32' || !app.isPackaged) return false
+  try {
+    return Boolean(app.getLoginItemSettings().wasOpenedAtLogin)
+  } catch {
+    return false
+  }
 }
 
 function clearRetry(displayId) {
@@ -462,6 +476,15 @@ function normalWindowBounds(physicalDisplay) {
   }
 }
 
+function enforceKioskWindow(playerWindow, displayId) {
+  if (!playerWindow || playerWindow.isDestroyed()) return
+  const physicalDisplay = resolvePhysicalDisplay(displayId)
+  if (!physicalDisplay) return
+  playerWindow.setBounds(physicalDisplay.bounds, false)
+  playerWindow.setKiosk(true)
+  playerWindow.setFullScreen(true)
+}
+
 function createPlayerWindow(mapping, settings) {
   const physicalDisplay = resolvePhysicalDisplay(mapping.displayId)
   if (!physicalDisplay) return null
@@ -490,7 +513,13 @@ function createPlayerWindow(mapping, settings) {
   })
 
   attachPlayerGuards(playerWindow, mapping.displayId, mapping.displayUrl)
-  playerWindow.once('ready-to-show', () => playerWindow.show())
+  playerWindow.once('ready-to-show', () => {
+    if (kioskMode) enforceKioskWindow(playerWindow, mapping.displayId)
+    playerWindow.show()
+    if (kioskMode) {
+      setTimeout(() => enforceKioskWindow(playerWindow, mapping.displayId), KIOSK_REASSERT_MS)
+    }
+  })
   playerWindows.set(mapping.displayId, playerWindow)
   void loadDisplay(playerWindow, mapping.displayId, mapping.displayUrl)
   return playerWindow
@@ -582,8 +611,8 @@ ipcMain.handle('player:reset', async () => {
   return { ok: true }
 })
 
-app.whenReady().then(() => {
-  const config = readConfig()
+app.whenReady().then(async () => {
+  let config = readConfig()
   applyLoginLaunch(config?.settings || DEFAULT_SETTINGS)
   getPlayerSession()
   createSetupWindow()
@@ -603,8 +632,13 @@ app.whenReady().then(() => {
     if (setupWindow && setupWindow.isVisible()) setupWindow.webContents.send('player:monitors-changed')
   })
 
-  if (config) void launchConfiguredDisplays(config)
-  else void showSetup()
+  if (config?.settings?.kioskMode && wasStartedByWindowsLogin()) {
+    await sleep(WINDOWS_LOGIN_SETTLE_MS)
+    config = readConfig() || config
+  }
+
+  if (config) await launchConfiguredDisplays(config)
+  else await showSetup()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
