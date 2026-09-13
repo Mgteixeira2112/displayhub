@@ -1,3 +1,4 @@
+-- Preparar exibição torna o grupo selecionado a referência mais recente das TVs.
 create or replace function private.touch_display_group_on_prepare()
 returns trigger
 language plpgsql
