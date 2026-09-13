@@ -1,10 +1,15 @@
 const { app, BrowserWindow, ipcMain, safeStorage, shell, screen, session } = require('electron')
+const crypto = require('crypto')
 const fs = require('fs')
+const os = require('os')
 const path = require('path')
 
 const DISPLAYHUB_ORIGIN = 'https://mgteixeira2112.github.io'
 const DISPLAYHUB_BASE = '/displayhub/'
+const SUPABASE_URL = 'https://meqeluddtwthqmrtbhbr.supabase.co'
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_yjnvIPUmi8-Kt7yTFibw3w_DQlawViE'
 const RETRY_MS = 5000
+const HEARTBEAT_MS = 60000
 const PLAYER_PARTITION = 'persist:displayhub-player'
 const DISK_CACHE_BYTES = 1024 * 1024 * 1024
 const MEDIA_CACHE_BYTES = 512 * 1024 * 1024
@@ -21,6 +26,7 @@ let setupWindow = null
 const playerWindows = new Map()
 const retryTimers = new Map()
 let playerSession = null
+let heartbeatTimer = null
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -35,6 +41,10 @@ function configPath() {
   return path.join(app.getPath('userData'), 'player-config.json')
 }
 
+function deviceIdentityPath() {
+  return path.join(app.getPath('userData'), 'device-identity.json')
+}
+
 function validateDisplayUrl(value) {
   try {
     const url = new URL(String(value || '').trim())
@@ -42,6 +52,17 @@ function validateDisplayUrl(value) {
     if (!url.pathname.startsWith(`${DISPLAYHUB_BASE}display/`)) return null
     if (!url.pathname.slice(`${DISPLAYHUB_BASE}display/`.length)) return null
     return url.toString()
+  } catch {
+    return null
+  }
+}
+
+function displayTokenFromUrl(value) {
+  const displayUrl = validateDisplayUrl(value)
+  if (!displayUrl) return null
+  try {
+    const url = new URL(displayUrl)
+    return url.pathname.slice(`${DISPLAYHUB_BASE}display/`.length).split('/')[0] || null
   } catch {
     return null
   }
@@ -146,6 +167,24 @@ function clearConfig() {
   }
 }
 
+function readOrCreateDeviceIdentity() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(deviceIdentityPath(), 'utf8'))
+    const identity = decryptConfig(raw.encryptedIdentity)
+    if (identity?.deviceId && identity?.deviceSecret) return identity
+  } catch {
+    // Create a new identity below.
+  }
+
+  const identity = {
+    deviceId: crypto.randomUUID(),
+    deviceSecret: crypto.randomBytes(32).toString('hex'),
+  }
+  fs.mkdirSync(app.getPath('userData'), { recursive: true })
+  fs.writeFileSync(deviceIdentityPath(), JSON.stringify({ encryptedIdentity: encryptConfig(identity) }, null, 2), 'utf8')
+  return identity
+}
+
 function applyLoginLaunch(settings = DEFAULT_SETTINGS) {
   if (process.platform !== 'win32' || !app.isPackaged) return
   app.setLoginItemSettings({
@@ -235,6 +274,69 @@ function getPhysicalDisplays() {
       rotation: display.rotation,
       size: display.size,
     }))
+}
+
+function heartbeatMonitors() {
+  return getPhysicalDisplays().map((monitor) => ({
+    id: monitor.id,
+    primary: monitor.primary,
+    width: monitor.size.width,
+    height: monitor.size.height,
+    x: monitor.bounds.x,
+    y: monitor.bounds.y,
+    scaleFactor: monitor.scaleFactor,
+    rotation: monitor.rotation,
+  }))
+}
+
+function heartbeatMappings(config) {
+  return (config?.mappings || [])
+    .map((mapping) => ({
+      physical_display_id: String(mapping.displayId || ''),
+      public_token: displayTokenFromUrl(mapping.displayUrl),
+    }))
+    .filter((mapping) => mapping.physical_display_id && mapping.public_token)
+}
+
+async function sendHeartbeat() {
+  if (!safeStorage.isEncryptionAvailable()) return false
+
+  try {
+    const identity = readOrCreateDeviceIdentity()
+    const config = readConfig()
+    const settings = config?.settings || { ...DEFAULT_SETTINGS }
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/heartbeat_windows_player`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        p_device_id: identity.deviceId,
+        p_device_secret: identity.deviceSecret,
+        p_hostname: os.hostname(),
+        p_app_version: app.getVersion(),
+        p_os_release: os.release(),
+        p_monitors: heartbeatMonitors(),
+        p_mappings: heartbeatMappings(config),
+        p_kiosk_mode: settings.kioskMode,
+        p_auto_start: settings.autoStart,
+      }),
+    })
+
+    if (!response.ok) throw new Error(`heartbeat_http_${response.status}`)
+    return true
+  } catch (error) {
+    console.warn('[DisplayHub] heartbeat não enviado:', error?.message || error)
+    return false
+  }
+}
+
+function startHeartbeatLoop() {
+  if (heartbeatTimer) clearInterval(heartbeatTimer)
+  void sendHeartbeat()
+  heartbeatTimer = setInterval(() => void sendHeartbeat(), HEARTBEAT_MS)
 }
 
 function resolvePhysicalDisplay(displayId) {
@@ -361,6 +463,7 @@ ipcMain.handle('player:refresh-monitors', () => getPhysicalDisplays())
 ipcMain.handle('player:save-mappings', async (_event, mappings, settings) => {
   const config = writeConfig(mappings, settings)
   applyLoginLaunch(config.settings)
+  void sendHeartbeat()
   await launchConfiguredDisplays(config)
   return { ok: true, settings: config.settings }
 })
@@ -368,6 +471,7 @@ ipcMain.handle('player:save-mappings', async (_event, mappings, settings) => {
 ipcMain.handle('player:reset', async () => {
   clearConfig()
   applyLoginLaunch({ autoStart: false, kioskMode: false })
+  void sendHeartbeat()
   await showSetup()
   return { ok: true }
 })
@@ -377,14 +481,18 @@ app.whenReady().then(() => {
   applyLoginLaunch(config?.settings || DEFAULT_SETTINGS)
   getPlayerSession()
   createSetupWindow()
+  startHeartbeatLoop()
 
   screen.on('display-added', () => {
+    void sendHeartbeat()
     if (setupWindow && setupWindow.isVisible()) setupWindow.webContents.send('player:monitors-changed')
   })
   screen.on('display-removed', () => {
+    void sendHeartbeat()
     if (setupWindow && setupWindow.isVisible()) setupWindow.webContents.send('player:monitors-changed')
   })
   screen.on('display-metrics-changed', () => {
+    void sendHeartbeat()
     if (setupWindow && setupWindow.isVisible()) setupWindow.webContents.send('player:monitors-changed')
   })
 
@@ -399,6 +507,10 @@ app.whenReady().then(() => {
       else void showSetup()
     }
   })
+})
+
+app.on('before-quit', () => {
+  if (heartbeatTimer) clearInterval(heartbeatTimer)
 })
 
 app.on('window-all-closed', () => {
