@@ -68,6 +68,13 @@ function formatLastSeen(lastSeenAt: string) {
   return new Date(lastSeenAt).toLocaleString('pt-BR')
 }
 
+function pairingCodeFromUrl() {
+  return (new URLSearchParams(window.location.search).get('pairing') || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 6)
+}
+
 export default function WindowsDevicesManager() {
   const [devices, setDevices] = useState<Device[]>([])
   const [commands, setCommands] = useState<DeviceCommand[]>([])
@@ -76,7 +83,7 @@ export default function WindowsDevicesManager() {
   const [busyDeviceId, setBusyDeviceId] = useState<string | null>(null)
   const [globalError, setGlobalError] = useState('')
   const [feedbackByDevice, setFeedbackByDevice] = useState<Record<string, string>>({})
-  const [pairingCode, setPairingCode] = useState('')
+  const [pairingCode, setPairingCode] = useState(pairingCodeFromUrl)
   const [pairingPreview, setPairingPreview] = useState<PairingPreview | null>(null)
   const [pairingSelections, setPairingSelections] = useState<Record<string, string>>({})
   const [pairingFeedback, setPairingFeedback] = useState('')
