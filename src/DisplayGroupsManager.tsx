@@ -169,14 +169,24 @@ export default function DisplayGroupsManager() {
     if (!profile || !selectedGroup || selectedGroup.mode !== 'coordinated' || !canManage || draftDirty) return
     setBusy(true); setMessage('')
     try {
+      const displayIds = Object.values(draftSlots).filter((displayId) => displayId && activeDisplays.some((display) => display.id === displayId))
+      const rowsToInsert = displayIds
+        .map((displayId) => ({ displayId, playlistId: coordinatedPlaylistDraft[displayId] || '' }))
+        .filter((row) => row.playlistId)
+        .map((row) => ({ company_id: profile.company_id, group_id: selectedGroup.id, display_id: row.displayId, playlist_id: row.playlistId, repeat_mode: 'always', weekdays: [0, 1, 2, 3, 4, 5, 6], is_active: true }))
+      if (!rowsToInsert.length) throw new Error('Selecione pelo menos uma playlist antes de salvar o conteúdo.')
+
       const { error: deleteError } = await supabase.from('display_publications').delete().eq('group_id', selectedGroup.id)
       if (deleteError) throw deleteError
-      const rowsToInsert = selectedMemberIds.map((displayId) => ({ displayId, playlistId: coordinatedPlaylistDraft[displayId] || '' })).filter((row) => row.playlistId).map((row) => ({ company_id: profile.company_id, group_id: selectedGroup.id, display_id: row.displayId, playlist_id: row.playlistId, repeat_mode: 'always', weekdays: [0, 1, 2, 3, 4, 5, 6], is_active: true }))
-      if (rowsToInsert.length) {
-        const { error } = await supabase.from('display_publications').insert(rowsToInsert)
-        if (error) throw error
-      }
-      await load(); setCoordinatedDirty(false); setMessage('Conteúdo coordenado salvo.')
+
+      const { data: inserted, error: insertError } = await supabase
+        .from('display_publications')
+        .insert(rowsToInsert)
+        .select('id, group_id, display_id, playlist_id, is_active')
+      if (insertError) throw insertError
+      if (!inserted || inserted.length !== rowsToInsert.length) throw new Error('O banco não confirmou todas as publicações do grupo.')
+
+      await load(); setCoordinatedDirty(false); setMessage(`Conteúdo coordenado salvo em ${inserted.length} tela(s).`)
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Não foi possível salvar o conteúdo coordenado.') } finally { setBusy(false) }
   }
 
