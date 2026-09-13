@@ -179,13 +179,9 @@ export default function PublicPlayer({ token }: { token: string }) {
       return
     }
     const align = () => { const next = resolveLaunchCursor(items, coordinatedLaunch); setCoordinatedCursor(next); return next }
-    const current = align()
-    if (!current) return
-    let timer = window.setTimeout(function realign() {
-      const next = align()
-      if (next) timer = window.setTimeout(realign, next.remainingMs)
-    }, current.remainingMs)
-    return () => window.clearTimeout(timer)
+    align()
+    const timer = window.setInterval(align, 1000)
+    return () => window.clearInterval(timer)
   }, [items, coordinatedLaunch?.id, coordinatedLaunch?.sequence, coordinatedLaunch?.status, coordinatedLaunch?.start_at])
 
   const activeCursor = coordinatedCursor || syncCursor
