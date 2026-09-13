@@ -14,6 +14,12 @@
     h1 { margin: 0; font-size: 1.7rem; }
     h2 { margin: 0; font-size: 1rem; }
     p { color: #9fb0c6; line-height: 1.55; }
+    .pairing-panel { margin: 0 0 22px; padding: 22px; border: 1px solid rgba(96,165,250,.4); border-radius: 18px; background: linear-gradient(135deg, rgba(37,99,235,.18), rgba(15,23,42,.9)); }
+    .pairing-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .pairing-code { margin: 18px 0 10px; font-size: clamp(2.2rem, 7vw, 4.8rem); line-height: 1; letter-spacing: .18em; font-weight: 900; color: #eff6ff; text-align: center; font-variant-numeric: tabular-nums; }
+    .pairing-copy { margin: 0; text-align: center; color: #bfdbfe; }
+    .pairing-status { margin-top: 14px; text-align: center; font-size: .9rem; color: #93c5fd; }
+    .pairing-expiry { margin-top: 6px; text-align: center; font-size: .8rem; color: #7f91aa; }
     .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 22px 0 14px; }
     .settings-panel { margin: 0 0 22px; padding: 16px; border: 1px solid #26364d; border-radius: 14px; background: #101a2b; }
     .settings-panel h2 { margin-bottom: 12px; }
@@ -28,6 +34,7 @@
     .slider::after { content: ''; position: absolute; width: 20px; height: 20px; left: 4px; top: 4px; border-radius: 50%; background: white; transition: .18s ease; }
     .switch input:checked + .slider { background: #2563eb; }
     .switch input:checked + .slider::after { transform: translateX(20px); }
+    .manual-title { margin-top: 28px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.08); }
     .monitor-list { display: grid; gap: 12px; }
     .monitor-card { display: grid; grid-template-columns: minmax(210px,.7fr) minmax(0,1.3fr); gap: 16px; align-items: center; padding: 16px; border: 1px solid #26364d; border-radius: 14px; background: #111c2e; }
     .monitor-meta { display: grid; gap: 5px; }
@@ -42,16 +49,29 @@
     .primary { background: #2563eb; color: white; }
     .secondary { background: #1e293b; color: #dbeafe; }
     .ghost { background: transparent; color: #bfdbfe; border: 1px solid #314158; }
+    button:disabled { opacity: .55; cursor: wait; }
     .status { min-height: 22px; margin-top: 12px; font-size: .9rem; color: #bfdbfe; }
     .note { margin-top: 22px; padding: 14px; border-radius: 12px; background: #111c2e; font-size: .9rem; }
     .empty { padding: 22px; text-align: center; border: 1px dashed #314158; border-radius: 12px; color: #9fb0c6; }
     code { color: #bfdbfe; }
-    @media (max-width: 760px) { .monitor-card { grid-template-columns: 1fr; } .toolbar { align-items: flex-start; flex-direction: column; } }
+    [hidden] { display: none !important; }
+    @media (max-width: 760px) { .monitor-card { grid-template-columns: 1fr; } .toolbar, .pairing-head { align-items: flex-start; flex-direction: column; } }
   </style>
 </head>
 <body>
   <main>
     <div class="brand"><div class="mark">DH</div><div><h1>DisplayHub Player</h1><p style="margin:4px 0 0">Configuração de monitores do Windows</p></div></div>
+
+    <section id="pairingPanel" class="pairing-panel" hidden>
+      <div class="pairing-head">
+        <div><h2>Ativação rápida</h2><p style="margin:6px 0 0">No painel do DisplayHub, informe este código e escolha qual tela será vinculada a este computador.</p></div>
+        <button id="newPairing" class="ghost" type="button">Gerar novo código</button>
+      </div>
+      <div id="pairingCode" class="pairing-code">------</div>
+      <p class="pairing-copy">Não é necessário copiar o link público da tela.</p>
+      <div id="pairingStatus" class="pairing-status">Preparando ativação...</div>
+      <div id="pairingExpiry" class="pairing-expiry"></div>
+    </section>
 
     <section class="settings-panel">
       <h2>Inicialização do Player</h2>
@@ -65,7 +85,7 @@
       </div>
     </section>
 
-    <p>O Player detecta os monitores conectados a este computador. Você pode vincular cada monitor físico a uma tela diferente do DisplayHub. Monitores sem link ficam livres.</p>
+    <div class="manual-title"><h2>Configuração manual</h2><p>O Player detecta os monitores conectados a este computador. Se preferir, ainda é possível vincular cada monitor colando o link público da tela.</p></div>
 
     <div class="toolbar">
       <div><h2 id="monitorCount">Detectando monitores...</h2><p style="margin:4px 0 0">Cada monitor configurado abrirá seu próprio player.</p></div>
@@ -92,7 +112,15 @@
     const status = document.getElementById('status')
     const autoStart = document.getElementById('autoStart')
     const kioskMode = document.getElementById('kioskMode')
+    const pairingPanel = document.getElementById('pairingPanel')
+    const pairingCode = document.getElementById('pairingCode')
+    const pairingStatus = document.getElementById('pairingStatus')
+    const pairingExpiry = document.getElementById('pairingExpiry')
+    const newPairing = document.getElementById('newPairing')
     let mappings = []
+    let pairingId = null
+    let pairingTimer = null
+    let pairingExpiresAt = null
 
     function mappingFor(displayId) {
       return mappings.find((mapping) => String(mapping.displayId) === String(displayId))
@@ -124,6 +152,68 @@
       })
     }
 
+    function stopPairingPoll() {
+      if (pairingTimer) window.clearInterval(pairingTimer)
+      pairingTimer = null
+    }
+
+    function updateExpiry() {
+      if (!pairingExpiresAt) {
+        pairingExpiry.textContent = ''
+        return
+      }
+      const seconds = Math.max(0, Math.ceil((new Date(pairingExpiresAt).getTime() - Date.now()) / 1000))
+      const minutes = Math.floor(seconds / 60)
+      const remainder = String(seconds % 60).padStart(2, '0')
+      pairingExpiry.textContent = seconds > 0 ? `Código válido por ${minutes}:${remainder}` : 'Código expirado.'
+    }
+
+    async function pollPairing() {
+      if (!pairingId) return
+      try {
+        const result = await window.displayHubPlayer.pollPairing(pairingId)
+        if (result?.status === 'configured') {
+          pairingStatus.textContent = 'Ativação concluída. Iniciando o Player...'
+          pairingExpiry.textContent = ''
+          stopPairingPoll()
+          return
+        }
+        if (result?.status === 'expired') {
+          pairingStatus.textContent = 'Este código expirou. Gere um novo código para continuar.'
+          pairingExpiry.textContent = ''
+          stopPairingPoll()
+          return
+        }
+        pairingStatus.textContent = 'Aguardando ativação no painel do DisplayHub...'
+        updateExpiry()
+      } catch (error) {
+        pairingStatus.textContent = 'Não foi possível consultar a ativação. Tentando novamente...'
+      }
+    }
+
+    async function startPairing() {
+      stopPairingPoll()
+      pairingId = null
+      pairingCode.textContent = '------'
+      pairingStatus.textContent = 'Gerando código seguro...'
+      pairingExpiry.textContent = ''
+      newPairing.disabled = true
+      try {
+        const result = await window.displayHubPlayer.startPairing()
+        if (!result?.pairingId || !result?.code) throw new Error('pairing_unavailable')
+        pairingId = result.pairingId
+        pairingExpiresAt = result.expiresAt
+        pairingCode.textContent = result.code
+        pairingStatus.textContent = 'Aguardando ativação no painel do DisplayHub...'
+        updateExpiry()
+        pairingTimer = window.setInterval(() => void pollPairing(), 3000)
+      } catch (error) {
+        pairingStatus.textContent = 'Não foi possível gerar o código. Verifique a conexão e tente novamente.'
+      } finally {
+        newPairing.disabled = false
+      }
+    }
+
     async function refreshMonitors() {
       const monitors = await window.displayHubPlayer.refreshMonitors()
       renderMonitors(monitors)
@@ -136,9 +226,13 @@
       kioskMode.checked = current.settings?.kioskMode !== false
       renderMonitors(current.monitors || [])
       reset.hidden = !current.configured
+      pairingPanel.hidden = current.configured
       if (!current.encryptionAvailable) {
         status.textContent = 'A proteção de credenciais do Windows não está disponível neste computador.'
         save.disabled = true
+        pairingPanel.hidden = true
+      } else if (!current.configured) {
+        void startPairing()
       }
     }
 
@@ -152,6 +246,7 @@
         return
       }
 
+      stopPairingPoll()
       status.textContent = 'Salvando configurações e iniciando os players...'
       save.disabled = true
       try {
@@ -166,17 +261,22 @@
     })
 
     reset.addEventListener('click', async () => {
+      stopPairingPoll()
       await window.displayHubPlayer.reset()
       mappings = []
       autoStart.checked = false
       kioskMode.checked = false
       reset.hidden = true
-      status.textContent = 'Configuração removida e inicialização automática desativada.'
+      pairingPanel.hidden = false
+      status.textContent = 'Configuração removida. Um novo código de ativação será gerado.'
       await refreshMonitors()
+      void startPairing()
     })
 
+    newPairing.addEventListener('click', () => void startPairing())
     refreshButton.addEventListener('click', () => void refreshMonitors())
     window.displayHubPlayer.onMonitorsChanged(() => void refreshMonitors())
+    window.setInterval(updateExpiry, 1000)
     void refresh()
   </script>
 </body>
