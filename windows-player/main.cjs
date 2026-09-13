@@ -9,6 +9,7 @@ const PLAYER_PARTITION = 'persist:displayhub-player'
 const DISK_CACHE_BYTES = 1024 * 1024 * 1024
 const MEDIA_CACHE_BYTES = 512 * 1024 * 1024
 const STARTUP_STAGGER_MS = 700
+const DEFAULT_SETTINGS = { autoStart: true, kioskMode: true }
 
 app.commandLine.appendSwitch('disk-cache-size', String(DISK_CACHE_BYTES))
 app.commandLine.appendSwitch('media-cache-size', String(MEDIA_CACHE_BYTES))
@@ -46,6 +47,13 @@ function validateDisplayUrl(value) {
   }
 }
 
+function normalizeSettings(value) {
+  return {
+    autoStart: value?.autoStart !== false,
+    kioskMode: value?.kioskMode !== false,
+  }
+}
+
 function encryptConfig(config) {
   if (!safeStorage.isEncryptionAvailable()) {
     throw new Error('A proteção de credenciais do Windows não está disponível neste computador.')
@@ -73,14 +81,18 @@ function normalizeConfig(raw) {
       }))
       .filter((mapping) => mapping.displayId && mapping.displayUrl)
 
-    return mappings.length ? { version: 2, mappings } : null
+    return mappings.length ? { version: 3, mappings, settings: normalizeSettings(raw.settings) } : null
   }
 
   if (raw.displayUrl) {
     const displayUrl = validateDisplayUrl(raw.displayUrl)
     if (!displayUrl) return null
     const primaryDisplay = screen.getPrimaryDisplay()
-    return { version: 2, mappings: [{ displayId: String(primaryDisplay.id), displayUrl }] }
+    return {
+      version: 3,
+      mappings: [{ displayId: String(primaryDisplay.id), displayUrl }],
+      settings: { ...DEFAULT_SETTINGS },
+    }
   }
 
   return null
@@ -103,7 +115,7 @@ function readConfig() {
   }
 }
 
-function writeConfig(mappings) {
+function writeConfig(mappings, settings) {
   if (!Array.isArray(mappings) || mappings.length === 0) {
     throw new Error('Configure pelo menos um monitor.')
   }
@@ -118,10 +130,12 @@ function writeConfig(mappings) {
     return { displayId, displayUrl }
   })
 
+  const normalizedSettings = normalizeSettings(settings)
+  const config = { version: 3, mappings: normalized, settings: normalizedSettings }
   fs.mkdirSync(app.getPath('userData'), { recursive: true })
-  const encryptedConfig = encryptConfig({ version: 2, mappings: normalized })
+  const encryptedConfig = encryptConfig(config)
   fs.writeFileSync(configPath(), JSON.stringify({ encryptedConfig }, null, 2), 'utf8')
-  return { version: 2, mappings: normalized }
+  return config
 }
 
 function clearConfig() {
@@ -132,10 +146,10 @@ function clearConfig() {
   }
 }
 
-function setupLoginLaunch() {
+function applyLoginLaunch(settings = DEFAULT_SETTINGS) {
   if (process.platform !== 'win32' || !app.isPackaged) return
   app.setLoginItemSettings({
-    openAtLogin: true,
+    openAtLogin: Boolean(settings.autoStart),
     openAsHidden: false,
     path: process.execPath,
   })
@@ -228,18 +242,32 @@ function resolvePhysicalDisplay(displayId) {
   return displays.find((display) => String(display.id) === String(displayId)) || null
 }
 
-function createPlayerWindow(mapping) {
+function normalWindowBounds(physicalDisplay) {
+  const margin = 48
+  const width = Math.max(720, Math.min(1280, physicalDisplay.workArea.width - margin * 2))
+  const height = Math.max(480, Math.min(720, physicalDisplay.workArea.height - margin * 2))
+  return {
+    x: physicalDisplay.workArea.x + Math.round((physicalDisplay.workArea.width - width) / 2),
+    y: physicalDisplay.workArea.y + Math.round((physicalDisplay.workArea.height - height) / 2),
+    width,
+    height,
+  }
+}
+
+function createPlayerWindow(mapping, settings) {
   const physicalDisplay = resolvePhysicalDisplay(mapping.displayId)
   if (!physicalDisplay) return null
 
+  const kioskMode = settings?.kioskMode !== false
+  const bounds = kioskMode ? physicalDisplay.bounds : normalWindowBounds(physicalDisplay)
   const playerWindow = new BrowserWindow({
-    x: physicalDisplay.bounds.x,
-    y: physicalDisplay.bounds.y,
-    width: physicalDisplay.bounds.width,
-    height: physicalDisplay.bounds.height,
-    frame: false,
-    kiosk: true,
-    fullscreen: true,
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
+    frame: !kioskMode,
+    kiosk: kioskMode,
+    fullscreen: kioskMode,
     autoHideMenuBar: true,
     backgroundColor: '#050811',
     show: false,
@@ -269,7 +297,7 @@ async function launchConfiguredDisplays(config = readConfig()) {
   closePlayerWindows()
   let launched = 0
   for (const mapping of config.mappings) {
-    if (createPlayerWindow(mapping)) {
+    if (createPlayerWindow(mapping, config.settings)) {
       launched += 1
       if (config.mappings.length > 1) await sleep(STARTUP_STAGGER_MS)
     }
@@ -295,9 +323,9 @@ async function showSetup() {
 function createSetupWindow() {
   setupWindow = new BrowserWindow({
     width: 1120,
-    height: 760,
+    height: 820,
     minWidth: 820,
-    minHeight: 560,
+    minHeight: 620,
     autoHideMenuBar: true,
     backgroundColor: '#0b1220',
     show: false,
@@ -320,6 +348,7 @@ ipcMain.handle('player:get-status', () => {
   return {
     configured: Boolean(config?.mappings?.length),
     mappings: config?.mappings || [],
+    settings: config?.settings || { ...DEFAULT_SETTINGS },
     monitors: getPhysicalDisplays(),
     encryptionAvailable: safeStorage.isEncryptionAvailable(),
     packaged: app.isPackaged,
@@ -329,20 +358,23 @@ ipcMain.handle('player:get-status', () => {
 
 ipcMain.handle('player:refresh-monitors', () => getPhysicalDisplays())
 
-ipcMain.handle('player:save-mappings', async (_event, mappings) => {
-  const config = writeConfig(mappings)
+ipcMain.handle('player:save-mappings', async (_event, mappings, settings) => {
+  const config = writeConfig(mappings, settings)
+  applyLoginLaunch(config.settings)
   await launchConfiguredDisplays(config)
-  return { ok: true }
+  return { ok: true, settings: config.settings }
 })
 
 ipcMain.handle('player:reset', async () => {
   clearConfig()
+  applyLoginLaunch({ autoStart: false, kioskMode: false })
   await showSetup()
   return { ok: true }
 })
 
 app.whenReady().then(() => {
-  setupLoginLaunch()
+  const config = readConfig()
+  applyLoginLaunch(config?.settings || DEFAULT_SETTINGS)
   getPlayerSession()
   createSetupWindow()
 
@@ -356,7 +388,6 @@ app.whenReady().then(() => {
     if (setupWindow && setupWindow.isVisible()) setupWindow.webContents.send('player:monitors-changed')
   })
 
-  const config = readConfig()
   if (config) void launchConfiguredDisplays(config)
   else void showSetup()
 
