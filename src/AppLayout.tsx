@@ -47,6 +47,10 @@ const descriptions: Record<View, string> = {
 const advancedViews: View[] = ['devices', 'groups', 'playlists', 'schedule', 'technical-templates', 'history']
 const allViews = new Set<View>(['overview', 'displays', 'devices', 'groups', 'library', 'posters', 'campaigns', 'playlists', 'schedule', 'technical-templates', 'history', 'settings'])
 
+function hasPairingCode() {
+  return /^[A-Z0-9]{6}$/.test((new URLSearchParams(window.location.search).get('pairing') || '').toUpperCase())
+}
+
 function NavIcon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
     home: <><path d="M3 10.8 12 3l9 7.8"/><path d="M5.5 9.6V21h13V9.6"/><path d="M9.5 21v-6h5v6"/></>,
@@ -67,8 +71,9 @@ function NavIcon({ name }: { name: IconName }) {
 }
 
 export default function AppLayout({ companyName, userName, roleLabel, busy, onSignOut, children }: Props) {
-  const [view, setView] = useState<View>('overview')
-  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const pairingRequested = hasPairingCode()
+  const [view, setView] = useState<View>(pairingRequested ? 'devices' : 'overview')
+  const [advancedOpen, setAdvancedOpen] = useState(pairingRequested)
   const isAdvanced = advancedViews.includes(view)
 
   useEffect(() => {
