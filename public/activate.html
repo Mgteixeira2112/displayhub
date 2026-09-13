@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>Ativar dispositivo · DisplayHub</title>
+  <style>
+    :root { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #e5edf8; background: #0b1220; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at top left, rgba(37,99,235,.24), transparent 36%), #0b1220; }
+    main { width: min(620px, 100%); padding: 30px; border: 1px solid rgba(255,255,255,.09); border-radius: 22px; background: rgba(15,23,42,.96); box-shadow: 0 30px 90px rgba(0,0,0,.35); text-align: center; }
+    .mark { width: 54px; height: 54px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 15px; background: #2563eb; font-weight: 900; }
+    h1 { margin: 0 0 10px; font-size: clamp(1.5rem, 5vw, 2.2rem); }
+    p { color: #9fb0c6; line-height: 1.6; }
+    .status { margin-top: 22px; padding: 16px; border-radius: 14px; background: #111c2e; color: #bfdbfe; }
+    .error { color: #fecaca; background: rgba(127,29,29,.28); }
+    .success { color: #bbf7d0; background: rgba(20,83,45,.3); }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark">DH</div>
+    <h1>Ativando este dispositivo</h1>
+    <p>O DisplayHub vai registrar este aparelho, criar uma nova tela e associá-la automaticamente. Nenhum login é necessário.</p>
+    <div id="status" class="status">Validando QR de instalação...</div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://meqeluddtwthqmrtbhbr.supabase.co'
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_yjnvIPUmi8-Kt7yTFibw3w_DQlawViE'
+    const IDENTITY_KEY = 'displayhub_generic_device_identity_v1'
+    const status = document.getElementById('status')
+
+    function randomHex(bytes) {
+      const values = new Uint8Array(bytes)
+      crypto.getRandomValues(values)
+      return Array.from(values, (value) => value.toString(16).padStart(2, '0')).join('')
+    }
+
+    function getIdentity() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(IDENTITY_KEY) || 'null')
+        if (saved?.deviceId && saved?.deviceSecret) return saved
+      } catch {
+        // Cria uma nova identidade abaixo.
+      }
+      const identity = { deviceId: crypto.randomUUID(), deviceSecret: randomHex(32) }
+      localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity))
+      return identity
+    }
+
+    function detectPlatform() {
+      const ua = navigator.userAgent.toLowerCase()
+      if (ua.includes('android')) return 'android'
+      if (ua.includes('iphone') || ua.includes('ipad')) return 'ios'
+      if (ua.includes('windows')) return 'windows-web'
+      return 'web'
+    }
+
+    function deviceLabel(deviceId) {
+      const suffix = deviceId.replaceAll('-', '').slice(0, 6).toUpperCase()
+      const platform = detectPlatform()
+      if (platform === 'android') return `Nova tela - Android ${suffix}`
+      if (platform === 'ios') return `Nova tela - iOS ${suffix}`
+      if (platform === 'windows-web') return `Nova tela - Windows ${suffix}`
+      return `Nova tela - Web ${suffix}`
+    }
+
+    async function activate() {
+      const token = (new URLSearchParams(window.location.search).get('install') || '').trim()
+      if (!/^[a-f0-9]{64}$/i.test(token)) {
+        status.textContent = 'Este QR de instalação é inválido.'
+        status.className = 'status error'
+        return
+      }
+
+      const identity = getIdentity()
+      const body = {
+        p_token: token,
+        p_device_id: identity.deviceId,
+        p_device_secret: identity.deviceSecret,
+        p_device_label: deviceLabel(identity.deviceId),
+        p_platform: detectPlatform(),
+        p_screen_width: Math.round(window.screen?.width || 1920),
+        p_screen_height: Math.round(window.screen?.height || 1080),
+      }
+
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/activate_device_installation`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        })
+
+        const text = await response.text()
+        if (!response.ok) {
+          let message = 'Não foi possível ativar este dispositivo.'
+          try {
+            const payload = JSON.parse(text)
+            if (payload?.message?.includes('expired')) message = 'Este QR expirou. Gere um novo QR no DisplayHub.'
+            else if (payload?.message?.includes('consumed')) message = 'Este QR já foi utilizado por outro dispositivo.'
+          } catch {
+            // Mantém a mensagem amigável padrão.
+          }
+          throw new Error(message)
+        }
+
+        const result = text ? JSON.parse(text) : null
+        if (!result?.display_url) throw new Error('A tela foi criada, mas o link de exibição não foi retornado.')
+
+        status.textContent = `Tela criada: ${result.display_name || 'Nova tela'}. Abrindo o Player...`
+        status.className = 'status success'
+        window.setTimeout(() => window.location.replace(result.display_url), 1200)
+      } catch (error) {
+        status.textContent = error?.message || 'Não foi possível ativar este dispositivo.'
+        status.className = 'status error'
+      }
+    }
+
+    void activate()
+  </script>
+</body>
+</html>

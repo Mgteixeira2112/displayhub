@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import DeviceInstallationQr from './DeviceInstallationQr'
 import { supabase } from './lib/supabase'
 import './windows-devices.css'
 
@@ -98,6 +99,7 @@ export default function WindowsDevicesManager() {
       supabase
         .from('player_devices')
         .select('id,hostname,app_version,os_release,monitor_count,kiosk_mode,auto_start,last_seen_at')
+        .eq('platform', 'windows')
         .order('hostname', { ascending: true, nullsFirst: false })
         .order('id', { ascending: true }),
       supabase
@@ -256,9 +258,11 @@ export default function WindowsDevicesManager() {
 
       {globalError && <div className="windows-devices-feedback">{globalError}</div>}
 
+      <DeviceInstallationQr />
+
       <section className="windows-pairing-card">
         <div className="windows-pairing-copy">
-          <p className="eyebrow">Nova instalação</p>
+          <p className="eyebrow">Nova instalação Windows</p>
           <h2>Ativar Player por código</h2>
           <p>Digite o código de 6 caracteres exibido no computador. Escolha apenas os monitores que devem exibir o DisplayHub; os demais podem ficar sem seleção.</p>
         </div>
