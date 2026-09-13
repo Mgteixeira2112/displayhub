@@ -7,6 +7,13 @@ type Installation = {
   expires_at: string
 }
 
+type RegisteredDevice = {
+  id: string
+  hostname: string | null
+  platform: string
+  last_seen_at: string
+}
+
 type QrConstructor = new (
   element: HTMLElement,
   options: { text: string; width: number; height: number; colorDark: string; colorLight: string },
@@ -14,6 +21,7 @@ type QrConstructor = new (
 
 export default function DeviceInstallationQr() {
   const [installation, setInstallation] = useState<Installation | null>(null)
+  const [registeredDevices, setRegisteredDevices] = useState<RegisteredDevice[]>([])
   const [busy, setBusy] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [now, setNow] = useState(Date.now())
@@ -25,7 +33,17 @@ export default function DeviceInstallationQr() {
     return `${window.location.origin}${import.meta.env.BASE_URL}activate.html?install=${encodeURIComponent(installation.token)}`
   }, [installation])
 
+  const loadRegisteredDevices = async () => {
+    const { data } = await supabase
+      .from('player_devices')
+      .select('id,hostname,platform,last_seen_at')
+      .neq('platform', 'windows')
+      .order('created_at', { ascending: false })
+    setRegisteredDevices((data || []) as RegisteredDevice[])
+  }
+
   useEffect(() => {
+    void loadRegisteredDevices()
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(timer)
   }, [])
@@ -65,7 +83,7 @@ export default function DeviceInstallationQr() {
       if (data.status === 'consumed' && data.device_id && !activationDetectedRef.current) {
         activationDetectedRef.current = true
         setFeedback('Dispositivo registrado. Atualizando a lista de dispositivos...')
-        window.setTimeout(() => window.location.reload(), 700)
+        await loadRegisteredDevices()
       }
     }
 
@@ -113,41 +131,67 @@ export default function DeviceInstallationQr() {
   }
 
   return (
-    <section className="windows-pairing-card">
-      <div className="windows-pairing-copy">
-        <p className="eyebrow">Instalação sem login</p>
-        <h2>Gerar QR para novo dispositivo</h2>
-        <p>Mostre este QR ao aparelho que será usado como Player. Ao abrir o QR, o DisplayHub registra o dispositivo automaticamente, sem criar uma tela e sem pedir e-mail ou senha.</p>
-      </div>
+    <>
+      <section className="windows-pairing-card">
+        <div className="windows-pairing-copy">
+          <p className="eyebrow">Instalação sem login</p>
+          <h2>Gerar QR para novo dispositivo</h2>
+          <p>Mostre este QR ao aparelho que será usado como Player. Ao abrir o QR, o DisplayHub registra o dispositivo automaticamente, sem criar uma tela e sem pedir e-mail ou senha.</p>
+        </div>
 
-      {!installation ? (
-        <button className="windows-pairing-activate" type="button" disabled={busy} onClick={() => void generate()}>
-          {busy ? 'Gerando...' : 'Gerar QR de instalação'}
-        </button>
-      ) : (
-        <div className="windows-pairing-preview">
-          <div className="windows-pairing-preview-head">
-            <div>
-              <strong>QR de instalação</strong>
-              <span>Uso único · registra 1 dispositivo</span>
+        {!installation ? (
+          <button className="windows-pairing-activate" type="button" disabled={busy} onClick={() => void generate()}>
+            {busy ? 'Gerando...' : 'Gerar QR de instalação'}
+          </button>
+        ) : (
+          <div className="windows-pairing-preview">
+            <div className="windows-pairing-preview-head">
+              <div>
+                <strong>QR de instalação</strong>
+                <span>Uso único · registra 1 dispositivo</span>
+              </div>
+              <span>{remainingSeconds > 0 ? `Expira em ${remainingLabel}` : 'QR expirado'}</span>
             </div>
-            <span>{remainingSeconds > 0 ? `Expira em ${remainingLabel}` : 'QR expirado'}</span>
-          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 260px) minmax(0, 1fr)', gap: 22, alignItems: 'center' }}>
-            <div ref={qrRef} style={{ width: 230, minHeight: 230, padding: 10, borderRadius: 16, background: '#fff', display: 'grid', placeItems: 'center' }} />
-            <div>
-              <p style={{ marginTop: 0 }}>Depois da leitura, o aparelho entra na lista de dispositivos. A associação a uma tela será feita separadamente no painel.</p>
-              <div className="windows-device-actions">
-                <button type="button" onClick={() => void copyLink()}>Copiar link</button>
-                <button type="button" disabled={busy} onClick={() => void generate()}>Gerar outro QR</button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 260px) minmax(0, 1fr)', gap: 22, alignItems: 'center' }}>
+              <div ref={qrRef} style={{ width: 230, minHeight: 230, padding: 10, borderRadius: 16, background: '#fff', display: 'grid', placeItems: 'center' }} />
+              <div>
+                <p style={{ marginTop: 0 }}>Depois da leitura, o aparelho entra na lista de dispositivos. A associação a uma tela será feita separadamente no painel.</p>
+                <div className="windows-device-actions">
+                  <button type="button" onClick={() => void copyLink()}>Copiar link</button>
+                  <button type="button" disabled={busy} onClick={() => void generate()}>Gerar outro QR</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {feedback && <div className="windows-devices-feedback">{feedback}</div>}
-    </section>
+        {feedback && <div className="windows-devices-feedback">{feedback}</div>}
+      </section>
+
+      {registeredDevices.length > 0 && (
+        <section className="windows-pairing-card">
+          <div className="windows-pairing-copy">
+            <p className="eyebrow">Dispositivos</p>
+            <h2>Dispositivos registrados por QR</h2>
+            <p>Estes aparelhos ainda são dispositivos. Eles só passam a exibir conteúdo depois que forem associados a uma tela.</p>
+          </div>
+          <div className="windows-device-grid">
+            {registeredDevices.map((device) => (
+              <article className="windows-device-card" key={device.id}>
+                <div className="windows-device-card-head">
+                  <div>
+                    <span className="windows-device-status online">Registrado</span>
+                    <h2>{device.hostname || 'Dispositivo'}</h2>
+                  </div>
+                  <span className="windows-device-version">{device.platform}</span>
+                </div>
+                <p className="windows-device-last-seen">Último contato {new Date(device.last_seen_at).toLocaleString('pt-BR')}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
   )
 }
