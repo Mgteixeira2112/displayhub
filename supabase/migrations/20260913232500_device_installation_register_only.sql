@@ -21,6 +21,7 @@ declare
   v_width integer;
   v_height integer;
   v_device_label text;
+  v_registered_url constant text := 'https://mgteixeira2112.github.io/displayhub/device-registered.html';
 begin
   if coalesce(length(trim(p_token)), 0) < 32 or p_device_id is null or coalesce(length(p_device_secret), 0) < 32 then
     raise exception 'invalid_activation_credentials';
@@ -44,7 +45,9 @@ begin
         'status', 'registered',
         'device_id', p_device_id,
         'device_label', v_existing.hostname,
-        'platform', v_existing.platform
+        'display_name', 'Dispositivo registrado',
+        'platform', v_existing.platform,
+        'display_url', v_registered_url
       );
     end if;
     raise exception 'installation_already_consumed';
@@ -117,7 +120,9 @@ begin
     'status', 'registered',
     'device_id', p_device_id,
     'device_label', v_device_label,
-    'platform', v_platform
+    'display_name', 'Dispositivo registrado',
+    'platform', v_platform,
+    'display_url', v_registered_url
   );
 end;
 $$;
