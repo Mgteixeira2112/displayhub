@@ -39,16 +39,16 @@ Deno.serve(async (req: Request) => {
     const groupIds = memberships.map((row) => row.group_id)
     const { data: groups, error: groupError } = await db
       .from('display_groups')
-      .select('id,name,rows,columns,virtual_width,virtual_height,media_fit,updated_at')
+      .select('id,name,mode,rows,columns,virtual_width,virtual_height,media_fit,updated_at')
       .in('id', groupIds)
-      .eq('mode', 'video_wall')
+      .in('mode', ['mirror', 'coordinated', 'video_wall'])
       .eq('is_active', true)
       .order('updated_at', { ascending: false })
       .limit(1)
 
     if (groupError) throw groupError
     const group = groups?.[0]
-    if (!group) return json({ wall: null })
+    if (!group || group.mode !== 'video_wall') return json({ wall: null })
 
     const membership = memberships.find((row) => row.group_id === group.id)
     if (!membership) return json({ wall: null })
