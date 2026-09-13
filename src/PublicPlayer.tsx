@@ -15,7 +15,7 @@ type TransitionType = 'none' | 'fade' | 'slide_left' | 'slide_up' | 'zoom'
 type Playlist = { id: string; name: string; transition_type: TransitionType; transition_duration_ms: number; items: Item[] }
 type Publication = { id: string; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; playlist: Playlist }
 type SyncSession = { id: string; playlist_id: string; playback_state: 'playing' | 'paused' | 'stopped'; started_at: string; paused_position_ms: number; sequence: number }
-type GroupLaunch = { id: string; playlist_id: string; status: 'preparing' | 'armed' | 'started' | 'cancelled'; sequence: number; requested_at: string; start_at: string | null; updated_at: string }
+type GroupLaunch = { id: string; playlist_id: string | null; status: 'preparing' | 'armed' | 'started' | 'cancelled'; sequence: number; requested_at: string; start_at: string | null; updated_at: string }
 type Program = { display: Display; publications: Publication[]; group_mode?: string | null; group_id?: string | null; sync_session?: SyncSession | null; group_launch?: GroupLaunch | null }
 type WallContext = { group_id: string; group_name: string; rows: number; columns: number; virtual_width: number | null; virtual_height: number | null; media_fit: MediaFit; row_index: number; column_index: number }
 type SyncCursor = { index: number; offsetSeconds: number; remainingMs: number; sequence: number }
@@ -31,19 +31,33 @@ function publicationMatches(publication: Publication, now = new Date()) {
   return current >= sh * 60 + sm && current < eh * 60 + em
 }
 
-function resolveSyncCursor(items: Item[], session: SyncSession): SyncCursor | null {
-  if (!items.length || session.playback_state === 'stopped') return null
+function resolveCursorFromElapsed(items: Item[], elapsedMs: number, sequence: number): SyncCursor | null {
+  if (!items.length) return null
   const durations = items.map((item) => Math.max(1, item.duration_seconds) * 1000)
   const cycleMs = durations.reduce((sum, duration) => sum + duration, 0)
   if (!cycleMs) return null
-  const rawElapsed = session.playback_state === 'paused' ? Number(session.paused_position_ms || 0) : Math.max(0, Date.now() - new Date(session.started_at).getTime())
-  let positionMs = rawElapsed % cycleMs
+  let positionMs = Math.max(0, elapsedMs) % cycleMs
   for (let index = 0; index < durations.length; index += 1) {
     const durationMs = durations[index]
-    if (positionMs < durationMs) return { index, offsetSeconds: positionMs / 1000, remainingMs: Math.max(50, durationMs - positionMs), sequence: session.sequence }
+    if (positionMs < durationMs) return { index, offsetSeconds: positionMs / 1000, remainingMs: Math.max(50, durationMs - positionMs), sequence }
     positionMs -= durationMs
   }
-  return { index: 0, offsetSeconds: 0, remainingMs: durations[0], sequence: session.sequence }
+  return { index: 0, offsetSeconds: 0, remainingMs: durations[0], sequence }
+}
+
+function resolveSyncCursor(items: Item[], session: SyncSession): SyncCursor | null {
+  if (!items.length || session.playback_state === 'stopped') return null
+  const rawElapsed = session.playback_state === 'paused' ? Number(session.paused_position_ms || 0) : Math.max(0, Date.now() - new Date(session.started_at).getTime())
+  return resolveCursorFromElapsed(items, rawElapsed, session.sequence)
+}
+
+function resolveLaunchCursor(items: Item[], launch: GroupLaunch): SyncCursor | null {
+  if (!items.length || !launch.start_at || !['armed', 'started'].includes(launch.status)) return null
+  const startMs = new Date(launch.start_at).getTime()
+  if (!Number.isFinite(startMs)) return null
+  const waitMs = startMs - Date.now()
+  if (waitMs > 0) return { index: 0, offsetSeconds: 0, remainingMs: Math.max(50, waitMs), sequence: launch.sequence }
+  return resolveCursorFromElapsed(items, Date.now() - startMs, launch.sequence)
 }
 
 function money(value: number | null) {
@@ -69,6 +83,7 @@ export default function PublicPlayer({ token }: { token: string }) {
   const [itemIndex, setItemIndex] = useState(0)
   const [localCycleSerial, setLocalCycleSerial] = useState(0)
   const [syncCursor, setSyncCursor] = useState<SyncCursor | null>(null)
+  const [coordinatedCursor, setCoordinatedCursor] = useState<SyncCursor | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [previousPosterItem, setPreviousPosterItem] = useState<Item | null>(null)
   const [transitionSerial, setTransitionSerial] = useState(0)
@@ -139,10 +154,12 @@ export default function PublicPlayer({ token }: { token: string }) {
   const items = publication?.playlist.items || []
   const preloadVideoUrls = useMemo(() => promotionVideoUrls(items), [items])
   const syncSession = program?.group_mode === 'video_wall' ? program.sync_session || null : null
-  const launch = program?.group_mode === 'video_wall' ? program.group_launch || null : null
+  const launch = program && ['video_wall', 'coordinated'].includes(program.group_mode || '') ? program.group_launch || null : null
+  const coordinatedLaunch = program?.group_mode === 'coordinated' ? launch : null
   const launchHolding = launch?.status === 'preparing'
   const shouldPlay = !launch || launch.status === 'started' || launch.status === 'armed'
   const launchStartAt = launch?.status === 'armed' ? launch.start_at : null
+  const coordinatedClockActive = Boolean(coordinatedLaunch && ['preparing', 'armed', 'started'].includes(coordinatedLaunch.status))
 
   useEffect(() => {
     if (!syncSession || !items.length) { setSyncCursor(null); return }
@@ -156,16 +173,32 @@ export default function PublicPlayer({ token }: { token: string }) {
     return () => window.clearTimeout(timer)
   }, [items, syncSession])
 
-  const effectiveIndex = launchHolding ? 0 : (syncCursor ? syncCursor.index : itemIndex)
+  useEffect(() => {
+    if (!coordinatedLaunch || !items.length || !['armed', 'started'].includes(coordinatedLaunch.status) || !coordinatedLaunch.start_at) {
+      setCoordinatedCursor(null)
+      return
+    }
+    const align = () => { const next = resolveLaunchCursor(items, coordinatedLaunch); setCoordinatedCursor(next); return next }
+    const current = align()
+    if (!current) return
+    let timer = window.setTimeout(function realign() {
+      const next = align()
+      if (next) timer = window.setTimeout(realign, next.remainingMs)
+    }, current.remainingMs)
+    return () => window.clearTimeout(timer)
+  }, [items, coordinatedLaunch?.id, coordinatedLaunch?.sequence, coordinatedLaunch?.status, coordinatedLaunch?.start_at])
+
+  const activeCursor = coordinatedCursor || syncCursor
+  const effectiveIndex = launchHolding ? 0 : (activeCursor ? activeCursor.index : itemIndex)
   const item = items.length ? items[effectiveIndex % items.length] : null
-  const offsetSeconds = launchHolding ? 0 : (syncCursor?.offsetSeconds || 0)
+  const offsetSeconds = launchHolding ? 0 : (activeCursor?.offsetSeconds || 0)
   const transitionType = publication?.playlist.transition_type || 'fade'
   const configuredTransitionMs = Math.max(0, Math.min(2000, Number(publication?.playlist.transition_duration_ms ?? 600)))
   const transitionDurationMs = item ? Math.min(configuredTransitionMs, Math.max(100, item.duration_seconds * 1000 - 100)) : configuredTransitionMs
-  const usesMediaEndedAdvance = !syncSession && item?.duration_mode === 'media' && item.poster?.theme === 'animated_beer_video'
+  const usesMediaEndedAdvance = !syncSession && !coordinatedClockActive && item?.duration_mode === 'media' && item.poster?.theme === 'animated_beer_video'
 
   const advanceLocalItem = useCallback(() => {
-    if (!item || !items.length || syncSession) return
+    if (!item || !items.length || syncSession || coordinatedClockActive) return
     if (items.length === 1) {
       if (item.content?.type === 'youtube') {
         const controller = youtubeController.current
@@ -178,14 +211,14 @@ export default function PublicPlayer({ token }: { token: string }) {
       return
     }
     setItemIndex((value) => (value + 1) % items.length)
-  }, [item, items.length, syncSession, shouldPlay])
+  }, [item, items.length, syncSession, coordinatedClockActive, shouldPlay])
 
   useEffect(() => {
-    if (syncSession || !item || !items.length) return
+    if (syncSession || coordinatedClockActive || !item || !items.length) return
     const delayMs = (item.duration_seconds + (usesMediaEndedAdvance ? 2 : 0)) * 1000
     const timer = window.setTimeout(advanceLocalItem, delayMs)
     return () => window.clearTimeout(timer)
-  }, [item?.id, item?.duration_seconds, item?.duration_mode, items.length, syncSession, localCycleSerial, usesMediaEndedAdvance, advanceLocalItem])
+  }, [item?.id, item?.duration_seconds, item?.duration_mode, items.length, syncSession, coordinatedClockActive, localCycleSerial, usesMediaEndedAdvance, advanceLocalItem])
 
   const handlePosterVideoEnded = useCallback(() => {
     if (!usesMediaEndedAdvance) return
@@ -215,11 +248,12 @@ export default function PublicPlayer({ token }: { token: string }) {
     lastItemRef.current = item
   }, [item?.id, transitionType, transitionDurationMs, wall])
 
+  const clockSequence = syncSession?.sequence || coordinatedCursor?.sequence || 0
   useEffect(() => {
     if (!item) { playbackAnchor.current = null; return }
-    const key = `${syncSession?.sequence || 0}:${item.id}`
+    const key = `${clockSequence}:${item.id}`
     playbackAnchor.current = { key, offsetMs: Math.max(0, Math.round(offsetSeconds * 1000)), startedAt: performance.now() }
-  }, [item?.id, offsetSeconds, syncSession?.sequence])
+  }, [item?.id, offsetSeconds, clockSequence])
 
   const reportReady = useCallback((provider: string) => {
     if (!launch || !['preparing', 'armed'].includes(launch.status) || !item) return
@@ -230,13 +264,13 @@ export default function PublicPlayer({ token }: { token: string }) {
   }, [launch, item, token])
 
   useEffect(() => {
-    if (!syncSession || !item || item.content?.type !== 'youtube' || !items.length || launchHolding) {
+    if ((!syncSession && !coordinatedLaunch) || !item || item.content?.type !== 'youtube' || !items.length || launchHolding) {
       if (item?.content?.type !== 'hls') providerTelemetry.current = null
       return
     }
     const sampleAndCorrect = () => {
       const controller = youtubeController.current
-      const expected = resolveSyncCursor(items, syncSession)
+      const expected = syncSession ? resolveSyncCursor(items, syncSession) : coordinatedLaunch ? resolveLaunchCursor(items, coordinatedLaunch) : null
       if (!controller || !expected || expected.index !== effectiveIndex) return
       const expectedPositionMs = Math.max(0, Math.round(expected.offsetSeconds * 1000))
       const actualPositionMs = Math.max(0, Math.round(controller.getCurrentTime() * 1000))
@@ -244,20 +278,26 @@ export default function PublicPlayer({ token }: { token: string }) {
       const buffering = youtubeBuffering.current || state === 3
       const driftMs = actualPositionMs - expectedPositionMs
       providerTelemetry.current = { expectedPositionMs, actualPositionMs, buffering, measurementKind: 'media', sampledAt: Date.now() }
-      if (shouldPlay && syncSession.playback_state === 'playing' && state === 1 && !buffering && Math.abs(driftMs) > 750) controller.seekTo(expected.offsetSeconds, true)
+      const clockPlaying = syncSession ? syncSession.playback_state === 'playing' : Boolean(coordinatedLaunch && ['armed', 'started'].includes(coordinatedLaunch.status))
+      if (shouldPlay && clockPlaying && state === 1 && !buffering && Math.abs(driftMs) > 750) controller.seekTo(expected.offsetSeconds, true)
     }
     sampleAndCorrect()
     const timer = window.setInterval(sampleAndCorrect, 2000)
     return () => window.clearInterval(timer)
-  }, [effectiveIndex, item?.id, item?.content?.type, items, syncSession, launchHolding, shouldPlay])
+  }, [effectiveIndex, item?.id, item?.content?.type, items, syncSession, coordinatedLaunch, launchHolding, shouldPlay])
 
   const getExpectedMediaSeconds = useCallback(() => {
     if (launchHolding) return 0
+    if (coordinatedLaunch) {
+      const expected = resolveLaunchCursor(items, coordinatedLaunch)
+      if (!expected || expected.index !== effectiveIndex) return null
+      return expected.offsetSeconds
+    }
     if (!syncSession || !items.length) return null
     const expected = resolveSyncCursor(items, syncSession)
     if (!expected || expected.index !== effectiveIndex) return null
     return expected.offsetSeconds
-  }, [effectiveIndex, items, syncSession, launchHolding])
+  }, [effectiveIndex, items, syncSession, coordinatedLaunch, launchHolding])
 
   useEffect(() => {
     if (!program || invalid) return
@@ -269,23 +309,24 @@ export default function PublicPlayer({ token }: { token: string }) {
       const mediaSample = providerTelemetry.current
       if (mediaSample && Date.now() - mediaSample.sampledAt <= 5000) {
         expectedPositionMs = mediaSample.expectedPositionMs; actualPositionMs = mediaSample.actualPositionMs; buffering = mediaSample.buffering; measurementKind = mediaSample.measurementKind
-      } else if (syncSession && item && items.length) {
-        const expected = resolveSyncCursor(items, syncSession)
+      } else if ((syncSession || coordinatedLaunch) && item && items.length) {
+        const expected = syncSession ? resolveSyncCursor(items, syncSession) : coordinatedLaunch ? resolveLaunchCursor(items, coordinatedLaunch) : null
         if (expected && expected.index === effectiveIndex) {
           expectedPositionMs = Math.max(0, Math.round(expected.offsetSeconds * 1000))
           const anchor = playbackAnchor.current
-          if (anchor?.key === `${syncSession.sequence}:${item.id}`) {
-            const elapsed = syncSession.playback_state === 'playing' ? Math.max(0, performance.now() - anchor.startedAt) : 0
+          if (anchor?.key === `${expected.sequence}:${item.id}`) {
+            const elapsed = Math.max(0, performance.now() - anchor.startedAt)
             actualPositionMs = Math.min(item.duration_seconds * 1000, Math.max(0, Math.round(anchor.offsetMs + elapsed)))
           }
         }
       }
-      void publicSupabase.functions.invoke('display-state', { body: { token, playlist_id: publication?.playlist.id ?? null, item_id: item?.id ?? null, group_id: program.group_id ?? null, session_id: syncSession?.id ?? null, expected_position_ms: expectedPositionMs, actual_position_ms: actualPositionMs, sequence: syncSession?.sequence ?? 0, buffering, measurement_kind: measurementKind } })
+      const sequence = syncSession?.sequence ?? coordinatedLaunch?.sequence ?? 0
+      void publicSupabase.functions.invoke('display-state', { body: { token, playlist_id: publication?.playlist.id ?? null, item_id: item?.id ?? null, group_id: program.group_id ?? null, session_id: syncSession?.id ?? null, expected_position_ms: expectedPositionMs, actual_position_ms: actualPositionMs, sequence, buffering, measurement_kind: measurementKind } })
     }
     report()
     const timer = window.setInterval(report, 10000)
     return () => window.clearInterval(timer)
-  }, [token, program, invalid, publication?.playlist.id, item?.id, item?.duration_seconds, items, syncSession, effectiveIndex])
+  }, [token, program, invalid, publication?.playlist.id, item?.id, item?.duration_seconds, items, syncSession, coordinatedLaunch, effectiveIndex])
 
   if (invalid) return <main className="public-display invalid-display"><div className="brand-mark">DH</div><h1>Display indisponível</h1><p>Este link foi revogado, desativado ou não existe.</p></main>
   if (loadError) return <main className="public-display invalid-display"><div className="brand-mark">DH</div><h1>Falha de conexão</h1><p>O player tentará carregar novamente automaticamente.</p></main>
@@ -294,7 +335,7 @@ export default function PublicPlayer({ token }: { token: string }) {
 
   const mediaFit = wall?.media_fit || 'cover'
   const localSyncKey = item.content?.type === 'youtube' ? item.id : `${localCycleSerial}:${item.id}`
-  const itemSyncKey = syncCursor ? `${syncCursor.sequence}:${item.id}` : localSyncKey
+  const itemSyncKey = activeCursor ? `${activeCursor.sequence}:${item.id}` : localSyncKey
   const currentContent = <ItemView item={item} display={program.display} mediaFit={mediaFit} startSeconds={offsetSeconds} syncKey={itemSyncKey} shouldPlay={shouldPlay} startAt={launchStartAt} onReady={reportReady} onYouTubeController={handleYouTubeController} onYouTubeBuffering={handleYouTubeBuffering} getExpectedMediaSeconds={getExpectedMediaSeconds} onHlsSample={handleHlsSample} posterVideoLoop={!usesMediaEndedAdvance} onPosterVideoEnded={handlePosterVideoEnded} />
   const showPosterTransition = !wall && transitionType !== 'none' && Boolean(previousPosterItem?.poster && item.poster)
   const content = showPosterTransition && previousPosterItem?.poster
@@ -303,12 +344,12 @@ export default function PublicPlayer({ token }: { token: string }) {
         <div className="poster-transition-layer poster-transition-new" style={{ animationDuration: `${transitionDurationMs}ms` }}>{currentContent}</div>
       </div>
     : currentContent
-  const progressDuration = syncCursor ? Math.max(0.05, syncCursor.remainingMs / 1000) : item.duration_seconds
+  const progressDuration = activeCursor ? Math.max(0.05, activeCursor.remainingMs / 1000) : item.duration_seconds
 
   return <main className={`public-display player-screen player-${item.template?.template_type || 'default'} ${wall ? 'video-wall-screen' : ''}`}>
     <PromotionVideoPreloader urls={preloadVideoUrls} />
     {wall ? <WallViewport wall={wall}>{content}</WallViewport> : content}
-    {!launchHolding && <div className="player-progress" key={`${item.id}:${syncCursor?.sequence || 0}:${localCycleSerial}:${Math.floor(offsetSeconds * 10)}`} style={{ animationDuration: `${progressDuration}s` }} />}
+    {!launchHolding && <div className="player-progress" key={`${item.id}:${activeCursor?.sequence || 0}:${localCycleSerial}:${Math.floor(offsetSeconds * 10)}`} style={{ animationDuration: `${progressDuration}s` }} />}
   </main>
 }
 
