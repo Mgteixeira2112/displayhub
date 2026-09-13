@@ -129,30 +129,3 @@ $$;
 
 revoke all on function public.activate_device_installation(text,uuid,text,text,text,integer,integer) from public;
 grant execute on function public.activate_device_installation(text,uuid,text,text,text,integer,integer) to anon, authenticated;
-
--- Corrige somente as telas provisórias geradas pelo fluxo QR anterior.
-update public.player_devices pd
-set mappings = '[]'::jsonb, updated_at = now()
-where pd.id in (
-  select r.device_id
-  from public.device_installation_requests r
-  join public.displays d on d.id = r.display_id
-  where r.device_id is not null
-    and d.location = 'Configuração pendente'
-);
-
-update public.displays d
-set is_active = false, revoked_at = coalesce(revoked_at, now()), updated_at = now()
-where d.id in (
-  select r.display_id
-  from public.device_installation_requests r
-  where r.display_id is not null
-)
-and d.location = 'Configuração pendente';
-
-update public.device_installation_requests r
-set display_id = null, updated_at = now()
-where r.display_id in (
-  select d.id from public.displays d
-  where d.location = 'Configuração pendente' and d.is_active = false
-);
