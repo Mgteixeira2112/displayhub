@@ -119,8 +119,8 @@ Deno.serve(async (req: Request) => {
     const syncSession = groupPublication?.mode === 'video_wall'
       ? await getOrCreateSyncSession(db, display.company_id, groupPublication.groupId, String(groupPublication.publication.playlist_id))
       : null
-    const groupLaunch = groupPublication?.mode === 'video_wall'
-      ? await getGroupLaunch(db, display.company_id, groupPublication.groupId, String(groupPublication.publication.playlist_id))
+    const groupLaunch = groupPublication && ['video_wall', 'coordinated'].includes(groupPublication.mode)
+      ? await getGroupLaunch(db, display.company_id, groupPublication.groupId, groupPublication.mode === 'video_wall' ? String(groupPublication.publication.playlist_id) : null)
       : null
 
     return json({
@@ -211,14 +211,16 @@ async function getGroupPublication(db: ReturnType<typeof createClient>, displayI
   return null
 }
 
-async function getGroupLaunch(db: ReturnType<typeof createClient>, companyId: string, groupId: string, playlistId: string) {
-  const { data, error } = await db
+async function getGroupLaunch(db: ReturnType<typeof createClient>, companyId: string, groupId: string, playlistId: string | null) {
+  let query = db
     .from('display_group_launches')
     .select('id,playlist_id,status,sequence,requested_at,start_at,updated_at')
     .eq('company_id', companyId)
     .eq('group_id', groupId)
-    .eq('playlist_id', playlistId)
-    .maybeSingle()
+
+  if (playlistId) query = query.eq('playlist_id', playlistId)
+
+  const { data, error } = await query.maybeSingle()
   if (error) throw error
   return data || null
 }
