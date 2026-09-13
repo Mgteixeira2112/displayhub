@@ -1,9 +1,9 @@
 {
   "name": "displayhub-windows-player",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "private": true,
   "description": "DisplayHub Player para Windows",
-  "main": "main.cjs",
+  "main": "startup.cjs",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis"
@@ -17,6 +17,7 @@
     "productName": "DisplayHub Player",
     "asar": true,
     "files": [
+      "startup.cjs",
       "main.cjs",
       "preload.cjs",
       "setup.html"
