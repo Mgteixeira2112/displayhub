@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import './smart-scenes-hero-v2.css'
 
 export type HeroPreset = 'tabloid' | 'explosive' | 'clean'
 
