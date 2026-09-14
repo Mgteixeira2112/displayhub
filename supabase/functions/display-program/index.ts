@@ -50,6 +50,10 @@ type RegisteredPlayerDevice = {
   updated_at: string
 }
 
+function publicationPriority(publication: ProgramPublication) {
+  return publication.repeat_mode === 'always' && !publication.starts_at && !publication.ends_at ? 0 : 1
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
@@ -93,7 +97,11 @@ Deno.serve(async (req: Request) => {
           .order('created_at', { ascending: false })
 
         if (pubError) throw pubError
-        publications = (data || []) as ProgramPublication[]
+        publications = ((data || []) as ProgramPublication[]).sort((a, b) => {
+          const priorityDiff = publicationPriority(b) - publicationPriority(a)
+          if (priorityDiff !== 0) return priorityDiff
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        })
       }
     } else {
       const { data: deviceRows, error: deviceError } = await db.rpc('resolve_registered_device_player', {
