@@ -66,18 +66,7 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   onHeroElement1Change?: (patch: HeroElement1Patch) => void
 }) {
   const hero = heroConfig || getHeroConfig()
-  const dragRef = useRef<{
-    target: HeroDragTarget
-    pointerId: number
-    frameLeft: number
-    frameTop: number
-    frameWidth: number
-    frameHeight: number
-    grabX: number
-    grabY: number
-    elementWidth: number
-    elementHeight: number
-  } | null>(null)
+  const dragRef = useRef<{ target: HeroDragTarget; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; width: number; height: number } | null>(null)
   const element1EditRef = useRef<{
     mode: 'move' | 'resize' | 'rotate'
     pointerId: number
@@ -107,25 +96,30 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   const unitAnimationClass = hero.unitAnimationEnabled ? `hero-text-animation-${hero.unitAnimation}` : 'hero-text-animation-none'
   const complementAnimationClass = hero.complementAnimationEnabled ? `hero-text-animation-${hero.complementAnimation}` : 'hero-text-animation-none'
 
+  function heroPosition(target: HeroDragTarget) {
+    if (target === 'product') return { x: hero.productX, y: hero.productY }
+    if (target === 'price') return { x: hero.priceX, y: hero.priceY }
+    if (target === 'unit') return { x: hero.unitX, y: hero.unitY }
+    return { x: hero.complementX, y: hero.complementY }
+  }
+
   function beginHeroDrag(event: ReactPointerEvent<HTMLElement>, target: HeroDragTarget) {
     if (!editableHero || scene.key !== 'hero' || !onHeroPositionChange) return
     const frame = event.currentTarget.closest('.smart-scene-copy')?.getBoundingClientRect()
-    const element = event.currentTarget.getBoundingClientRect()
     if (!frame) return
+    const position = heroPosition(target)
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
     dragRef.current = {
       target,
       pointerId: event.pointerId,
-      frameLeft: frame.left,
-      frameTop: frame.top,
-      frameWidth: Math.max(frame.width, 1),
-      frameHeight: Math.max(frame.height, 1),
-      grabX: event.clientX - element.left,
-      grabY: event.clientY - element.top,
-      elementWidth: element.width,
-      elementHeight: element.height,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startX: position.x,
+      startY: position.y,
+      width: Math.max(frame.width, 1),
+      height: Math.max(frame.height, 1),
     }
   }
 
@@ -133,12 +127,8 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId || !onHeroPositionChange) return
     event.preventDefault()
-    const maxLeft = Math.max(0, drag.frameWidth - drag.elementWidth)
-    const maxTop = Math.max(0, drag.frameHeight - drag.elementHeight)
-    const left = Math.max(0, Math.min(maxLeft, event.clientX - drag.frameLeft - drag.grabX))
-    const top = Math.max(0, Math.min(maxTop, event.clientY - drag.frameTop - drag.grabY))
-    const nextX = (left / drag.frameWidth) * 100
-    const nextY = (top / drag.frameHeight) * 100
+    const nextX = Math.max(0, Math.min(100, drag.startX + ((event.clientX - drag.startClientX) / drag.width) * 100))
+    const nextY = Math.max(0, Math.min(100, drag.startY + ((event.clientY - drag.startClientY) / drag.height) * 100))
     onHeroPositionChange(drag.target, Math.round(nextX), Math.round(nextY))
   }
 
