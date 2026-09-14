@@ -8,7 +8,9 @@
   <style>
     :root { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #e5edf8; background: #0b1220; }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at top left, rgba(37,99,235,.24), transparent 36%), #0b1220; }
+    html, body { margin: 0; width: 100%; height: 100%; background: #0b1220; }
+    body { overflow: hidden; }
+    #waiting { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at top left, rgba(37,99,235,.24), transparent 36%), #0b1220; z-index: 2; }
     main { width: min(620px, 100%); padding: 30px; border: 1px solid rgba(255,255,255,.09); border-radius: 22px; background: rgba(15,23,42,.96); box-shadow: 0 30px 90px rgba(0,0,0,.35); text-align: center; }
     .mark { width: 54px; height: 54px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 15px; background: #2563eb; font-weight: 900; }
     h1 { margin: 0 0 10px; font-size: clamp(1.5rem, 5vw, 2.2rem); }
@@ -16,22 +18,29 @@
     .status { margin-top: 22px; padding: 16px; border-radius: 14px; background: rgba(30,41,59,.8); color: #bfdbfe; }
     .success { background: rgba(20,83,45,.3); color: #bbf7d0; }
     .error { background: rgba(127,29,29,.28); color: #fecaca; }
+    #player { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #000; display: none; z-index: 1; }
   </style>
 </head>
 <body>
-  <main>
-    <div class="mark">DH</div>
-    <h1>Dispositivo registrado</h1>
-    <p>Este aparelho já faz parte do DisplayHub. Nenhuma tela foi criada automaticamente.</p>
-    <div id="status" class="status">Aguardando o administrador associar uma tela a este dispositivo...</div>
-  </main>
+  <iframe id="player" title="DisplayHub Player" allow="autoplay; fullscreen" allowfullscreen></iframe>
+
+  <div id="waiting">
+    <main>
+      <div class="mark">DH</div>
+      <h1>Dispositivo registrado</h1>
+      <p>Este aparelho já faz parte do DisplayHub.</p>
+      <div id="status" class="status">Aguardando o administrador associar uma tela a este dispositivo...</div>
+    </main>
+  </div>
 
   <script>
     const SUPABASE_URL = 'https://meqeluddtwthqmrtbhbr.supabase.co'
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_yjnvIPUmi8-Kt7yTFibw3w_DQlawViE'
     const IDENTITY_KEY = 'displayhub_generic_device_identity_v1'
     const status = document.getElementById('status')
-    let timer = null
+    const waiting = document.getElementById('waiting')
+    const player = document.getElementById('player')
+    let currentDisplayUrl = ''
 
     function getIdentity() {
       try {
@@ -43,12 +52,27 @@
       return null
     }
 
+    function showWaiting(message, className = 'status') {
+      waiting.style.display = 'grid'
+      player.style.display = 'none'
+      status.textContent = message
+      status.className = className
+    }
+
+    function showDisplay(url, name) {
+      if (url !== currentDisplayUrl) {
+        currentDisplayUrl = url
+        player.src = url
+      }
+      player.style.display = 'block'
+      waiting.style.display = 'none'
+      document.title = `${name || 'DisplayHub'} · DisplayHub`
+    }
+
     async function pollAssignment() {
       const identity = getIdentity()
       if (!identity) {
-        status.textContent = 'A identidade deste dispositivo não foi encontrada. Leia um novo QR de instalação.'
-        status.className = 'status error'
-        if (timer) window.clearInterval(timer)
+        showWaiting('A identidade deste dispositivo não foi encontrada. Leia um novo QR de instalação.', 'status error')
         return
       }
 
@@ -68,19 +92,24 @@
 
         if (!response.ok) throw new Error('poll_failed')
         const result = await response.json()
-        if (result?.status !== 'assigned' || !result?.display_url) return
 
-        status.textContent = `Tela associada: ${result.display_name || 'DisplayHub'}. Abrindo o Player...`
-        status.className = 'status success'
-        if (timer) window.clearInterval(timer)
-        window.setTimeout(() => window.location.replace(result.display_url), 700)
+        if (result?.status === 'assigned' && result?.display_url) {
+          showDisplay(result.display_url, result.display_name)
+          return
+        }
+
+        currentDisplayUrl = ''
+        player.removeAttribute('src')
+        showWaiting('Aguardando o administrador associar uma tela a este dispositivo...')
       } catch {
-        status.textContent = 'Aguardando associação. Tentando novamente automaticamente...'
+        if (!currentDisplayUrl) {
+          showWaiting('Não foi possível verificar a associação agora. Tentando novamente automaticamente...')
+        }
       }
     }
 
     void pollAssignment()
-    timer = window.setInterval(() => void pollAssignment(), 3000)
+    window.setInterval(() => void pollAssignment(), 3000)
   </script>
 </body>
 </html>
