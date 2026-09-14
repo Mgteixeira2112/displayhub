@@ -25,7 +25,7 @@ type QrConstructor = new (
 function formatPlatform(platform: string) {
   if (platform === 'android') return 'Android'
   if (platform === 'ios') return 'iOS'
-  if (platform === 'windows-web') return 'Windows (navegador)'
+  if (platform === 'windows-web') return 'Windows Web'
   return platform || 'Web'
 }
 
@@ -54,8 +54,8 @@ function StoredDisplayQr({ display, onFeedback }: { display: DisplayOption; onFe
     if (!QRCode) return
     new QRCode(container, {
       text: url,
-      width: 176,
-      height: 176,
+      width: 148,
+      height: 148,
       colorDark: '#0f172a',
       colorLight: '#ffffff',
     })
@@ -71,13 +71,13 @@ function StoredDisplayQr({ display, onFeedback }: { display: DisplayOption; onFe
   }
 
   return (
-    <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '196px minmax(0, 1fr)', gap: 16, alignItems: 'center' }}>
-      <div ref={qrRef} style={{ width: 196, minHeight: 196, padding: 10, borderRadius: 16, background: '#fff', display: 'grid', placeItems: 'center' }} />
-      <div>
+    <div className="registered-device-qr">
+      <div ref={qrRef} className="registered-device-qr-image" />
+      <div className="registered-device-qr-copy">
         <strong>QR da tela associada</strong>
-        <p style={{ margin: '6px 0 12px' }}>Este QR fica disponível junto ao cadastro do dispositivo e sempre abre a tela <strong>{display.name}</strong>.</p>
-        <div className="windows-device-actions">
-          <button type="button" onClick={() => void copyLink()}>Copiar link da tela</button>
+        <span>{display.name}{display.location ? ` · ${display.location}` : ''}</span>
+        <div className="registered-device-inline-actions">
+          <button type="button" onClick={() => void copyLink()}>Copiar link</button>
           <a href={url} target="_blank" rel="noreferrer">Abrir tela</a>
         </div>
       </div>
@@ -93,6 +93,7 @@ export default function RegisteredDevicesManager() {
   const [busyDeviceId, setBusyDeviceId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [filter, setFilter] = useState('')
 
   const load = useCallback(async () => {
     const [{ data: deviceRows, error: deviceError }, { data: displayRows, error: displayError }] = await Promise.all([
@@ -137,6 +138,19 @@ export default function RegisteredDevicesManager() {
   }, [load])
 
   const displayById = useMemo(() => new Map(displays.map((display) => [display.id, display])), [displays])
+  const visibleDevices = useMemo(() => {
+    const query = filter.trim().toLowerCase()
+    if (!query) return devices
+    return devices.filter((device) => {
+      const mapping = Array.isArray(device.mappings)
+        ? device.mappings.find((item) => item.physical_display_id === 'browser' && item.display_id)
+        : null
+      const display = mapping?.display_id ? displayById.get(mapping.display_id) : null
+      return [device.hostname, formatPlatform(device.platform), device.app_version, display?.name, display?.location]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query))
+    })
+  }, [devices, displayById, filter])
 
   const assign = async (device: RegisteredDevice) => {
     const displayId = selectionByDevice[device.id] || ''
@@ -156,7 +170,7 @@ export default function RegisteredDevicesManager() {
       const result = data as { display_name?: string }
       setFeedbackByDevice((current) => ({
         ...current,
-        [device.id]: `${result?.display_name || 'Tela'} associada. O QR permanente desta tela já está disponível abaixo.`,
+        [device.id]: `${result?.display_name || 'Tela'} associada.`,
       }))
       await load()
     } catch (nextError) {
@@ -172,20 +186,29 @@ export default function RegisteredDevicesManager() {
   if (loading) return <section className="windows-pairing-card"><p>Carregando dispositivos registrados…</p></section>
 
   return (
-    <section className="windows-pairing-card">
-      <div className="windows-pairing-copy">
-        <p className="eyebrow">Dispositivos registrados</p>
-        <h2>Associar uma tela ao dispositivo</h2>
-        <p>O QR inicial registra somente o aparelho. Depois da associação, o QR da tela fica guardado visualmente junto ao cadastro do dispositivo para poder ser lido novamente a qualquer momento.</p>
+    <section className="windows-pairing-card registered-devices-panel">
+      <div className="registered-devices-toolbar">
+        <div>
+          <p className="eyebrow">Dispositivos registrados</p>
+          <h2>{devices.length} {devices.length === 1 ? 'dispositivo' : 'dispositivos'}</h2>
+        </div>
+        <input
+          value={filter}
+          onChange={(event) => setFilter(event.target.value)}
+          placeholder="Buscar dispositivo ou tela"
+          aria-label="Buscar dispositivo"
+        />
       </div>
 
       {error && <div className="windows-devices-feedback">{error}</div>}
 
       {devices.length === 0 ? (
         <div className="windows-device-empty">Nenhum dispositivo registrado por QR.</div>
+      ) : visibleDevices.length === 0 ? (
+        <div className="windows-device-empty">Nenhum dispositivo corresponde à busca.</div>
       ) : (
-        <div className="windows-device-grid">
-          {devices.map((device) => {
+        <div className="registered-device-list">
+          {visibleDevices.map((device) => {
             const mapping = Array.isArray(device.mappings)
               ? device.mappings.find((item) => item.physical_display_id === 'browser' && item.display_id)
               : null
@@ -194,54 +217,46 @@ export default function RegisteredDevicesManager() {
             const feedback = feedbackByDevice[device.id]
 
             return (
-              <article className="windows-device-card" key={device.id}>
-                <div className="windows-device-card-head">
-                  <div>
-                    <span className="windows-device-status online">Registrado</span>
-                    <h2>{device.hostname || 'Dispositivo sem nome'}</h2>
+              <details className="registered-device-row" key={device.id}>
+                <summary className="registered-device-summary">
+                  <span className="windows-device-status online">Registrado</span>
+                  <strong>{device.hostname || 'Dispositivo sem nome'}</strong>
+                  <span className="registered-device-platform">{formatPlatform(device.platform)}</span>
+                  <span className={assignedDisplay ? 'registered-device-assigned' : 'registered-device-pending'}>
+                    {assignedDisplay ? assignedDisplay.name : 'Sem tela'}
+                  </span>
+                  <span className="registered-device-last-seen">{formatLastSeen(device.last_seen_at)}</span>
+                  <span className="registered-device-expand">Detalhes</span>
+                </summary>
+
+                <div className="registered-device-details">
+                  <div className="registered-device-assignment">
+                    <select
+                      value={selectionByDevice[device.id] || mapping?.display_id || ''}
+                      onChange={(event) => setSelectionByDevice((current) => ({ ...current, [device.id]: event.target.value }))}
+                    >
+                      <option value="">Escolha uma tela</option>
+                      {displays.map((display) => (
+                        <option key={display.id} value={display.id}>
+                          {display.name}{display.location ? ` · ${display.location}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" disabled={busy || displays.length === 0} onClick={() => void assign(device)}>
+                      {assignedDisplay ? 'Alterar associação' : 'Associar tela'}
+                    </button>
                   </div>
-                  <span className="windows-device-version">{formatPlatform(device.platform)}</span>
+
+                  {assignedDisplay && (
+                    <StoredDisplayQr
+                      display={assignedDisplay}
+                      onFeedback={(message) => setFeedbackByDevice((current) => ({ ...current, [device.id]: message }))}
+                    />
+                  )}
+
+                  {feedback && <div className="windows-devices-feedback">{feedback}</div>}
                 </div>
-
-                <div className="windows-device-facts">
-                  <span><strong>{assignedDisplay ? 'Associada' : 'Pendente'}</strong> tela</span>
-                  <span><strong>{device.app_version}</strong> origem</span>
-                </div>
-
-                <p className="windows-device-last-seen">Último contato {formatLastSeen(device.last_seen_at)}</p>
-
-                {assignedDisplay && (
-                  <div className="windows-device-command-status status-completed">
-                    Tela atual: {assignedDisplay.name}{assignedDisplay.location ? ` · ${assignedDisplay.location}` : ''}
-                  </div>
-                )}
-
-                <div className="windows-pairing-code-row">
-                  <select
-                    value={selectionByDevice[device.id] || mapping?.display_id || ''}
-                    onChange={(event) => setSelectionByDevice((current) => ({ ...current, [device.id]: event.target.value }))}
-                  >
-                    <option value="">Escolha uma tela</option>
-                    {displays.map((display) => (
-                      <option key={display.id} value={display.id}>
-                        {display.name}{display.location ? ` · ${display.location}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <button type="button" disabled={busy || displays.length === 0} onClick={() => void assign(device)}>
-                    {assignedDisplay ? 'Alterar associação' : 'Associar tela'}
-                  </button>
-                </div>
-
-                {assignedDisplay && (
-                  <StoredDisplayQr
-                    display={assignedDisplay}
-                    onFeedback={(message) => setFeedbackByDevice((current) => ({ ...current, [device.id]: message }))}
-                  />
-                )}
-
-                {feedback && <div className="windows-devices-feedback">{feedback}</div>}
-              </article>
+              </details>
             )
           })}
         </div>
