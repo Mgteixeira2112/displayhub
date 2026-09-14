@@ -48,8 +48,13 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
 }) {
   const hero = heroConfig || getHeroConfig()
   const dragRef = useRef<{ target: HeroDragTarget; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; width: number; height: number } | null>(null)
-  const displayPrimary = primaryText || (scene.key === 'hero' ? 'QUEIJO MINAS FRESCAL' : scene.key === 'countdown' ? '02:14:36' : scene.key === 'data' ? 'R$ 24,90' : 'DESTAQUE')
+  const displayPrimary = scene.key === 'hero'
+    ? (editableHero ? (primaryText || '').trim() : (primaryText ?? 'QUEIJO MINAS FRESCAL').trim())
+    : primaryText || (scene.key === 'countdown' ? '02:14:36' : scene.key === 'data' ? 'R$ 24,90' : 'DESTAQUE')
   const heroClass = scene.key === 'hero' ? ` smart-hero-preset-${hero.preset}` : ''
+  const displaySecondary = scene.key === 'hero' ? (secondaryText || '').trim() : secondaryText || scene.accent
+  const displayPrice = hero.price.trim()
+  const displayUnit = hero.unit.trim()
 
   function heroPosition(target: HeroDragTarget) {
     if (target === 'product') return { x: hero.productX, y: hero.productY }
@@ -110,9 +115,9 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
       {scene.key !== 'hero' && <div className="smart-scene-visual" />}
       <div className="smart-scene-copy">
         {scene.key !== 'hero' && <span>{headline || scene.category}</span>}
-        <strong {...dragHandlers('product')}>{displayPrimary}</strong>
-        {scene.key === 'hero' && <div className="smart-hero-price-row" {...dragHandlers('price')}><b>{hero.price}</b><em>{hero.unit}</em></div>}
-        <small>{secondaryText || scene.accent}</small>
+        {(scene.key !== 'hero' || displayPrimary) && <strong {...dragHandlers('product')}>{displayPrimary}</strong>}
+        {scene.key === 'hero' && displayPrice && <div className="smart-hero-price-row" {...dragHandlers('price')}><b>{displayPrice}</b>{displayUnit && <em>{displayUnit}</em>}</div>}
+        {(scene.key !== 'hero' || displaySecondary) && <small>{displaySecondary}</small>}
       </div>
       {scene.key === 'panorama' && <div className="smart-scene-wall-grid"><i/><i/><i/></div>}
       {scene.key === 'split' && <div className="smart-scene-split-line" />}
