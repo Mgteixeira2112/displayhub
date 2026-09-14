@@ -27,6 +27,7 @@ export default function SmartSceneView({ scene, className = '' }: { scene: Smart
   const productAnimationClass = hero.productAnimationEnabled ? `hero-text-animation-${hero.productAnimation}` : 'hero-text-animation-none'
   const priceAnimationClass = hero.priceAnimationEnabled ? `hero-text-animation-${hero.priceAnimation}` : 'hero-text-animation-none'
   const unitAnimationClass = hero.unitAnimationEnabled ? `hero-text-animation-${hero.unitAnimation}` : 'hero-text-animation-none'
+  const complementAnimationClass = hero.complementAnimationEnabled ? `hero-text-animation-${hero.complementAnimation}` : 'hero-text-animation-none'
 
   return (
     <div
@@ -57,7 +58,7 @@ export default function SmartSceneView({ scene, className = '' }: { scene: Smart
             {unitText && <em className={unitAnimationClass}>{unitText}</em>}
           </div>
         )}
-        {(scene.scene_type !== 'hero' || secondaryText) && <small>{scene.scene_type === 'hero' ? secondaryText : scene.secondary_text}</small>}
+        {(scene.scene_type !== 'hero' || secondaryText) && <small className={scene.scene_type === 'hero' ? complementAnimationClass : undefined}>{scene.scene_type === 'hero' ? secondaryText : scene.secondary_text}</small>}
       </div>
       {scene.scene_type === 'panorama' && <div className="smart-scene-wall-grid"><i/><i/><i/></div>}
       {scene.scene_type === 'split' && <div className="smart-scene-split-line" />}

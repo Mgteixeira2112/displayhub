@@ -52,6 +52,13 @@ export type HeroConfig = {
   unitY: number
   unitAnimationEnabled: boolean
   unitAnimation: HeroTextAnimation
+  complementColor: string
+  complementSize: number
+  complementRotation: number
+  complementX: number
+  complementY: number
+  complementAnimationEnabled: boolean
+  complementAnimation: HeroTextAnimation
 }
 
 const defaults: HeroConfig = {
@@ -99,6 +106,13 @@ const defaults: HeroConfig = {
   unitY: 0,
   unitAnimationEnabled: false,
   unitAnimation: 'float',
+  complementColor: '#1d1d1d',
+  complementSize: 100,
+  complementRotation: 0,
+  complementX: 0,
+  complementY: 0,
+  complementAnimationEnabled: false,
+  complementAnimation: 'float',
 }
 
 function numberValue(value: unknown, fallback: number, min: number, max: number) {
@@ -194,6 +208,13 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
     unitY: numberValue(hero.unitY, defaults.unitY, -40, 40),
     unitAnimationEnabled: booleanValue(hero.unitAnimationEnabled, defaults.unitAnimationEnabled),
     unitAnimation: textAnimationValue(hero.unitAnimation, defaults.unitAnimation),
+    complementColor: stringValue(hero.complementColor, defaults.complementColor),
+    complementSize: numberValue(hero.complementSize, defaults.complementSize, 60, 160),
+    complementRotation: numberValue(hero.complementRotation, defaults.complementRotation, -15, 15),
+    complementX: numberValue(hero.complementX, defaults.complementX, -40, 40),
+    complementY: numberValue(hero.complementY, defaults.complementY, -40, 40),
+    complementAnimationEnabled: booleanValue(hero.complementAnimationEnabled, defaults.complementAnimationEnabled),
+    complementAnimation: textAnimationValue(hero.complementAnimation, defaults.complementAnimation),
   }
 }
 
@@ -224,5 +245,10 @@ export function heroStyleVars(config: HeroConfig, productText = ''): CSSProperti
     '--hero-unit-rotation': `${config.unitRotation}deg`,
     '--hero-unit-x': `${config.unitX}%`,
     '--hero-unit-y': `${config.unitY}%`,
+    '--hero-complement-color': config.complementColor,
+    '--hero-complement-scale': String(config.complementSize / 100),
+    '--hero-complement-rotation': `${config.complementRotation}deg`,
+    '--hero-complement-x': `${config.complementX}%`,
+    '--hero-complement-y': `${config.complementY}%`,
   } as CSSProperties
 }
