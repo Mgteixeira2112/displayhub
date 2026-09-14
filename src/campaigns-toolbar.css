@@ -21,23 +21,7 @@
 }
 
 .view-campaigns .playlist-create-panel > summary {
-  display: flex !important;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 13px;
-  cursor: pointer;
-  color: #2563eb;
-  font-size: .72rem;
-  font-weight: 750;
-  list-style: none;
-}
-
-.view-campaigns .playlist-create-panel > summary::-webkit-details-marker {
-  display: none;
-}
-
-.view-campaigns .playlist-create-panel[open] > summary {
-  border-bottom: 1px solid #e2e8f0;
+  display: none !important;
 }
 
 .view-campaigns .playlist-create-panel > .playlist-create-grid {
