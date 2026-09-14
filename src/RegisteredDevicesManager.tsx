@@ -8,13 +8,13 @@ type RegisteredDevice = {
   platform: string
   app_version: string
   last_seen_at: string
-  mappings: Array<{ physical_display_id?: string; display_id?: string }> | null
+  mappings: Array<{ physical_display_id?: string; display_id?: string; playlist_id?: string; player_token?: string }> | null
 }
 
-type DisplayOption = {
+type PlaylistOption = {
   id: string
   name: string
-  location: string | null
+  description: string | null
 }
 
 type QrConstructor = new (
@@ -75,7 +75,7 @@ function DeviceRecoveryQr({ device, onFeedback }: { device: RegisteredDevice; on
       <div className="registered-device-qr-copy">
         <strong>QR de recuperação do dispositivo</strong>
         <span>{device.hostname || 'Dispositivo sem nome'} · {formatPlatform(device.platform)}</span>
-        <span>Use este QR no próprio aparelho para voltar ao Player conectado ao DisplayHub. Ele não muda quando a tela associada é alterada.</span>
+        <span>Use este QR no próprio aparelho para voltar ao Player conectado ao DisplayHub. Ele não muda quando a playlist associada é alterada.</span>
         <div className="registered-device-inline-actions">
           <button type="button" onClick={() => void copyLink()}>Copiar link</button>
           <a href={url} target="_blank" rel="noreferrer">Abrir recuperação</a>
@@ -87,7 +87,7 @@ function DeviceRecoveryQr({ device, onFeedback }: { device: RegisteredDevice; on
 
 export default function RegisteredDevicesManager() {
   const [devices, setDevices] = useState<RegisteredDevice[]>([])
-  const [displays, setDisplays] = useState<DisplayOption[]>([])
+  const [playlists, setPlaylists] = useState<PlaylistOption[]>([])
   const [selectionByDevice, setSelectionByDevice] = useState<Record<string, string>>({})
   const [feedbackByDevice, setFeedbackByDevice] = useState<Record<string, string>>({})
   const [busyDeviceId, setBusyDeviceId] = useState<string | null>(null)
@@ -96,24 +96,23 @@ export default function RegisteredDevicesManager() {
   const [filter, setFilter] = useState('')
 
   const load = useCallback(async () => {
-    const [{ data: deviceRows, error: deviceError }, { data: displayRows, error: displayError }] = await Promise.all([
+    const [{ data: deviceRows, error: deviceError }, { data: playlistRows, error: playlistError }] = await Promise.all([
       supabase
         .from('player_devices')
         .select('id,hostname,platform,app_version,last_seen_at,mappings')
         .neq('platform', 'windows')
         .order('created_at', { ascending: false }),
       supabase
-        .from('displays')
-        .select('id,name,location')
+        .from('playlists')
+        .select('id,name,description')
         .eq('is_active', true)
-        .is('revoked_at', null)
         .order('name', { ascending: true }),
     ])
 
     if (deviceError) throw deviceError
-    if (displayError) throw displayError
+    if (playlistError) throw playlistError
     setDevices((deviceRows || []) as RegisteredDevice[])
-    setDisplays((displayRows || []) as DisplayOption[])
+    setPlaylists((playlistRows || []) as PlaylistOption[])
   }, [])
 
   useEffect(() => {
@@ -137,46 +136,46 @@ export default function RegisteredDevicesManager() {
     }
   }, [load])
 
-  const displayById = useMemo(() => new Map(displays.map((display) => [display.id, display])), [displays])
+  const playlistById = useMemo(() => new Map(playlists.map((playlist) => [playlist.id, playlist])), [playlists])
   const visibleDevices = useMemo(() => {
     const query = filter.trim().toLowerCase()
     if (!query) return devices
     return devices.filter((device) => {
       const mapping = Array.isArray(device.mappings)
-        ? device.mappings.find((item) => item.physical_display_id === 'browser' && item.display_id)
+        ? device.mappings.find((item) => item.physical_display_id === 'browser' && item.playlist_id)
         : null
-      const display = mapping?.display_id ? displayById.get(mapping.display_id) : null
-      return [device.hostname, formatPlatform(device.platform), device.app_version, display?.name, display?.location]
+      const playlist = mapping?.playlist_id ? playlistById.get(mapping.playlist_id) : null
+      return [device.hostname, formatPlatform(device.platform), device.app_version, playlist?.name, playlist?.description]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(query))
     })
-  }, [devices, displayById, filter])
+  }, [devices, playlistById, filter])
 
   const assign = async (device: RegisteredDevice) => {
-    const displayId = selectionByDevice[device.id] || ''
-    if (!displayId) {
-      setFeedbackByDevice((current) => ({ ...current, [device.id]: 'Escolha uma tela antes de associar.' }))
+    const playlistId = selectionByDevice[device.id] || ''
+    if (!playlistId) {
+      setFeedbackByDevice((current) => ({ ...current, [device.id]: 'Escolha uma playlist antes de associar.' }))
       return
     }
 
     setBusyDeviceId(device.id)
-    setFeedbackByDevice((current) => ({ ...current, [device.id]: 'Alterando associação...' }))
+    setFeedbackByDevice((current) => ({ ...current, [device.id]: 'Alterando playlist...' }))
     try {
-      const { data, error: rpcError } = await supabase.rpc('assign_registered_device_display', {
+      const { data, error: rpcError } = await supabase.rpc('assign_registered_device_playlist', {
         p_device_id: device.id,
-        p_display_id: displayId,
+        p_playlist_id: playlistId,
       })
       if (rpcError) throw rpcError
-      const result = data as { display_name?: string }
+      const result = data as { playlist_name?: string }
       setFeedbackByDevice((current) => ({
         ...current,
-        [device.id]: `${result?.display_name || 'Tela'} associada. O dispositivo mudará automaticamente em alguns segundos.`,
+        [device.id]: `${result?.playlist_name || 'Playlist'} associada. O dispositivo mudará automaticamente em alguns segundos.`,
       }))
       await load()
     } catch (nextError) {
       setFeedbackByDevice((current) => ({
         ...current,
-        [device.id]: nextError instanceof Error ? nextError.message : 'Não foi possível alterar a associação.',
+        [device.id]: nextError instanceof Error ? nextError.message : 'Não foi possível alterar a playlist.',
       }))
     } finally {
       setBusyDeviceId(null)
@@ -195,7 +194,7 @@ export default function RegisteredDevicesManager() {
         <input
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
-          placeholder="Buscar dispositivo ou tela"
+          placeholder="Buscar dispositivo ou playlist"
           aria-label="Buscar dispositivo"
         />
       </div>
@@ -210,9 +209,9 @@ export default function RegisteredDevicesManager() {
         <div className="registered-device-list">
           {visibleDevices.map((device) => {
             const mapping = Array.isArray(device.mappings)
-              ? device.mappings.find((item) => item.physical_display_id === 'browser' && item.display_id)
+              ? device.mappings.find((item) => item.physical_display_id === 'browser' && item.playlist_id)
               : null
-            const assignedDisplay = mapping?.display_id ? displayById.get(mapping.display_id) : null
+            const assignedPlaylist = mapping?.playlist_id ? playlistById.get(mapping.playlist_id) : null
             const busy = busyDeviceId === device.id
             const feedback = feedbackByDevice[device.id]
 
@@ -222,8 +221,8 @@ export default function RegisteredDevicesManager() {
                   <span className="windows-device-status online">Registrado</span>
                   <strong>{device.hostname || 'Dispositivo sem nome'}</strong>
                   <span className="registered-device-platform">{formatPlatform(device.platform)}</span>
-                  <span className={assignedDisplay ? 'registered-device-assigned' : 'registered-device-pending'}>
-                    {assignedDisplay ? assignedDisplay.name : 'Sem tela'}
+                  <span className={assignedPlaylist ? 'registered-device-assigned' : 'registered-device-pending'}>
+                    {assignedPlaylist ? assignedPlaylist.name : 'Sem playlist'}
                   </span>
                   <span className="registered-device-last-seen">{formatLastSeen(device.last_seen_at)}</span>
                   <span className="registered-device-expand">Detalhes</span>
@@ -232,25 +231,25 @@ export default function RegisteredDevicesManager() {
                 <div className="registered-device-details">
                   <div className="registered-device-assignment">
                     <select
-                      value={selectionByDevice[device.id] || mapping?.display_id || ''}
+                      value={selectionByDevice[device.id] || mapping?.playlist_id || ''}
                       onChange={(event) => setSelectionByDevice((current) => ({ ...current, [device.id]: event.target.value }))}
                     >
-                      <option value="">Escolha uma tela</option>
-                      {displays.map((display) => (
-                        <option key={display.id} value={display.id}>
-                          {display.name}{display.location ? ` · ${display.location}` : ''}
+                      <option value="">Escolha uma playlist</option>
+                      {playlists.map((playlist) => (
+                        <option key={playlist.id} value={playlist.id}>
+                          {playlist.name}
                         </option>
                       ))}
                     </select>
-                    <button type="button" disabled={busy || displays.length === 0} onClick={() => void assign(device)}>
-                      {assignedDisplay ? 'Alterar associação' : 'Associar tela'}
+                    <button type="button" disabled={busy || playlists.length === 0} onClick={() => void assign(device)}>
+                      {assignedPlaylist ? 'Alterar playlist' : 'Associar playlist'}
                     </button>
                   </div>
 
                   <div className="windows-device-command-status status-completed">
-                    {assignedDisplay
-                      ? `Tela atual: ${assignedDisplay.name}${assignedDisplay.location ? ` · ${assignedDisplay.location}` : ''}. Alterações são recebidas automaticamente pelo dispositivo.`
-                      : 'Sem tela associada. Assim que uma tela for escolhida, o dispositivo receberá a configuração automaticamente.'}
+                    {assignedPlaylist
+                      ? `Playlist atual: ${assignedPlaylist.name}. Alterações são recebidas automaticamente pelo dispositivo.`
+                      : 'Sem playlist associada. Assim que uma playlist for escolhida, o dispositivo receberá a configuração automaticamente.'}
                   </div>
 
                   <DeviceRecoveryQr
