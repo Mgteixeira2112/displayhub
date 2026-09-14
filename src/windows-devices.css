@@ -276,6 +276,115 @@
   cursor: not-allowed;
 }
 
+.windows-player-list {
+  display: grid;
+  gap: 6px;
+}
+
+.windows-player-row {
+  border: 1px solid var(--dh-border);
+  border-radius: 12px;
+  background: var(--dh-panel);
+  overflow: hidden;
+}
+
+.windows-player-summary {
+  display: grid;
+  grid-template-columns: auto minmax(150px, 1.4fr) minmax(90px, .7fr) minmax(75px, .6fr) auto auto auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 48px;
+  padding: 7px 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.windows-player-summary::-webkit-details-marker {
+  display: none;
+}
+
+.windows-player-summary > strong,
+.windows-player-summary > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.windows-player-summary > strong {
+  font-size: .9rem;
+}
+
+.windows-player-summary > span:not(.windows-device-status):not(.windows-device-version) {
+  color: var(--dh-muted);
+  font-size: .76rem;
+}
+
+.windows-player-last-seen {
+  text-align: right;
+}
+
+.windows-player-expand {
+  font-weight: 800;
+  color: #2563eb !important;
+}
+
+.windows-player-row[open] .windows-player-expand::after {
+  content: ' ▲';
+}
+
+.windows-player-row:not([open]) .windows-player-expand::after {
+  content: ' ▼';
+}
+
+.windows-player-details {
+  padding: 10px;
+  border-top: 1px solid var(--dh-border);
+  background: rgba(148, 163, 184, .04);
+}
+
+.windows-player-details .windows-device-facts {
+  margin-top: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.windows-player-details .windows-device-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.windows-player-details .windows-device-actions button {
+  min-height: 36px;
+  font-size: .78rem;
+}
+
+.windows-player-details .windows-device-command-status {
+  margin-top: 10px;
+}
+
+.windows-player-details .windows-devices-feedback {
+  margin-top: 10px;
+  padding: 9px 11px;
+}
+
+@media (max-width: 900px) {
+  .windows-player-summary {
+    grid-template-columns: auto minmax(120px, 1fr) auto auto;
+  }
+
+  .windows-player-summary > span:nth-of-type(2),
+  .windows-player-summary > span:nth-of-type(3),
+  .windows-player-last-seen {
+    display: none;
+  }
+
+  .windows-player-details .windows-device-facts,
+  .windows-player-details .windows-device-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 700px) {
   .windows-devices-heading,
   .windows-pairing-preview-head {
@@ -286,6 +395,19 @@
   .windows-device-actions,
   .windows-pairing-code-row,
   .windows-pairing-monitor {
+    grid-template-columns: 1fr;
+  }
+
+  .windows-player-summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .windows-player-summary .windows-device-version {
+    display: none;
+  }
+
+  .windows-player-details .windows-device-facts,
+  .windows-player-details .windows-device-actions {
     grid-template-columns: 1fr;
   }
 }
