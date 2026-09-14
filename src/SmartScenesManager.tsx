@@ -127,8 +127,8 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId || !onHeroPositionChange) return
     event.preventDefault()
-    const nextX = Math.max(-40, Math.min(40, drag.startX + ((event.clientX - drag.startClientX) / drag.width) * 100))
-    const nextY = Math.max(-40, Math.min(40, drag.startY + ((event.clientY - drag.startClientY) / drag.height) * 100))
+    const nextX = Math.max(0, Math.min(100, drag.startX + ((event.clientX - drag.startClientX) / drag.width) * 100))
+    const nextY = Math.max(0, Math.min(100, drag.startY + ((event.clientY - drag.startClientY) / drag.height) * 100))
     onHeroPositionChange(drag.target, Math.round(nextX), Math.round(nextY))
   }
 
