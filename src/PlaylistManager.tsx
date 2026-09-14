@@ -6,13 +6,14 @@ type Props = { companyId: string; role: string }
 type SourceType = 'content_item' | 'structured_content' | 'promotion_poster'
 type TransitionType = 'none' | 'fade' | 'slide_left' | 'slide_up' | 'zoom'
 type DurationMode = 'fixed' | 'media'
+type PublicationMode = 'base' | 'scheduled'
 type Playlist = { id: string; name: string; description: string | null; is_active: boolean; transition_type: TransitionType; transition_duration_ms: number }
 type Source = { id: string; label: string; sourceType: SourceType; mediaUrl?: string }
 type TemplateType = keyof typeof templateLabels
 type DisplayTemplate = { id: string; name: string; template_type: TemplateType; is_active: boolean }
 type PlaylistItem = { id: string; playlist_id: string; source_type: SourceType; content_item_id: string | null; structured_content_id: string | null; promotion_poster_id: string | null; template_id: string | null; position: number; duration_seconds: number; duration_mode: DurationMode; created_at: string }
 type Display = { id: string; name: string; is_active: boolean; revoked_at: string | null }
-type Publication = { id: string; display_id: string; playlist_id: string; starts_at: string | null; ends_at: string | null; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; is_active: boolean }
+type Publication = { id: string; group_id: string | null; display_id: string; playlist_id: string; starts_at: string | null; ends_at: string | null; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; is_active: boolean }
 
 const week = [[0,'Dom'],[1,'Seg'],[2,'Ter'],[3,'Qua'],[4,'Qui'],[5,'Sex'],[6,'Sáb']] as const
 const transitionOptions: Array<{ value: TransitionType; label: string }> = [
@@ -71,6 +72,10 @@ function orderPlaylistItems(rows: PlaylistItem[]) {
   })
 }
 
+function isBasePublication(publication: Publication) {
+  return publication.is_active && !publication.group_id && publication.repeat_mode === 'always' && !publication.starts_at && !publication.ends_at
+}
+
 export default function PlaylistManager({ companyId, role }: Props) {
   const canManage = role === 'admin' || role === 'manager'
   const [playlists, setPlaylists] = useState<Playlist[]>([])
@@ -86,6 +91,7 @@ export default function PlaylistManager({ companyId, role }: Props) {
   const [templateId, setTemplateId] = useState('')
   const [duration, setDuration] = useState(10)
   const [durationMode, setDurationMode] = useState<DurationMode>('fixed')
+  const [publicationMode, setPublicationMode] = useState<PublicationMode>('scheduled')
   const [publicationPlaylist, setPublicationPlaylist] = useState('')
   const [displayId, setDisplayId] = useState('')
   const [startsAt, setStartsAt] = useState('')
@@ -103,6 +109,8 @@ export default function PlaylistManager({ companyId, role }: Props) {
   const playlistMap = useMemo(() => new Map(playlists.map((p) => [p.id, p.name])), [playlists])
   const displayMap = useMemo(() => new Map(displays.map((d) => [d.id, d.name])), [displays])
   const activeDisplays = displays.filter((d) => d.is_active && !d.revoked_at)
+  const baseDisplayIds = useMemo(() => new Set(publications.filter(isBasePublication).map((publication) => publication.display_id)), [publications])
+  const publicationDisplays = publicationMode === 'base' ? activeDisplays.filter((display) => !baseDisplayIds.has(display.id)) : activeDisplays
   const selectedSourceType = sourceKey.split(':')[0] as SourceType | ''
   const selectedSource = sourceByKey.get(sourceKey)
   const selectedCanUseMediaDuration = Boolean(selectedSource?.mediaUrl)
@@ -116,7 +124,7 @@ export default function PlaylistManager({ companyId, role }: Props) {
       supabase.from('promotion_posters').select('id,product_name,price,orientation,template_key,layout_positions').eq('is_active', true).order('created_at', { ascending: false }),
       supabase.from('display_templates').select('id,name,template_type,is_active').eq('is_active', true).order('name'),
       supabase.from('displays').select('id,name,is_active,revoked_at').order('name'),
-      supabase.from('display_publications').select('id,display_id,playlist_id,starts_at,ends_at,repeat_mode,daily_start,daily_end,weekdays,is_active').order('created_at',{ascending:false}),
+      supabase.from('display_publications').select('id,group_id,display_id,playlist_id,starts_at,ends_at,repeat_mode,daily_start,daily_end,weekdays,is_active').order('created_at',{ascending:false}),
     ])
     for (const response of [playlistRes,itemRes,contentRes,structuredRes,posterRes,templateRes,displayRes,publicationRes]) if (response.error) throw response.error
     setPlaylists((playlistRes.data || []).map((row) => ({ ...row, transition_type: row.transition_type || 'fade', transition_duration_ms: Number(row.transition_duration_ms ?? 600) })) as Playlist[])
@@ -255,17 +263,24 @@ export default function PlaylistManager({ companyId, role }: Props) {
 
   async function createPublication(event: FormEvent) {
     event.preventDefault(); if (!canManage || !publicationPlaylist || !displayId) return
+    const isBase = publicationMode === 'base'
+    if (!isBase && repeatMode === 'always' && !startsAt && !endsAt) {
+      setMessage('Defina início ou fim para o agendamento.')
+      return
+    }
     setBusy(true); setMessage('')
     const { error } = await supabase.from('display_publications').insert({
       company_id: companyId, playlist_id: publicationPlaylist, display_id: displayId,
-      starts_at: startsAt ? new Date(startsAt).toISOString() : null,
-      ends_at: endsAt ? new Date(endsAt).toISOString() : null,
-      repeat_mode: repeatMode,
-      daily_start: repeatMode === 'daily' ? dailyStart : null,
-      daily_end: repeatMode === 'daily' ? dailyEnd : null,
-      weekdays,
+      starts_at: isBase ? null : startsAt ? new Date(startsAt).toISOString() : null,
+      ends_at: isBase ? null : endsAt ? new Date(endsAt).toISOString() : null,
+      repeat_mode: isBase ? 'always' : repeatMode,
+      daily_start: !isBase && repeatMode === 'daily' ? dailyStart : null,
+      daily_end: !isBase && repeatMode === 'daily' ? dailyEnd : null,
+      weekdays: isBase ? [0,1,2,3,4,5,6] : weekdays,
     })
-    if (error) setMessage(error.message); else { setMessage('Programação criada.'); await loadAll() }
+    if (error?.code === '23505') setMessage('Este display já possui uma playlist base contínua.')
+    else if (error) setMessage(error.message)
+    else { setMessage(isBase ? 'Playlist base definida.' : 'Agendamento criado.'); await loadAll() }
     setBusy(false)
   }
 
@@ -303,8 +318,8 @@ export default function PlaylistManager({ companyId, role }: Props) {
       </div>})}{playlistItems.length===0&&<small className="empty-state">Playlist vazia.</small>}</div>
     </article>})}</div>
 
-    {canManage && <details className="create-panel schedule-create-panel"><summary>+ Nova programação</summary><form className="content-form publication-form" onSubmit={createPublication}><h3>Publicar / agendar em display</h3><div className="publication-grid"><label>Playlist<select value={publicationPlaylist} onChange={(e)=>setPublicationPlaylist(e.target.value)} required><option value="">Selecione</option>{playlists.filter((p)=>p.is_active).map((p)=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>Display<select value={displayId} onChange={(e)=>setDisplayId(e.target.value)} required disabled={activeDisplays.length===0}><option value="">{activeDisplays.length===0 ? 'Nenhum display ativo disponível' : 'Selecione'}</option>{activeDisplays.map((d)=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label>Início opcional<input type="datetime-local" value={startsAt} onChange={(e)=>setStartsAt(e.target.value)}/></label><label>Fim opcional<input type="datetime-local" value={endsAt} onChange={(e)=>setEndsAt(e.target.value)}/></label><label>Repetição<select value={repeatMode} onChange={(e)=>setRepeatMode(e.target.value as 'always'|'daily')}><option value="always">Contínua</option><option value="daily">Horário diário</option></select></label>{repeatMode==='daily'&&<><label>De<input type="time" value={dailyStart} onChange={(e)=>setDailyStart(e.target.value)} required/></label><label>Até<input type="time" value={dailyEnd} onChange={(e)=>setDailyEnd(e.target.value)} required/></label></>}</div>{repeatMode==='daily'&&<div className="weekday-row">{week.map(([value,label])=><label key={value}><input type="checkbox" checked={weekdays.includes(value)} onChange={(e)=>setWeekdays(e.target.checked?[...weekdays,value].sort():weekdays.filter((day)=>day!==value))}/>{label}</label>)}</div>}<button className="primary-button" disabled={busy||activeDisplays.length===0||(repeatMode==='daily'&&weekdays.length===0)}>Criar programação</button></form></details>}
+    {canManage && <details className="create-panel schedule-create-panel"><summary>+ Nova programação</summary><form className="content-form publication-form" onSubmit={createPublication}><h3>Publicar / agendar em display</h3><div className="publication-grid"><label>Tipo<select value={publicationMode} onChange={(e)=>{setPublicationMode(e.target.value as PublicationMode);setDisplayId('')}}><option value="base">Base contínua</option><option value="scheduled">Agendamento</option></select></label><label>Playlist<select value={publicationPlaylist} onChange={(e)=>setPublicationPlaylist(e.target.value)} required><option value="">Selecione</option>{playlists.filter((p)=>p.is_active).map((p)=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>Display<select value={displayId} onChange={(e)=>setDisplayId(e.target.value)} required disabled={publicationDisplays.length===0}><option value="">{publicationDisplays.length===0 ? 'Nenhum display disponível' : 'Selecione'}</option>{publicationDisplays.map((d)=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>{publicationMode==='scheduled'&&<><label>Início opcional<input type="datetime-local" value={startsAt} onChange={(e)=>setStartsAt(e.target.value)}/></label><label>Fim opcional<input type="datetime-local" value={endsAt} onChange={(e)=>setEndsAt(e.target.value)}/></label><label>Repetição<select value={repeatMode} onChange={(e)=>setRepeatMode(e.target.value as 'always'|'daily')}><option value="always">Período único</option><option value="daily">Horário diário</option></select></label>{repeatMode==='daily'&&<><label>De<input type="time" value={dailyStart} onChange={(e)=>setDailyStart(e.target.value)} required/></label><label>Até<input type="time" value={dailyEnd} onChange={(e)=>setDailyEnd(e.target.value)} required/></label></>}</>}</div>{publicationMode==='scheduled'&&repeatMode==='daily'&&<div className="weekday-row">{week.map(([value,label])=><label key={value}><input type="checkbox" checked={weekdays.includes(value)} onChange={(e)=>setWeekdays(e.target.checked?[...weekdays,value].sort():weekdays.filter((day)=>day!==value))}/>{label}</label>)}</div>}<button className="primary-button" disabled={busy||publicationDisplays.length===0||(publicationMode==='scheduled'&&repeatMode==='daily'&&weekdays.length===0)}>Criar</button></form></details>}
 
-    <div className="publication-list"><h3>Programações</h3>{publications.length===0&&<p className="empty-state">Nenhuma programação criada.</p>}{publications.map((publication)=><article className="publication-card" key={publication.id}><strong>{playlistMap.get(publication.playlist_id)||'Playlist'} → {displayMap.get(publication.display_id)||'Display'}</strong><span>{publication.repeat_mode==='daily'?`Diária ${publication.daily_start?.slice(0,5)}–${publication.daily_end?.slice(0,5)}`:'Contínua'}</span>{publication.starts_at&&<small>Início: {new Date(publication.starts_at).toLocaleString('pt-BR')}</small>}{publication.ends_at&&<small>Fim: {new Date(publication.ends_at).toLocaleString('pt-BR')}</small>}{canManage&&<button className="danger-button" type="button" onClick={()=>void remove('display_publications',publication.id)} disabled={busy}>Remover programação</button>}</article>)}</div>
+    <div className="publication-list"><h3>Programações</h3>{publications.length===0&&<p className="empty-state">Nenhuma programação criada.</p>}{publications.map((publication)=><article className="publication-card" key={publication.id}><strong>{playlistMap.get(publication.playlist_id)||'Playlist'} → {displayMap.get(publication.display_id)||'Display'}</strong><span>{isBasePublication(publication)?'Base contínua':publication.repeat_mode==='daily'?`Agendamento diário ${publication.daily_start?.slice(0,5)}–${publication.daily_end?.slice(0,5)}`:'Agendamento'}</span>{publication.starts_at&&<small>Início: {new Date(publication.starts_at).toLocaleString('pt-BR')}</small>}{publication.ends_at&&<small>Fim: {new Date(publication.ends_at).toLocaleString('pt-BR')}</small>}{canManage&&<button className="danger-button" type="button" onClick={()=>void remove('display_publications',publication.id)} disabled={busy}>Remover programação</button>}</article>)}</div>
   </section>
 }
