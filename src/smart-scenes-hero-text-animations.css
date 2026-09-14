@@ -10,6 +10,11 @@
 .hero-text-animation-zoom{animation:heroTextZoom 2.4s ease-in-out infinite!important}
 .hero-text-animation-float{animation:heroTextFloat 3s ease-in-out infinite!important}
 .hero-text-animation-blink{animation:heroTextBlink 2.6s ease-in-out infinite!important}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong.hero-text-animation-pulse{animation:heroTextPulse 2.2s ease-in-out infinite!important}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong.hero-text-animation-slide{animation:heroTextSlide 2.8s ease-in-out infinite!important}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong.hero-text-animation-zoom{animation:heroTextZoom 2.4s ease-in-out infinite!important}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong.hero-text-animation-float{animation:heroTextFloat 3s ease-in-out infinite!important}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong.hero-text-animation-blink{animation:heroTextBlink 2.6s ease-in-out infinite!important}
 @keyframes heroTextPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 @keyframes heroTextSlide{0%,100%{transform:translateX(0)}50%{transform:translateX(8%)}}
 @keyframes heroTextZoom{0%,100%{transform:scale(.96)}50%{transform:scale(1.08)}}
