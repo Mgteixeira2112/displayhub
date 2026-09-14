@@ -52,7 +52,7 @@ const defaults: HeroConfig = {
   element1Enabled: true,
   element1Type: 'burst',
   element1Color: '#d80d0d',
-  element1X: -8,
+  element1X: 2,
   element1Y: 14,
   element1Width: 62,
   element1Height: 72,
