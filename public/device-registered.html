@@ -44,6 +44,7 @@
     const waiting = document.getElementById('waiting')
     const player = document.getElementById('player')
     let currentPlayerUrl = ''
+    let currentAppVersion = ''
     let identityReady = false
 
     function getIdentity() {
@@ -75,6 +76,29 @@
       player.style.display = 'block'
       waiting.style.display = 'none'
       document.title = `${name || 'DisplayHub'} · DisplayHub`
+    }
+
+    async function appVersion() {
+      const response = await fetch(`./index.html?v=${Date.now()}`, { cache: 'no-store' })
+      if (!response.ok) return ''
+      const html = await response.text()
+      const bytes = new TextEncoder().encode(html)
+      const digest = await crypto.subtle.digest('SHA-256', bytes)
+      return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+    }
+
+    async function pollAppVersion() {
+      try {
+        const nextVersion = await appVersion()
+        if (!nextVersion) return
+        if (!currentAppVersion) {
+          currentAppVersion = nextVersion
+          return
+        }
+        if (nextVersion !== currentAppVersion) window.location.reload()
+      } catch {
+        return
+      }
     }
 
     async function recoverIdentityIfNeeded() {
@@ -170,7 +194,9 @@
     }
 
     void pollAssignment()
+    void pollAppVersion()
     window.setInterval(() => void pollAssignment(), 3000)
+    window.setInterval(() => void pollAppVersion(), 15000)
   </script>
 </body>
 </html>
