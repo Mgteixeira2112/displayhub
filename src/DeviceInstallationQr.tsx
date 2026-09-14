@@ -37,7 +37,7 @@ export default function DeviceInstallationQr() {
     container.innerHTML = ''
     const QRCode = (window as Window & { QRCode?: QrConstructor }).QRCode
     if (!QRCode) {
-      setFeedback('Não foi possível carregar o gerador de QR Code. Gere novamente ou use o link de instalação.')
+      setFeedback('Não foi possível carregar o QR Code.')
       return
     }
     new QRCode(container, {
@@ -65,7 +65,7 @@ export default function DeviceInstallationQr() {
 
       if (data.status === 'consumed' && data.device_id && !activationDetectedRef.current) {
         activationDetectedRef.current = true
-        setFeedback('Dispositivo registrado. Ele já pode ser associado a uma tela abaixo.')
+        setFeedback('Dispositivo registrado.')
       }
     }
 
@@ -84,7 +84,7 @@ export default function DeviceInstallationQr() {
 
   const generate = async () => {
     setBusy(true)
-    setFeedback('Gerando QR seguro...')
+    setFeedback('Gerando QR...')
     try {
       const { data, error } = await supabase.rpc('create_device_installation')
       if (error) throw error
@@ -93,7 +93,7 @@ export default function DeviceInstallationQr() {
       activationDetectedRef.current = false
       setInstallation(next)
       setNow(Date.now())
-      setFeedback('QR pronto. Ao ser lido, o aparelho será registrado como dispositivo. Nenhuma tela será criada automaticamente.')
+      setFeedback('QR pronto.')
     } catch (error) {
       setInstallation(null)
       setFeedback(error instanceof Error ? error.message : 'Não foi possível gerar o QR de instalação.')
@@ -106,9 +106,9 @@ export default function DeviceInstallationQr() {
     if (!activationUrl) return
     try {
       await navigator.clipboard.writeText(activationUrl)
-      setFeedback('Link de instalação copiado.')
+      setFeedback('Link copiado.')
     } catch {
-      setFeedback('Não foi possível copiar o link automaticamente.')
+      setFeedback('Não foi possível copiar o link.')
     }
   }
 
@@ -118,7 +118,6 @@ export default function DeviceInstallationQr() {
         <div className="windows-pairing-copy">
           <p className="eyebrow">Instalação sem login</p>
           <h2>Gerar QR para novo dispositivo</h2>
-          <p>Mostre este QR ao aparelho que será usado como Player. Ao abrir o QR, o DisplayHub registra o dispositivo automaticamente, sem criar uma tela e sem pedir e-mail ou senha.</p>
         </div>
 
         {!installation ? (
@@ -130,19 +129,16 @@ export default function DeviceInstallationQr() {
             <div className="windows-pairing-preview-head">
               <div>
                 <strong>QR de instalação</strong>
-                <span>Uso único · registra 1 dispositivo</span>
+                <span>Uso único · 1 dispositivo</span>
               </div>
               <span>{remainingSeconds > 0 ? `Expira em ${remainingLabel}` : 'QR expirado'}</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 260px) minmax(0, 1fr)', gap: 22, alignItems: 'center' }}>
               <div ref={qrRef} style={{ width: 230, minHeight: 230, padding: 10, borderRadius: 16, background: '#fff', display: 'grid', placeItems: 'center' }} />
-              <div>
-                <p style={{ marginTop: 0 }}>Depois da leitura, o aparelho entra na lista de dispositivos. A associação a uma tela é feita separadamente abaixo.</p>
-                <div className="windows-device-actions">
-                  <button type="button" onClick={() => void copyLink()}>Copiar link</button>
-                  <button type="button" disabled={busy} onClick={() => void generate()}>Gerar outro QR</button>
-                </div>
+              <div className="windows-device-actions">
+                <button type="button" onClick={() => void copyLink()}>Copiar link</button>
+                <button type="button" disabled={busy} onClick={() => void generate()}>Gerar outro QR</button>
               </div>
             </div>
           </div>

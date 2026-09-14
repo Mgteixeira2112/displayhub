@@ -190,19 +190,19 @@ export default function WindowsDevicesManager() {
       .filter((mapping) => mapping.display_id)
 
     if (mappings.length === 0) {
-      setPairingFeedback('Escolha pelo menos um monitor para exibir uma tela do DisplayHub.')
+      setPairingFeedback('Selecione pelo menos um monitor.')
       return
     }
 
     setPairingBusy(true)
-    setPairingFeedback('Ativando o Player...')
+    setPairingFeedback('Ativando...')
     try {
       const { error } = await supabase.rpc('claim_windows_player_pairing', {
         p_code: pairingCode,
         p_mappings: mappings,
       })
       if (error) throw error
-      setPairingFeedback(`Ativação autorizada para ${mappings.length} ${mappings.length === 1 ? 'monitor' : 'monitores'}. Monitores não selecionados ficarão livres.`)
+      setPairingFeedback('Ativação concluída.')
       setPairingPreview(null)
       setPairingSelections({})
       setPairingCode('')
@@ -216,7 +216,7 @@ export default function WindowsDevicesManager() {
 
   const sendCommand = async (device: Device, command: RemoteCommand) => {
     if (command === 'reboot_device') {
-      const confirmed = window.confirm(`Reiniciar o computador ${device.hostname || 'selecionado'}? O Windows será reiniciado remotamente.`)
+      const confirmed = window.confirm(`Reiniciar ${device.hostname || 'este computador'}?`)
       if (!confirmed) return
     }
 
@@ -230,7 +230,7 @@ export default function WindowsDevicesManager() {
       if (error) throw error
       setFeedbackByDevice((current) => ({
         ...current,
-        [device.id]: `${commandLabels[command]} enviado para ${device.hostname || 'o Player'}.`,
+        [device.id]: `${commandLabels[command]} enviado.`,
       }))
       await load()
     } catch (error) {
@@ -251,7 +251,6 @@ export default function WindowsDevicesManager() {
         <div>
           <p className="eyebrow">Operação remota</p>
           <h1>Players Windows</h1>
-          <p>Veja quais computadores estão online, ative novos Players e envie comandos seguros para instalações existentes.</p>
         </div>
         <button className="secondary-button compact" type="button" onClick={() => void load()}>Atualizar</button>
       </div>
@@ -264,7 +263,6 @@ export default function WindowsDevicesManager() {
         <div className="windows-pairing-copy">
           <p className="eyebrow">Nova instalação Windows</p>
           <h2>Ativar Player por código</h2>
-          <p>Digite o código de 6 caracteres exibido no computador. Escolha apenas os monitores que devem exibir o DisplayHub; os demais podem ficar sem seleção.</p>
         </div>
         <div className="windows-pairing-code-row">
           <input
@@ -283,9 +281,9 @@ export default function WindowsDevicesManager() {
             <div className="windows-pairing-preview-head">
               <div>
                 <strong>{pairingPreview.hostname || 'Computador Windows'}</strong>
-                <span>{pairingPreview.monitors.length} {pairingPreview.monitors.length === 1 ? 'monitor detectado' : 'monitores detectados'}</span>
+                <span>{pairingPreview.monitors.length} {pairingPreview.monitors.length === 1 ? 'monitor' : 'monitores'}</span>
               </div>
-              <span>Código válido até {new Date(pairingPreview.expires_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>Válido até {new Date(pairingPreview.expires_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
 
             <div className="windows-pairing-monitor-list">
@@ -299,7 +297,7 @@ export default function WindowsDevicesManager() {
                     value={pairingSelections[String(monitor.id)] || ''}
                     onChange={(event) => setPairingSelections((current) => ({ ...current, [String(monitor.id)]: event.target.value }))}
                   >
-                    <option value="">Não usar este monitor</option>
+                    <option value="">Não usar</option>
                     {displays.map((display) => (
                       <option key={display.id} value={display.id}>{display.name}{display.location ? ` · ${display.location}` : ''}</option>
                     ))}
@@ -309,7 +307,7 @@ export default function WindowsDevicesManager() {
             </div>
 
             <button className="windows-pairing-activate" type="button" disabled={pairingBusy || displays.length === 0} onClick={() => void activatePairing()}>
-              Ativar e enviar configuração
+              Ativar
             </button>
           </div>
         )}
@@ -318,7 +316,7 @@ export default function WindowsDevicesManager() {
       </section>
 
       {devices.length === 0 ? (
-        <div className="windows-device-empty">Nenhum Player Windows registrado ainda.</div>
+        <div className="windows-device-empty">Nenhum Player Windows registrado.</div>
       ) : (
         <div className="windows-player-list">
           {devices.map((device) => {
@@ -343,16 +341,16 @@ export default function WindowsDevicesManager() {
                 <div className="windows-player-details">
                   <div className="windows-device-facts">
                     <span><strong>{device.monitor_count}</strong> {device.monitor_count === 1 ? 'monitor' : 'monitores'}</span>
-                    <span><strong>{device.kiosk_mode ? 'Quiosque' : 'Janela'}</strong> modo atual</span>
+                    <span><strong>{device.kiosk_mode ? 'Quiosque' : 'Janela'}</strong></span>
                     <span><strong>{device.auto_start ? 'Ligado' : 'Desligado'}</strong> iniciar com Windows</span>
-                    <span><strong>{device.os_release || 'Windows'}</strong> sistema</span>
+                    <span><strong>{device.os_release || 'Windows'}</strong></span>
                   </div>
 
                   {deviceFeedback && <div className="windows-devices-feedback">{deviceFeedback}</div>}
 
                   {latest && (
                     <div className={`windows-device-command-status status-${latest.status}`}>
-                      Último comando: {latest.command.replaceAll('_', ' ')} · {latest.status}
+                      {latest.command.replaceAll('_', ' ')} · {latest.status}
                       {latest.result ? ` · ${latest.result}` : ''}
                     </div>
                   )}
