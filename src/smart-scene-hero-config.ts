@@ -142,7 +142,7 @@ function textAnimationValue(value: unknown, fallback: HeroTextAnimation): HeroTe
 }
 
 function canvasCoordinate(value: number, legacyBase: number) {
-  return Math.min(99, Math.max(1, legacyBase + value * 2.3))
+  return Math.min(100, Math.max(0, legacyBase + value * 2.3))
 }
 
 export function heroStylePreset(style: HeroStyle) {
