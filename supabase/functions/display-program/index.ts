@@ -5,6 +5,41 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+type RuntimeDisplay = {
+  id: string
+  company_id: string
+  name: string
+  location: string | null
+  orientation: string
+  resolution_width: number
+  resolution_height: number
+}
+
+type ProgramPublication = {
+  id: string
+  playlist_id: string
+  starts_at: string | null
+  ends_at: string | null
+  repeat_mode: string
+  daily_start: string | null
+  daily_end: string | null
+  weekdays: number[]
+  created_at: string
+  group_id?: string
+}
+
+type GroupPublication = {
+  groupId: string
+  mode: string
+  publication: ProgramPublication
+}
+
+type DeviceMapping = {
+  physical_display_id?: string
+  playlist_id?: string
+  player_token?: string
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
@@ -17,7 +52,7 @@ Deno.serve(async (req: Request) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const db = createClient(url, serviceKey, { auth: { persistSession: false } })
 
-    const { data: display, error: displayError } = await db
+    const { data: directDisplay, error: displayError } = await db
       .from('displays')
       .select('id,company_id,name,location,orientation,resolution_width,resolution_height')
       .eq('public_token', token)
@@ -26,33 +61,77 @@ Deno.serve(async (req: Request) => {
       .maybeSingle()
 
     if (displayError) throw displayError
-    if (!display) return json({ error: 'display_unavailable' }, 404)
 
-    const groupPublication = await getGroupPublication(db, display.id)
-    let publications: Array<Record<string, unknown>> = []
+    let display = directDisplay as RuntimeDisplay | null
+    let groupPublication: GroupPublication | null = null
+    let publications: ProgramPublication[] = []
 
-    if (groupPublication) {
-      publications = [groupPublication.publication]
+    if (display) {
+      groupPublication = await getGroupPublication(db, display.id)
+
+      if (groupPublication) {
+        publications = [groupPublication.publication]
+      } else {
+        const now = new Date().toISOString()
+        const { data, error: pubError } = await db
+          .from('display_publications')
+          .select('id,playlist_id,starts_at,ends_at,repeat_mode,daily_start,daily_end,weekdays,created_at')
+          .eq('display_id', display.id)
+          .eq('is_active', true)
+          .or(`starts_at.is.null,starts_at.lte.${now}`)
+          .or(`ends_at.is.null,ends_at.gte.${now}`)
+          .order('created_at', { ascending: false })
+
+        if (pubError) throw pubError
+        publications = (data || []) as ProgramPublication[]
+      }
     } else {
-      const now = new Date().toISOString()
-      const { data, error: pubError } = await db
-        .from('display_publications')
-        .select('id,playlist_id,starts_at,ends_at,repeat_mode,daily_start,daily_end,weekdays,created_at')
-        .eq('display_id', display.id)
-        .eq('is_active', true)
-        .or(`starts_at.is.null,starts_at.lte.${now}`)
-        .or(`ends_at.is.null,ends_at.gte.${now}`)
-        .order('created_at', { ascending: false })
+      const { data: device, error: deviceError } = await db
+        .from('player_devices')
+        .select('id,company_id,hostname,platform,monitors,mappings,updated_at')
+        .neq('platform', 'windows')
+        .contains('mappings', [{ player_token: token }])
+        .maybeSingle()
 
-      if (pubError) throw pubError
-      publications = data || []
+      if (deviceError) throw deviceError
+      if (!device) return json({ error: 'display_unavailable' }, 404)
+
+      const mappings = Array.isArray(device.mappings) ? device.mappings as DeviceMapping[] : []
+      const mapping = mappings.find((row) => row?.physical_display_id === 'browser' && row?.player_token === token && row?.playlist_id)
+      if (!mapping?.playlist_id) return json({ error: 'display_unavailable' }, 404)
+
+      const primaryMonitor = Array.isArray(device.monitors) ? device.monitors[0] : null
+      const width = Math.max(320, Number(primaryMonitor?.width || 1920))
+      const height = Math.max(320, Number(primaryMonitor?.height || 1080))
+
+      display = {
+        id: device.id,
+        company_id: device.company_id,
+        name: device.hostname || 'Dispositivo DisplayHub',
+        location: 'Player registrado',
+        orientation: height > width ? 'portrait' : 'landscape',
+        resolution_width: width,
+        resolution_height: height,
+      }
+
+      publications = [{
+        id: `device-${device.id}`,
+        playlist_id: mapping.playlist_id,
+        starts_at: null,
+        ends_at: null,
+        repeat_mode: 'always',
+        daily_start: null,
+        daily_end: null,
+        weekdays: [0, 1, 2, 3, 4, 5, 6],
+        created_at: device.updated_at || new Date().toISOString(),
+      }]
     }
 
     if (!publications.length) return json({ display, publications: [], group_mode: groupPublication?.mode ?? null, group_id: groupPublication?.groupId ?? null, sync_session: null, group_launch: null })
 
     const playlistIds = [...new Set(publications.map((row) => String(row.playlist_id)))]
     const [{ data: playlists, error: playlistError }, { data: items, error: itemError }] = await Promise.all([
-      db.from('playlists').select('id,name,is_active,transition_type,transition_duration_ms').in('id', playlistIds).eq('is_active', true),
+      db.from('playlists').select('id,name,is_active,transition_type,transition_duration_ms').in('id', playlistIds).eq('company_id', display.company_id).eq('is_active', true),
       db.from('playlist_items').select('id,playlist_id,source_type,content_item_id,structured_content_id,promotion_poster_id,template_id,position,duration_seconds,duration_mode').in('playlist_id', playlistIds).order('position'),
     ])
     if (playlistError) throw playlistError
@@ -137,7 +216,7 @@ Deno.serve(async (req: Request) => {
   }
 })
 
-async function getGroupPublication(db: ReturnType<typeof createClient>, displayId: string) {
+async function getGroupPublication(db: ReturnType<typeof createClient>, displayId: string): Promise<GroupPublication | null> {
   const { data: memberships, error: memberError } = await db
     .from('display_group_members')
     .select('group_id')
@@ -176,7 +255,7 @@ async function getGroupPublication(db: ReturnType<typeof createClient>, displayI
       return {
         groupId: group.id,
         mode: group.mode,
-        publication: { ...publication, group_id: group.id },
+        publication: { ...publication, group_id: group.id } as ProgramPublication,
       }
     }
 

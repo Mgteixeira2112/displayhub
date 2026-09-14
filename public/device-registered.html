@@ -29,7 +29,7 @@
       <div class="mark">DH</div>
       <h1>Dispositivo registrado</h1>
       <p>Este aparelho já faz parte do DisplayHub.</p>
-      <div id="status" class="status">Aguardando o administrador associar uma tela a este dispositivo...</div>
+      <div id="status" class="status">Aguardando o administrador associar uma playlist a este dispositivo...</div>
     </main>
   </div>
 
@@ -41,7 +41,7 @@
     const status = document.getElementById('status')
     const waiting = document.getElementById('waiting')
     const player = document.getElementById('player')
-    let currentDisplayUrl = ''
+    let currentPlayerUrl = ''
 
     function getIdentity() {
       try {
@@ -60,9 +60,9 @@
       status.className = className
     }
 
-    function showDisplay(url, name) {
-      if (url !== currentDisplayUrl) {
-        currentDisplayUrl = url
+    function showPlayer(url, name) {
+      if (url !== currentPlayerUrl) {
+        currentPlayerUrl = url
         player.src = url
       }
       player.style.display = 'block'
@@ -99,16 +99,16 @@
         if (!response.ok) throw new Error('poll_failed')
         const result = await response.json()
 
-        if (result?.status === 'assigned' && result?.display_url) {
-          showDisplay(result.display_url, result.display_name)
+        if (result?.status === 'assigned' && result?.player_url) {
+          showPlayer(result.player_url, result.playlist_name)
           return
         }
 
-        currentDisplayUrl = ''
+        currentPlayerUrl = ''
         player.removeAttribute('src')
-        showWaiting('Aguardando o administrador associar uma tela a este dispositivo...')
+        showWaiting('Aguardando o administrador associar uma playlist a este dispositivo...')
       } catch {
-        if (!currentDisplayUrl) {
+        if (!currentPlayerUrl) {
           showWaiting('Não foi possível verificar a associação agora. Tentando novamente automaticamente...')
         }
       }
