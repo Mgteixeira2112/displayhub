@@ -70,18 +70,18 @@ export default function ContentLibrary(props: Props) {
           <PromotionPosterManager {...props} />
         </div>
 
-        <div className="software-module module-playlists">
-          <PlaylistManager {...props} />
-        </div>
-
-        <div className="software-module module-schedule">
-          <PlaylistManager {...props} />
-        </div>
-
         <div className="software-module module-templates">
           <TemplateManager {...props} />
         </div>
       </Fragment>
+
+      <div className="software-module module-playlists">
+        <PlaylistManager {...props} />
+      </div>
+
+      <div className="software-module module-schedule">
+        <PlaylistManager {...props} />
+      </div>
 
       <div className="software-module module-history">
         <MonitoringPanel companyId={props.companyId} />
