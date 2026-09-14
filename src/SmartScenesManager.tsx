@@ -10,6 +10,7 @@ type Orientation = 'auto' | 'landscape' | 'portrait' | 'ultrawide'
 type Intensity = 'minimal' | 'commercial' | 'impact' | 'immersive'
 type Motion = 'soft' | 'balanced' | 'strong'
 type HeroDragTarget = 'product' | 'price'
+type HeroElement1Patch = Partial<Pick<HeroConfig, 'element1X' | 'element1Y' | 'element1Width' | 'element1Height' | 'element1Rotation'>>
 type Scene = { key: SceneKind; name: string; category: string; orientation: string; intensity: string; accent: string }
 type SavedScene = {
   id: string
@@ -43,7 +44,7 @@ const heroElementOptions: { value: HeroElementType; label: string }[] = [
   { value: 'glow', label: 'Brilho' },
 ]
 
-function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced', heroConfig, editableHero = false, onHeroPositionChange }: {
+function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced', heroConfig, editableHero = false, onHeroPositionChange, onHeroElement1Change }: {
   scene: Scene
   headline?: string
   primaryText?: string
@@ -54,9 +55,26 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   heroConfig?: HeroConfig
   editableHero?: boolean
   onHeroPositionChange?: (target: HeroDragTarget, x: number, y: number) => void
+  onHeroElement1Change?: (patch: HeroElement1Patch) => void
 }) {
   const hero = heroConfig || getHeroConfig()
   const dragRef = useRef<{ target: HeroDragTarget; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; width: number; height: number } | null>(null)
+  const element1EditRef = useRef<{
+    mode: 'move' | 'resize' | 'rotate'
+    pointerId: number
+    frameWidth: number
+    frameHeight: number
+    startClientX: number
+    startClientY: number
+    startX: number
+    startY: number
+    startWidth: number
+    startHeight: number
+    startRotation: number
+    centerX: number
+    centerY: number
+    startAngle: number
+  } | null>(null)
   const displayPrimary = scene.key === 'hero'
     ? (editableHero ? (primaryText || '').trim() : (primaryText ?? 'QUEIJO MINAS FRESCAL').trim())
     : primaryText || (scene.key === 'countdown' ? '02:14:36' : scene.key === 'data' ? 'R$ 24,90' : 'DESTAQUE')
@@ -114,6 +132,86 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
     onPointerCancel: endHeroDrag,
   } : {}
 
+  function beginElement1Edit(event: ReactPointerEvent<HTMLElement>, mode: 'move' | 'resize' | 'rotate') {
+    if (!editableHero || scene.key !== 'hero' || !onHeroElement1Change) return
+    const layer = event.currentTarget.closest('.smart-hero-style-layer')?.getBoundingClientRect()
+    const element = event.currentTarget.closest('.hero-style-element')?.getBoundingClientRect()
+    if (!layer || !element) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    const centerX = element.left + element.width / 2
+    const centerY = element.top + element.height / 2
+    element1EditRef.current = {
+      mode,
+      pointerId: event.pointerId,
+      frameWidth: Math.max(layer.width, 1),
+      frameHeight: Math.max(layer.height, 1),
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startX: hero.element1X,
+      startY: hero.element1Y,
+      startWidth: hero.element1Width,
+      startHeight: hero.element1Height,
+      startRotation: hero.element1Rotation,
+      centerX,
+      centerY,
+      startAngle: Math.atan2(event.clientY - centerY, event.clientX - centerX) * 180 / Math.PI,
+    }
+  }
+
+  function moveElement1Edit(event: ReactPointerEvent<HTMLElement>) {
+    const edit = element1EditRef.current
+    if (!edit || edit.pointerId !== event.pointerId || !onHeroElement1Change) return
+    event.preventDefault()
+    event.stopPropagation()
+    if (edit.mode === 'move') {
+      const x = Math.max(-60, Math.min(100, edit.startX + ((event.clientX - edit.startClientX) / edit.frameWidth) * 100))
+      const y = Math.max(-60, Math.min(100, edit.startY + ((event.clientY - edit.startClientY) / edit.frameHeight) * 100))
+      onHeroElement1Change({ element1X: Math.round(x), element1Y: Math.round(y) })
+      return
+    }
+    if (edit.mode === 'resize') {
+      const width = Math.max(8, Math.min(140, edit.startWidth + ((event.clientX - edit.startClientX) / edit.frameWidth) * 100))
+      const height = Math.max(8, Math.min(140, edit.startHeight + ((event.clientY - edit.startClientY) / edit.frameHeight) * 100))
+      onHeroElement1Change({ element1Width: Math.round(width), element1Height: Math.round(height) })
+      return
+    }
+    const angle = Math.atan2(event.clientY - edit.centerY, event.clientX - edit.centerX) * 180 / Math.PI
+    let rotation = edit.startRotation + angle - edit.startAngle
+    while (rotation > 180) rotation -= 360
+    while (rotation < -180) rotation += 360
+    onHeroElement1Change({ element1Rotation: Math.round(rotation) })
+  }
+
+  function endElement1Edit(event: ReactPointerEvent<HTMLElement>) {
+    const edit = element1EditRef.current
+    if (!edit || edit.pointerId !== event.pointerId) return
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+    element1EditRef.current = null
+  }
+
+  const element1PointerHandlers = editableHero && scene.key === 'hero' ? {
+    onPointerDown: (event: ReactPointerEvent<HTMLElement>) => beginElement1Edit(event, 'move'),
+    onPointerMove: moveElement1Edit,
+    onPointerUp: endElement1Edit,
+    onPointerCancel: endElement1Edit,
+  } : {}
+
+  const element1ResizeHandlers = editableHero && scene.key === 'hero' ? {
+    onPointerDown: (event: ReactPointerEvent<HTMLElement>) => beginElement1Edit(event, 'resize'),
+    onPointerMove: moveElement1Edit,
+    onPointerUp: endElement1Edit,
+    onPointerCancel: endElement1Edit,
+  } : {}
+
+  const element1RotateHandlers = editableHero && scene.key === 'hero' ? {
+    onPointerDown: (event: ReactPointerEvent<HTMLElement>) => beginElement1Edit(event, 'rotate'),
+    onPointerMove: moveElement1Edit,
+    onPointerUp: endElement1Edit,
+    onPointerCancel: endElement1Edit,
+  } : {}
+
   return (
     <div
       className={`smart-scene-preview smart-scene-${scene.key} smart-scene-intensity-${intensity} smart-scene-motion-${motion}${heroClass}${editableHero && scene.key === 'hero' ? ' is-hero-editable' : ''}`}
@@ -127,7 +225,13 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
             {hero.backgroundMode === 'video' && videoUrl && <video className="smart-hero-background-video" src={videoUrl} autoPlay muted loop playsInline />}
           </div>
           <div className={`smart-hero-style-layer smart-hero-style-${hero.style}`}>
-            {hero.element1Enabled && <i className={`hero-style-element element-1 type-${hero.element1Type}`} />}
+            {hero.element1Enabled && (editableHero
+              ? <div className="hero-style-element element-1 is-editable" {...element1PointerHandlers}>
+                  <i className={`hero-element-visual type-${hero.element1Type}`} />
+                  <span className="hero-element-resize-handle" {...element1ResizeHandlers} />
+                  <span className="hero-element-rotate-handle" {...element1RotateHandlers} />
+                </div>
+              : <i className={`hero-style-element element-1 type-${hero.element1Type}`} />)}
             {hero.element2Enabled && <i className={`hero-style-element element-2 type-${hero.element2Type}`} />}
             {hero.element3Enabled && <i className={`hero-style-element element-3 type-${hero.element3Type}`} />}
           </div>
@@ -208,6 +312,10 @@ export default function SmartScenesManager() {
     setHeroConfig((current) => target === 'product'
       ? { ...current, productX: x, productY: y }
       : { ...current, priceX: x, priceY: y })
+  }
+
+  function transformHeroElement1(patch: HeroElement1Patch) {
+    setHeroConfig((current) => ({ ...current, ...patch }))
   }
 
   function toggleScene(kind: SceneKind) {
@@ -305,7 +413,7 @@ export default function SmartScenesManager() {
 
       {editorScene && (
         <form className="smart-scene-editor" onSubmit={saveScene}>
-          <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} orientation={orientation} intensity={intensity} motion={motion} heroConfig={heroConfig} editableHero={editorKind === 'hero'} onHeroPositionChange={moveHero} />
+          <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} orientation={orientation} intensity={intensity} motion={motion} heroConfig={heroConfig} editableHero={editorKind === 'hero'} onHeroPositionChange={moveHero} onHeroElement1Change={transformHeroElement1} />
           <div className="smart-scene-editor-fields">
             <div className="smart-scene-editor-title"><strong>{editingId ? 'Editar Smart Scene' : 'Nova Smart Scene'}</strong><button type="button" onClick={() => { setEditorKind(null); setEditingId(null) }}>×</button></div>
             <label>Nome<input value={name} onChange={(event) => setName(event.target.value)} required minLength={2} maxLength={120} /></label>
