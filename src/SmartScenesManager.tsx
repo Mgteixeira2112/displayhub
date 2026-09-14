@@ -1,5 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { getHeroConfig, heroStyleVars, type HeroConfig, type HeroPreset } from './smart-scene-hero-config'
 import './smart-scenes.css'
 import './smart-scenes-hero.css'
 
@@ -18,6 +19,7 @@ type SavedScene = {
   headline: string
   primary_text: string
   secondary_text: string
+  config?: Record<string, unknown>
   created_at: string
 }
 type Profile = { company_id: string; role: string }
@@ -31,7 +33,7 @@ const scenes: Scene[] = [
   { key: 'panorama', name: 'Panorama', category: 'Video Wall', orientation: 'Ultrawide / Wall', intensity: 'Imersiva', accent: 'Múltiplas telas' },
 ]
 
-function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced' }: {
+function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced', heroConfig }: {
   scene: Scene
   headline?: string
   primaryText?: string
@@ -39,18 +41,24 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   orientation?: Orientation
   intensity?: Intensity
   motion?: Motion
+  heroConfig?: HeroConfig
 }) {
+  const hero = heroConfig || getHeroConfig()
+  const displayPrimary = primaryText || (scene.key === 'hero' ? 'QUEIJO MINAS FRESCAL' : scene.key === 'countdown' ? '02:14:36' : scene.key === 'data' ? 'R$ 24,90' : 'DESTAQUE')
+  const heroClass = scene.key === 'hero' ? ` smart-hero-preset-${hero.preset}` : ''
   return (
     <div
-      className={`smart-scene-preview smart-scene-${scene.key} smart-scene-intensity-${intensity} smart-scene-motion-${motion}`}
+      className={`smart-scene-preview smart-scene-${scene.key} smart-scene-intensity-${intensity} smart-scene-motion-${motion}${heroClass}`}
       data-scene-orientation={orientation}
+      style={scene.key === 'hero' ? heroStyleVars(hero, displayPrimary) : undefined}
       aria-hidden="true"
     >
       <div className="smart-scene-glow" />
       <div className="smart-scene-visual" />
       <div className="smart-scene-copy">
-        <span>{headline || scene.category}</span>
-        <strong>{primaryText || (scene.key === 'countdown' ? '02:14:36' : scene.key === 'data' ? 'R$ 24,90' : 'DESTAQUE')}</strong>
+        <span>{headline || (scene.key === 'hero' ? 'OFERTA' : scene.category)}</span>
+        <strong>{displayPrimary}</strong>
+        {scene.key === 'hero' && <div className="smart-hero-price-row"><b>{hero.price}</b><em>{hero.unit}</em></div>}
         <small>{secondaryText || scene.accent}</small>
       </div>
       {scene.key === 'panorama' && <div className="smart-scene-wall-grid"><i/><i/><i/></div>}
@@ -77,6 +85,7 @@ export default function SmartScenesManager() {
   const [headline, setHeadline] = useState('')
   const [primaryText, setPrimaryText] = useState('')
   const [secondaryText, setSecondaryText] = useState('')
+  const [heroConfig, setHeroConfig] = useState<HeroConfig>(() => getHeroConfig())
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -88,7 +97,7 @@ export default function SmartScenesManager() {
     const { data: nextProfile, error: profileError } = await supabase.from('profiles').select('company_id,role').eq('user_id', userData.user.id).single()
     if (profileError) throw profileError
     setProfile(nextProfile as Profile)
-    const { data, error } = await supabase.from('smart_scenes').select('id,name,scene_type,orientation,intensity,motion,headline,primary_text,secondary_text,created_at').order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('smart_scenes').select('id,name,scene_type,orientation,intensity,motion,headline,primary_text,secondary_text,config,created_at').order('created_at', { ascending: false })
     if (error) throw error
     setSavedScenes((data || []) as SavedScene[])
   }, [])
@@ -105,6 +114,10 @@ export default function SmartScenesManager() {
   }, [query, filter])
 
   const editorScene = scenes.find((scene) => scene.key === editorKind) || null
+
+  function updateHero<K extends keyof HeroConfig>(key: K, value: HeroConfig[K]) {
+    setHeroConfig((current) => ({ ...current, [key]: value }))
+  }
 
   function toggleScene(kind: SceneKind) {
     if (expanded === kind) {
@@ -126,9 +139,10 @@ export default function SmartScenesManager() {
     setOrientation(expanded === kind ? previewOrientation : kind === 'panorama' ? 'ultrawide' : 'auto')
     setIntensity(expanded === kind ? previewIntensity : kind === 'panorama' ? 'immersive' : 'impact')
     setMotion(expanded === kind ? previewMotion : 'balanced')
-    setHeadline(scene.category.toUpperCase())
-    setPrimaryText(kind === 'countdown' ? '02:14:36' : kind === 'data' ? 'R$ 24,90' : 'DESTAQUE')
-    setSecondaryText(scene.accent)
+    setHeadline(kind === 'hero' ? 'OFERTA' : scene.category.toUpperCase())
+    setPrimaryText(kind === 'hero' ? 'QUEIJO MINAS FRESCAL' : kind === 'countdown' ? '02:14:36' : kind === 'data' ? 'R$ 24,90' : 'DESTAQUE')
+    setSecondaryText(kind === 'hero' ? 'Aproveite hoje' : scene.accent)
+    setHeroConfig(getHeroConfig(kind === 'hero' ? { hero: { price: 'R$ 24,90', unit: 'KG' } } : undefined))
     setMessage('')
   }
 
@@ -142,6 +156,7 @@ export default function SmartScenesManager() {
     setHeadline(scene.headline)
     setPrimaryText(scene.primary_text)
     setSecondaryText(scene.secondary_text)
+    setHeroConfig(getHeroConfig(scene.config))
     setMessage('')
   }
 
@@ -159,7 +174,7 @@ export default function SmartScenesManager() {
       headline: headline.trim(),
       primary_text: primaryText.trim(),
       secondary_text: secondaryText.trim(),
-      config: {},
+      config: editorKind === 'hero' ? { hero: heroConfig } : {},
       is_active: true,
     }
     const result = editingId
@@ -199,7 +214,7 @@ export default function SmartScenesManager() {
 
       {editorScene && (
         <form className="smart-scene-editor" onSubmit={saveScene}>
-          <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} orientation={orientation} intensity={intensity} motion={motion} />
+          <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} orientation={orientation} intensity={intensity} motion={motion} heroConfig={heroConfig} />
           <div className="smart-scene-editor-fields">
             <div className="smart-scene-editor-title"><strong>{editingId ? 'Editar Smart Scene' : 'Nova Smart Scene'}</strong><button type="button" onClick={() => { setEditorKind(null); setEditingId(null) }}>×</button></div>
             <label>Nome<input value={name} onChange={(event) => setName(event.target.value)} required minLength={2} maxLength={120} /></label>
@@ -208,8 +223,36 @@ export default function SmartScenesManager() {
               <label>Intensidade<select value={intensity} onChange={(event) => setIntensity(event.target.value as Intensity)}><option value="minimal">Minimal</option><option value="commercial">Comercial</option><option value="impact">Impacto</option><option value="immersive">Imersivo</option></select></label>
               <label>Movimento<select value={motion} onChange={(event) => setMotion(event.target.value as Motion)}><option value="soft">Suave</option><option value="balanced">Equilibrado</option><option value="strong">Marcante</option></select></label>
             </div>
-            <label>Chamada<input value={headline} onChange={(event) => setHeadline(event.target.value)} maxLength={120} /></label>
-            <label>Destaque<input value={primaryText} onChange={(event) => setPrimaryText(event.target.value)} maxLength={160} /></label>
+            {editorKind === 'hero' && (
+              <div className="smart-hero-editor-block">
+                <div className="smart-scene-control-grid smart-scene-control-grid-three">
+                  <label>Visual<select value={heroConfig.preset} onChange={(event) => updateHero('preset', event.target.value as HeroPreset)}><option value="tabloid">Tabloide Clássico</option><option value="explosive">Oferta Explosiva</option><option value="clean">Oferta Limpa</option></select></label>
+                  <label>Preço<input value={heroConfig.price} onChange={(event) => updateHero('price', event.target.value)} maxLength={32} /></label>
+                  <label>Unidade<input value={heroConfig.unit} onChange={(event) => updateHero('unit', event.target.value)} maxLength={16} /></label>
+                </div>
+                <div className="smart-hero-text-control">
+                  <strong>Produto</strong>
+                  <label>Cor<input type="color" value={heroConfig.productColor} onChange={(event) => updateHero('productColor', event.target.value)} /></label>
+                  <label>Tamanho<input type="range" min="60" max="150" value={heroConfig.productSize} onChange={(event) => updateHero('productSize', Number(event.target.value))} /><span>{heroConfig.productSize}%</span></label>
+                  <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.productRotation} onChange={(event) => updateHero('productRotation', Number(event.target.value))} /><span>{heroConfig.productRotation}°</span></label>
+                </div>
+                <div className="smart-hero-text-control">
+                  <strong>Preço</strong>
+                  <label>Cor<input type="color" value={heroConfig.priceColor} onChange={(event) => updateHero('priceColor', event.target.value)} /></label>
+                  <label>Tamanho<input type="range" min="60" max="160" value={heroConfig.priceSize} onChange={(event) => updateHero('priceSize', Number(event.target.value))} /><span>{heroConfig.priceSize}%</span></label>
+                  <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.priceRotation} onChange={(event) => updateHero('priceRotation', Number(event.target.value))} /><span>{heroConfig.priceRotation}°</span></label>
+                </div>
+                <div className="smart-hero-text-control smart-hero-text-control-badge">
+                  <strong>Selo</strong>
+                  <label>Texto<input type="color" value={heroConfig.badgeColor} onChange={(event) => updateHero('badgeColor', event.target.value)} /></label>
+                  <label>Fundo<input type="color" value={heroConfig.badgeBackground} onChange={(event) => updateHero('badgeBackground', event.target.value)} /></label>
+                  <label>Tamanho<input type="range" min="70" max="140" value={heroConfig.badgeSize} onChange={(event) => updateHero('badgeSize', Number(event.target.value))} /><span>{heroConfig.badgeSize}%</span></label>
+                  <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.badgeRotation} onChange={(event) => updateHero('badgeRotation', Number(event.target.value))} /><span>{heroConfig.badgeRotation}°</span></label>
+                </div>
+              </div>
+            )}
+            <label>{editorKind === 'hero' ? 'Selo' : 'Chamada'}<input value={headline} onChange={(event) => setHeadline(event.target.value)} maxLength={120} /></label>
+            <label>{editorKind === 'hero' ? 'Produto' : 'Destaque'}<input value={primaryText} onChange={(event) => setPrimaryText(event.target.value)} maxLength={160} /></label>
             <label>Complemento<input value={secondaryText} onChange={(event) => setSecondaryText(event.target.value)} maxLength={240} /></label>
             <div className="smart-scene-editor-actions"><button className="primary-button" type="submit" disabled={busy || !canManage}>{editingId ? 'Salvar alterações' : 'Criar Smart Scene'}</button><button className="secondary-button" type="button" onClick={() => { setEditorKind(null); setEditingId(null) }}>Cancelar</button></div>
           </div>
