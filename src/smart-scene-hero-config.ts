@@ -16,6 +16,11 @@ export type HeroConfig = {
   element1Enabled: boolean
   element1Type: HeroElementType
   element1Color: string
+  element1X: number
+  element1Y: number
+  element1Width: number
+  element1Height: number
+  element1Rotation: number
   element2Enabled: boolean
   element2Type: HeroElementType
   element2Color: string
@@ -47,6 +52,11 @@ const defaults: HeroConfig = {
   element1Enabled: true,
   element1Type: 'burst',
   element1Color: '#d80d0d',
+  element1X: -8,
+  element1Y: 14,
+  element1Width: 62,
+  element1Height: 72,
+  element1Rotation: 0,
   element2Enabled: true,
   element2Type: 'band',
   element2Color: '#ff7a00',
@@ -122,6 +132,11 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
     element1Enabled: booleanValue(hero.element1Enabled, defaults.element1Enabled),
     element1Type: elementTypeValue(hero.element1Type, presetElements[0]),
     element1Color: stringValue(hero.element1Color, styleColor1),
+    element1X: numberValue(hero.element1X, defaults.element1X, -60, 100),
+    element1Y: numberValue(hero.element1Y, defaults.element1Y, -60, 100),
+    element1Width: numberValue(hero.element1Width, defaults.element1Width, 8, 140),
+    element1Height: numberValue(hero.element1Height, defaults.element1Height, 8, 140),
+    element1Rotation: numberValue(hero.element1Rotation, defaults.element1Rotation, -180, 180),
     element2Enabled: booleanValue(hero.element2Enabled, defaults.element2Enabled),
     element2Type: elementTypeValue(hero.element2Type, presetElements[1]),
     element2Color: stringValue(hero.element2Color, styleColor2),
@@ -150,6 +165,11 @@ export function heroStyleVars(config: HeroConfig, productText = ''): CSSProperti
     '--hero-style-color-1': config.element1Color,
     '--hero-style-color-2': config.element2Color,
     '--hero-style-color-3': config.element3Color,
+    '--hero-element-1-x': `${config.element1X}%`,
+    '--hero-element-1-y': `${config.element1Y}%`,
+    '--hero-element-1-width': `${config.element1Width}%`,
+    '--hero-element-1-height': `${config.element1Height}%`,
+    '--hero-element-1-rotation': `${config.element1Rotation}deg`,
     '--hero-product-color': config.productColor,
     '--hero-product-scale': String((config.productSize / 100) * lengthFit),
     '--hero-product-rotation': `${config.productRotation}deg`,
