@@ -4,13 +4,14 @@ import YouTubeSyncPlayer, { type MediaFit, type YouTubeController } from './YouT
 import HlsSyncPlayer, { type HlsMediaSample } from './HlsSyncPlayer'
 import { type PromotionPosterData } from './PromotionPosterView'
 import PromotionVideoPoster, { readPromotionVideoMetadata } from './PromotionVideoPoster'
+import SmartSceneView, { type SmartSceneData } from './SmartSceneView'
 
 type Display = { id: string; name: string; location: string | null; orientation: string; resolution_width: number; resolution_height: number }
 type Template = { name: string; template_type: string }
 type Content = { type: string; title: string; signed_url?: string; external_url?: string; external_id?: string }
 type StructuredRow = { id: string; title: string; category: string | null; description: string | null; price: number | null; promo_price: number | null; position: number }
 type Structured = { kind: string; title: string; category: string | null; description: string | null; price: number | null; promo_price: number | null; qr_value: string | null; rows: StructuredRow[] }
-type Item = { id: string; position: number; duration_seconds: number; duration_mode?: 'fixed' | 'media'; template: Template | null; content: Content | null; structured: Structured | null; poster: PromotionPosterData | null }
+type Item = { id: string; position: number; duration_seconds: number; duration_mode?: 'fixed' | 'media'; template: Template | null; content: Content | null; structured: Structured | null; poster: PromotionPosterData | null; smart_scene: SmartSceneData | null }
 type TransitionType = 'none' | 'fade' | 'slide_left' | 'slide_up' | 'zoom'
 type Playlist = { id: string; name: string; transition_type: TransitionType; transition_duration_ms: number; items: Item[] }
 type Publication = { id: string; repeat_mode: 'always' | 'daily'; daily_start: string | null; daily_end: string | null; weekdays: number[]; playlist: Playlist }
@@ -377,8 +378,10 @@ function ItemView({ item, display, mediaFit, startSeconds, syncKey, shouldPlay, 
   useEffect(() => {
     if (item.structured) onReady('structured')
     if (item.poster) onReady('promotion_poster')
-  }, [item.id, item.structured, item.poster, onReady])
+    if (item.smart_scene) onReady('smart_scene')
+  }, [item.id, item.structured, item.poster, item.smart_scene, onReady])
 
+  if (item.smart_scene) return <SmartSceneView scene={item.smart_scene} />
   if (item.poster) return <div className="promotion-player"><PromotionVideoPoster key={`${item.id}:${syncKey}`} poster={item.poster} className="promotion-player-poster" loop={posterVideoLoop} onVideoEnded={onPosterVideoEnded} /></div>
 
   if (item.content?.type === 'image' && item.content.signed_url) {

@@ -149,7 +149,7 @@ Deno.serve(async (req: Request) => {
     const playlistIds = [...new Set(publications.map((row) => String(row.playlist_id)))]
     const [{ data: playlists, error: playlistError }, { data: items, error: itemError }] = await Promise.all([
       db.from('playlists').select('id,name,is_active,transition_type,transition_duration_ms').in('id', playlistIds).eq('company_id', display.company_id).eq('is_active', true),
-      db.from('playlist_items').select('id,playlist_id,source_type,content_item_id,structured_content_id,promotion_poster_id,template_id,position,duration_seconds,duration_mode').in('playlist_id', playlistIds).order('position'),
+      db.from('playlist_items').select('id,playlist_id,source_type,content_item_id,structured_content_id,promotion_poster_id,smart_scene_id,template_id,position,duration_seconds,duration_mode').in('playlist_id', playlistIds).order('position'),
     ])
     if (playlistError) throw playlistError
     if (itemError) throw itemError
@@ -157,17 +157,19 @@ Deno.serve(async (req: Request) => {
     const contentIds = [...new Set((items || []).map((row) => row.content_item_id).filter(Boolean))] as string[]
     const structuredIds = [...new Set((items || []).map((row) => row.structured_content_id).filter(Boolean))] as string[]
     const promotionPosterIds = [...new Set((items || []).map((row) => row.promotion_poster_id).filter(Boolean))] as string[]
+    const smartSceneIds = [...new Set((items || []).map((row) => row.smart_scene_id).filter(Boolean))] as string[]
     const templateIds = [...new Set((items || []).map((row) => row.template_id).filter(Boolean))] as string[]
 
-    const [contentRes, structuredRes, templateRes, rowRes, posterRes] = await Promise.all([
+    const [contentRes, structuredRes, templateRes, rowRes, posterRes, sceneRes] = await Promise.all([
       contentIds.length ? db.from('content_items').select('id,type,title,category,storage_path,provider,external_url,external_id').in('id', contentIds).eq('is_active', true) : Promise.resolve({ data: [], error: null }),
       structuredIds.length ? db.from('structured_contents').select('id,kind,title,category,description,price,promo_price,qr_value').in('id', structuredIds).eq('is_active', true) : Promise.resolve({ data: [], error: null }),
       templateIds.length ? db.from('display_templates').select('id,name,template_type').in('id', templateIds).eq('is_active', true) : Promise.resolve({ data: [], error: null }),
       structuredIds.length ? db.from('structured_content_rows').select('id,content_id,title,category,description,price,promo_price,position').in('content_id', structuredIds).eq('is_active', true).order('position') : Promise.resolve({ data: [], error: null }),
       promotionPosterIds.length ? db.from('promotion_posters').select('id,template_key,product_name,price,unit,headline,footer,orientation,layout_positions').in('id', promotionPosterIds).eq('is_active', true) : Promise.resolve({ data: [], error: null }),
+      smartSceneIds.length ? db.from('smart_scenes').select('id,name,scene_type,orientation,intensity,motion,headline,primary_text,secondary_text,config').in('id', smartSceneIds).eq('is_active', true).eq('company_id', display.company_id) : Promise.resolve({ data: [], error: null }),
     ])
 
-    for (const result of [contentRes, structuredRes, templateRes, rowRes, posterRes]) if (result.error) throw result.error
+    for (const result of [contentRes, structuredRes, templateRes, rowRes, posterRes, sceneRes]) if (result.error) throw result.error
 
     const posterTemplateKeys = [...new Set((posterRes.data || []).map((row) => row.template_key).filter(Boolean))] as string[]
     const { data: posterTemplates, error: posterTemplateError } = posterTemplateKeys.length
@@ -187,6 +189,7 @@ Deno.serve(async (req: Request) => {
     const templateMap = new Map((templateRes.data || []).map((row) => [row.id, row]))
     const posterThemeMap = new Map((posterTemplates || []).map((row) => [row.key, row.theme]))
     const posterMap = new Map((posterRes.data || []).map((row) => [row.id, { ...row, price: Number(row.price), theme: posterThemeMap.get(row.template_key) || 'hot_red' }]))
+    const sceneMap = new Map((sceneRes.data || []).map((row) => [row.id, row]))
     const rowsByContent = new Map<string, unknown[]>()
     for (const row of rowRes.data || []) {
       const current = rowsByContent.get(row.content_id) || []
@@ -209,7 +212,8 @@ Deno.serve(async (req: Request) => {
         content: item.content_item_id ? contentMap.get(item.content_item_id) || null : null,
         structured: item.structured_content_id ? { ...(structuredMap.get(item.structured_content_id) || {}), rows: rowsByContent.get(item.structured_content_id) || [] } : null,
         poster: item.promotion_poster_id ? posterMap.get(item.promotion_poster_id) || null : null,
-      })).filter((item) => item.content || item.structured || item.poster),
+        smart_scene: item.smart_scene_id ? sceneMap.get(item.smart_scene_id) || null : null,
+      })).filter((item) => item.content || item.structured || item.poster || item.smart_scene),
     }]))
 
     const syncSession = groupPublication && ['mirror', 'video_wall'].includes(groupPublication.mode)
