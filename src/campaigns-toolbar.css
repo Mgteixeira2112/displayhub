@@ -1,0 +1,134 @@
+/* Topo operacional de Campanhas: criação sob demanda, busca e filtros. */
+
+.view-campaigns .playlist-workspace > .section-heading {
+  margin-bottom: 2px;
+}
+
+.view-campaigns .playlist-workspace > .section-heading .eyebrow {
+  display: none;
+}
+
+.view-campaigns .playlist-workspace > .section-heading h2 {
+  font-size: 1.05rem;
+  letter-spacing: -.02em;
+}
+
+.view-campaigns .playlist-create-panel {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.view-campaigns .playlist-create-panel > summary {
+  display: flex !important;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 13px;
+  cursor: pointer;
+  color: #2563eb;
+  font-size: .72rem;
+  font-weight: 750;
+  list-style: none;
+}
+
+.view-campaigns .playlist-create-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.view-campaigns .playlist-create-panel[open] > summary {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.view-campaigns .playlist-create-panel > .playlist-create-grid {
+  padding: 8px !important;
+}
+
+.view-campaigns .playlist-create-panel:not([open]) > .playlist-create-grid {
+  display: none !important;
+}
+
+.view-campaigns .campaign-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 42px;
+  padding: 5px 0;
+}
+
+.view-campaigns .campaign-toolbar-search-wrap {
+  flex: 1 1 320px;
+  max-width: 430px;
+}
+
+.view-campaigns .campaign-toolbar-search {
+  width: 100%;
+  min-height: 32px;
+  height: 32px;
+  padding: 5px 10px;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font-size: .72rem;
+  outline: none;
+}
+
+.view-campaigns .campaign-toolbar-search:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .08);
+}
+
+.view-campaigns .campaign-toolbar-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.view-campaigns .campaign-toolbar-filters button {
+  min-height: 26px;
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font-size: .64rem;
+  font-weight: 700;
+}
+
+.view-campaigns .campaign-toolbar-filters button:hover {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.view-campaigns .campaign-toolbar-filters button.is-active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+}
+
+.view-campaigns .playlist-list > .playlist-card[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  .view-campaigns .campaign-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .view-campaigns .campaign-toolbar-search-wrap {
+    flex-basis: auto;
+    max-width: none;
+  }
+
+  .view-campaigns .campaign-toolbar-filters {
+    width: fit-content;
+  }
+}
