@@ -194,7 +194,7 @@ function attachCampaignScheduling(card: HTMLElement) {
   if (heading) heading.textContent = 'Onde e quando exibir'
 
   const playlistName = getCampaignPlaylistName(card)
-  const playlistSelect = schedulePanel.querySelector<HTMLSelectElement>('.publication-grid label:first-child select')
+  const playlistSelect = schedulePanel.querySelector<HTMLSelectElement>('.publication-grid label:nth-child(2) select')
   if (playlistSelect && playlistName) {
     const matchingOption = Array.from(playlistSelect.options).find((option) => option.textContent?.trim() === playlistName)
     if (matchingOption && playlistSelect.value !== matchingOption.value) {
