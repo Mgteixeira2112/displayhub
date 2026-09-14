@@ -320,7 +320,7 @@ export default function WindowsDevicesManager() {
       {devices.length === 0 ? (
         <div className="windows-device-empty">Nenhum Player Windows registrado ainda.</div>
       ) : (
-        <div className="windows-device-grid">
+        <div className="windows-player-list">
           {devices.map((device) => {
             const online = isOnline(device.last_seen_at)
             const latest = latestCommandByDevice.get(device.id)
@@ -329,40 +329,42 @@ export default function WindowsDevicesManager() {
             const deviceFeedback = feedbackByDevice[device.id]
 
             return (
-              <article className="windows-device-card" key={device.id}>
-                <div className="windows-device-card-head">
-                  <div>
-                    <span className={`windows-device-status ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>
-                    <h2>{device.hostname || 'Computador Windows'}</h2>
-                  </div>
+              <details className="windows-player-row" key={device.id}>
+                <summary className="windows-player-summary">
+                  <span className={`windows-device-status ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>
+                  <strong>{device.hostname || 'Computador Windows'}</strong>
+                  <span>{device.monitor_count} {device.monitor_count === 1 ? 'monitor' : 'monitores'}</span>
+                  <span>{device.kiosk_mode ? 'Quiosque' : 'Janela'}</span>
+                  <span className="windows-player-last-seen">{formatLastSeen(device.last_seen_at)}</span>
                   <span className="windows-device-version">v{device.app_version}</span>
-                </div>
+                  <span className="windows-player-expand">Detalhes</span>
+                </summary>
 
-                <div className="windows-device-facts">
-                  <span><strong>{device.monitor_count}</strong> {device.monitor_count === 1 ? 'monitor' : 'monitores'}</span>
-                  <span><strong>{device.kiosk_mode ? 'Quiosque' : 'Janela'}</strong> modo atual</span>
-                  <span><strong>{device.auto_start ? 'Ligado' : 'Desligado'}</strong> iniciar com Windows</span>
-                  <span><strong>{device.os_release || 'Windows'}</strong> sistema</span>
-                </div>
-
-                <p className="windows-device-last-seen">Último contato {formatLastSeen(device.last_seen_at)}</p>
-
-                {deviceFeedback && <div className="windows-devices-feedback">{deviceFeedback}</div>}
-
-                {latest && (
-                  <div className={`windows-device-command-status status-${latest.status}`}>
-                    Último comando: {latest.command.replaceAll('_', ' ')} · {latest.status}
-                    {latest.result ? ` · ${latest.result}` : ''}
+                <div className="windows-player-details">
+                  <div className="windows-device-facts">
+                    <span><strong>{device.monitor_count}</strong> {device.monitor_count === 1 ? 'monitor' : 'monitores'}</span>
+                    <span><strong>{device.kiosk_mode ? 'Quiosque' : 'Janela'}</strong> modo atual</span>
+                    <span><strong>{device.auto_start ? 'Ligado' : 'Desligado'}</strong> iniciar com Windows</span>
+                    <span><strong>{device.os_release || 'Windows'}</strong> sistema</span>
                   </div>
-                )}
 
-                <div className="windows-device-actions">
-                  <button type="button" disabled={!online || busy} onClick={() => void sendCommand(device, 'reload_displays')}>Recarregar telas</button>
-                  <button type="button" disabled={!online || busy} onClick={() => void sendCommand(device, 'restart_player')}>Reiniciar Player</button>
-                  <button type="button" disabled={!online || busy} onClick={() => void sendCommand(device, kioskCommand)}>{device.kiosk_mode ? 'Sair do quiosque' : 'Entrar em quiosque'}</button>
-                  <button className="danger" type="button" disabled={!online || busy} onClick={() => void sendCommand(device, 'reboot_device')}>Reiniciar PC</button>
+                  {deviceFeedback && <div className="windows-devices-feedback">{deviceFeedback}</div>}
+
+                  {latest && (
+                    <div className={`windows-device-command-status status-${latest.status}`}>
+                      Último comando: {latest.command.replaceAll('_', ' ')} · {latest.status}
+                      {latest.result ? ` · ${latest.result}` : ''}
+                    </div>
+                  )}
+
+                  <div className="windows-device-actions">
+                    <button type="button" disabled={!online || busy} onClick={() => void sendCommand(device, 'reload_displays')}>Recarregar telas</button>
+                    <button type="button" disabled={!online || busy} onClick={() => void sendCommand(device, 'restart_player')}>Reiniciar Player</button>
+                    <button type="button" disabled={!online || busy} onClick={() => void sendCommand(device, kioskCommand)}>{device.kiosk_mode ? 'Sair do quiosque' : 'Entrar em quiosque'}</button>
+                    <button className="danger" type="button" disabled={!online || busy} onClick={() => void sendCommand(device, 'reboot_device')}>Reiniciar PC</button>
+                  </div>
                 </div>
-              </article>
+              </details>
             )
           })}
         </div>
