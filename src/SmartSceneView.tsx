@@ -25,9 +25,9 @@ export default function SmartSceneView({ scene, className = '' }: { scene: Smart
       style={scene.scene_type === 'hero' ? heroStyleVars(hero, scene.primary_text) : undefined}
     >
       <div className="smart-scene-glow" />
-      <div className="smart-scene-visual" />
+      {scene.scene_type !== 'hero' && <div className="smart-scene-visual" />}
       <div className="smart-scene-copy">
-        <span>{scene.headline}</span>
+        {scene.scene_type !== 'hero' && <span>{scene.headline}</span>}
         <strong>{scene.primary_text}</strong>
         {scene.scene_type === 'hero' && <div className="smart-hero-price-row"><b>{hero.price}</b><em>{hero.unit}</em></div>}
         <small>{scene.secondary_text}</small>
