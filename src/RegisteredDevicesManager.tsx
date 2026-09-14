@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import './device-lists-compact.css'
 
@@ -15,7 +15,13 @@ type DisplayOption = {
   id: string
   name: string
   location: string | null
+  public_token: string
 }
+
+type QrConstructor = new (
+  element: HTMLElement,
+  options: { text: string; width: number; height: number; colorDark: string; colorLight: string },
+) => unknown
 
 function formatPlatform(platform: string) {
   if (platform === 'android') return 'Android'
@@ -30,6 +36,54 @@ function formatLastSeen(lastSeenAt: string) {
   const minutes = Math.round(seconds / 60)
   if (minutes < 60) return `há ${minutes} min`
   return new Date(lastSeenAt).toLocaleString('pt-BR')
+}
+
+function displayPlayerUrl(publicToken: string) {
+  const route = `display/${publicToken}`
+  return `${window.location.origin}${import.meta.env.BASE_URL}?p=${encodeURIComponent(route)}`
+}
+
+function StoredDisplayQr({ display, onFeedback }: { display: DisplayOption; onFeedback: (message: string) => void }) {
+  const qrRef = useRef<HTMLDivElement | null>(null)
+  const url = useMemo(() => displayPlayerUrl(display.public_token), [display.public_token])
+
+  useEffect(() => {
+    const container = qrRef.current
+    if (!container) return
+    container.innerHTML = ''
+    const QRCode = (window as Window & { QRCode?: QrConstructor }).QRCode
+    if (!QRCode) return
+    new QRCode(container, {
+      text: url,
+      width: 148,
+      height: 148,
+      colorDark: '#0f172a',
+      colorLight: '#ffffff',
+    })
+  }, [url])
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url)
+      onFeedback('Link da tela copiado.')
+    } catch {
+      onFeedback('Não foi possível copiar o link automaticamente.')
+    }
+  }
+
+  return (
+    <div className="registered-device-qr">
+      <div ref={qrRef} className="registered-device-qr-image" />
+      <div className="registered-device-qr-copy">
+        <strong>QR de recuperação da tela</strong>
+        <span>{display.name}{display.location ? ` · ${display.location}` : ''}</span>
+        <div className="registered-device-inline-actions">
+          <button type="button" onClick={() => void copyLink()}>Copiar link</button>
+          <a href={url} target="_blank" rel="noreferrer">Abrir tela</a>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function RegisteredDevicesManager() {
@@ -51,7 +105,7 @@ export default function RegisteredDevicesManager() {
         .order('created_at', { ascending: false }),
       supabase
         .from('displays')
-        .select('id,name,location')
+        .select('id,name,location,public_token')
         .eq('is_active', true)
         .is('revoked_at', null)
         .order('name', { ascending: true }),
@@ -199,6 +253,13 @@ export default function RegisteredDevicesManager() {
                       ? `Tela atual: ${assignedDisplay.name}${assignedDisplay.location ? ` · ${assignedDisplay.location}` : ''}. Alterações são recebidas automaticamente pelo dispositivo.`
                       : 'Sem tela associada. Assim que uma tela for escolhida, o dispositivo receberá a configuração automaticamente.'}
                   </div>
+
+                  {assignedDisplay && (
+                    <StoredDisplayQr
+                      display={assignedDisplay}
+                      onFeedback={(message) => setFeedbackByDevice((current) => ({ ...current, [device.id]: message }))}
+                    />
+                  )}
 
                   {feedback && <div className="windows-devices-feedback">{feedback}</div>}
                 </div>
