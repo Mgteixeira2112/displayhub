@@ -8,7 +8,7 @@ type RegisteredDevice = {
   platform: string
   app_version: string
   last_seen_at: string
-  mappings: Array<{ physical_display_id?: string; display_id?: string; playlist_id?: string; player_token?: string }> | null
+  mappings: Array<{ physical_display_id?: string; display_id?: string; playlist_id?: string; player_token?: string; recovery_token?: string }> | null
 }
 
 type PlaylistOption = {
@@ -37,18 +37,24 @@ function formatLastSeen(lastSeenAt: string) {
   return new Date(lastSeenAt).toLocaleString('pt-BR')
 }
 
-function deviceRecoveryUrl(deviceId: string) {
-  return `${window.location.origin}${import.meta.env.BASE_URL}device-registered.html?device=${encodeURIComponent(deviceId)}`
+function deviceRecoveryUrl(deviceId: string, recoveryToken: string) {
+  const params = new URLSearchParams({ device: deviceId, recover: recoveryToken })
+  return `${window.location.origin}${import.meta.env.BASE_URL}device-registered.html?${params.toString()}`
 }
 
 function DeviceRecoveryQr({ device, onFeedback }: { device: RegisteredDevice; onFeedback: (message: string) => void }) {
   const qrRef = useRef<HTMLDivElement | null>(null)
-  const url = useMemo(() => deviceRecoveryUrl(device.id), [device.id])
+  const recoveryToken = useMemo(() => {
+    if (!Array.isArray(device.mappings)) return ''
+    return device.mappings.find((item) => item.physical_display_id === 'browser')?.recovery_token || ''
+  }, [device.mappings])
+  const url = useMemo(() => recoveryToken ? deviceRecoveryUrl(device.id, recoveryToken) : '', [device.id, recoveryToken])
 
   useEffect(() => {
     const container = qrRef.current
     if (!container) return
     container.innerHTML = ''
+    if (!url) return
     const QRCode = (window as Window & { QRCode?: QrConstructor }).QRCode
     if (!QRCode) return
     new QRCode(container, {
@@ -61,6 +67,7 @@ function DeviceRecoveryQr({ device, onFeedback }: { device: RegisteredDevice; on
   }, [url])
 
   const copyLink = async () => {
+    if (!url) return
     try {
       await navigator.clipboard.writeText(url)
       onFeedback('Link de recuperação do dispositivo copiado.')
@@ -69,13 +76,17 @@ function DeviceRecoveryQr({ device, onFeedback }: { device: RegisteredDevice; on
     }
   }
 
+  if (!recoveryToken) {
+    return <div className="windows-device-command-status">Preparando QR de recuperação deste dispositivo…</div>
+  }
+
   return (
     <div className="registered-device-qr">
       <div ref={qrRef} className="registered-device-qr-image" />
       <div className="registered-device-qr-copy">
         <strong>QR de recuperação do dispositivo</strong>
         <span>{device.hostname || 'Dispositivo sem nome'} · {formatPlatform(device.platform)}</span>
-        <span>Use este QR no próprio aparelho para voltar ao Player conectado ao DisplayHub. Ele não muda quando a playlist associada é alterada.</span>
+        <span>Este QR restaura a identidade deste mesmo dispositivo no aparelho. Ele não muda quando a playlist é alterada.</span>
         <div className="registered-device-inline-actions">
           <button type="button" onClick={() => void copyLink()}>Copiar link</button>
           <a href={url} target="_blank" rel="noreferrer">Abrir recuperação</a>
