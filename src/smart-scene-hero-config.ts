@@ -141,6 +141,10 @@ function textAnimationValue(value: unknown, fallback: HeroTextAnimation): HeroTe
   return value === 'pulse' || value === 'slide' || value === 'zoom' || value === 'float' || value === 'blink' ? value : fallback
 }
 
+function canvasCoordinate(value: number, legacyBase: number) {
+  return Math.min(99, Math.max(1, legacyBase + value * 2.3))
+}
+
 export function heroStylePreset(style: HeroStyle) {
   if (style === 'bands') return ['band', 'band', 'band'] as const
   if (style === 'clean') return ['circle', 'circle', 'block'] as const
@@ -220,7 +224,6 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
 
 export function heroStyleVars(config: HeroConfig, productText = ''): CSSProperties {
   const lengthFit = productText.length > 24 ? .66 : productText.length > 18 ? .74 : productText.length > 13 ? .84 : productText.length > 9 ? .92 : 1
-  const canvasPositionScale = 2
   return {
     '--hero-background-color': config.backgroundColor,
     '--hero-style-color-1': config.element1Color,
@@ -234,22 +237,22 @@ export function heroStyleVars(config: HeroConfig, productText = ''): CSSProperti
     '--hero-product-color': config.productColor,
     '--hero-product-scale': String((config.productSize / 100) * lengthFit),
     '--hero-product-rotation': `${config.productRotation}deg`,
-    '--hero-product-x': `${config.productX * canvasPositionScale}%`,
-    '--hero-product-y': `${config.productY * canvasPositionScale}%`,
+    '--hero-product-x': `${canvasCoordinate(config.productX, 7)}%`,
+    '--hero-product-y': `${canvasCoordinate(config.productY, 18)}%`,
     '--hero-price-color': config.priceColor,
     '--hero-price-scale': String(config.priceSize / 100),
     '--hero-price-rotation': `${config.priceRotation}deg`,
-    '--hero-price-x': `${config.priceX * canvasPositionScale}%`,
-    '--hero-price-y': `${config.priceY * canvasPositionScale}%`,
+    '--hero-price-x': `${canvasCoordinate(config.priceX, 7)}%`,
+    '--hero-price-y': `${canvasCoordinate(config.priceY, 51)}%`,
     '--hero-unit-color': config.unitColor,
     '--hero-unit-scale': String(config.unitSize / 100),
     '--hero-unit-rotation': `${config.unitRotation}deg`,
-    '--hero-unit-x': `${config.unitX * canvasPositionScale}%`,
-    '--hero-unit-y': `${config.unitY * canvasPositionScale}%`,
+    '--hero-unit-x': `${canvasCoordinate(config.unitX, 42)}%`,
+    '--hero-unit-y': `${canvasCoordinate(config.unitY, 60)}%`,
     '--hero-complement-color': config.complementColor,
     '--hero-complement-scale': String(config.complementSize / 100),
     '--hero-complement-rotation': `${config.complementRotation}deg`,
-    '--hero-complement-x': `${config.complementX * canvasPositionScale}%`,
-    '--hero-complement-y': `${config.complementY * canvasPositionScale}%`,
+    '--hero-complement-x': `${canvasCoordinate(config.complementX, 7)}%`,
+    '--hero-complement-y': `${canvasCoordinate(config.complementY, 78)}%`,
   } as CSSProperties
 }
