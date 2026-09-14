@@ -1,0 +1,294 @@
+.registered-devices-panel {
+  padding: 14px;
+  gap: 10px;
+}
+
+.registered-devices-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.registered-devices-toolbar h2 {
+  margin: 2px 0 0;
+  font-size: 1rem;
+}
+
+.registered-devices-toolbar input {
+  width: min(320px, 45vw);
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--dh-border);
+  border-radius: 10px;
+  background: var(--dh-surface, #fff);
+  color: var(--dh-text);
+  font: inherit;
+}
+
+.registered-device-list {
+  display: grid;
+  gap: 6px;
+}
+
+.registered-device-row {
+  border: 1px solid var(--dh-border);
+  border-radius: 12px;
+  background: var(--dh-panel);
+  overflow: hidden;
+}
+
+.registered-device-summary {
+  display: grid;
+  grid-template-columns: auto minmax(140px, 1.4fr) minmax(90px, .7fr) minmax(120px, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 46px;
+  padding: 7px 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.registered-device-summary::-webkit-details-marker {
+  display: none;
+}
+
+.registered-device-summary > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .9rem;
+}
+
+.registered-device-platform,
+.registered-device-last-seen,
+.registered-device-assigned,
+.registered-device-pending,
+.registered-device-expand {
+  font-size: .76rem;
+  color: var(--dh-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.registered-device-assigned {
+  color: #15803d;
+  font-weight: 800;
+}
+
+.registered-device-pending {
+  color: #b45309;
+  font-weight: 800;
+}
+
+.registered-device-expand {
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.registered-device-row[open] .registered-device-expand::after {
+  content: ' ▲';
+}
+
+.registered-device-row:not([open]) .registered-device-expand::after {
+  content: ' ▼';
+}
+
+.registered-device-details {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border-top: 1px solid var(--dh-border);
+  background: rgba(148, 163, 184, .04);
+}
+
+.registered-device-assignment {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 8px;
+}
+
+.registered-device-assignment select,
+.registered-device-assignment button,
+.registered-device-inline-actions button,
+.registered-device-inline-actions a {
+  min-height: 34px;
+  border: 1px solid var(--dh-border);
+  border-radius: 9px;
+  background: var(--dh-surface, #fff);
+  color: var(--dh-text);
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.registered-device-assignment select {
+  padding: 0 9px;
+}
+
+.registered-device-assignment button,
+.registered-device-inline-actions button,
+.registered-device-inline-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 11px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.registered-device-qr {
+  display: grid;
+  grid-template-columns: 164px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.registered-device-qr-image {
+  width: 164px;
+  min-height: 164px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.registered-device-qr-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.registered-device-qr-copy > span {
+  color: var(--dh-muted);
+  font-size: .8rem;
+}
+
+.registered-device-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 4px;
+}
+
+/* Lista Windows: mantém os recursos existentes, mas ocupa muito menos altura. */
+.windows-device-grid {
+  grid-template-columns: 1fr;
+  gap: 7px;
+}
+
+.windows-device-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.windows-device-card-head {
+  align-items: center;
+}
+
+.windows-device-card h2 {
+  display: inline-block;
+  margin: 0 0 0 8px;
+  font-size: .92rem;
+}
+
+.windows-device-card-head > div {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.windows-device-status,
+.windows-device-version {
+  min-height: 22px;
+  padding: 0 7px;
+  font-size: .69rem;
+}
+
+.windows-device-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.windows-device-facts span {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 5px 7px;
+  font-size: .72rem;
+}
+
+.windows-device-facts strong {
+  font-size: .76rem;
+}
+
+.windows-device-last-seen {
+  margin-top: 7px;
+  font-size: .72rem;
+}
+
+.windows-device-command-status,
+.windows-devices-feedback {
+  margin-top: 7px;
+  padding: 7px 9px;
+  font-size: .72rem;
+}
+
+.windows-device-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.windows-device-actions button {
+  min-height: 32px;
+  padding: 0 9px;
+  border-radius: 9px;
+  font-size: .74rem;
+}
+
+@media (max-width: 850px) {
+  .registered-device-summary {
+    grid-template-columns: auto minmax(130px, 1fr) auto auto;
+  }
+
+  .registered-device-platform,
+  .registered-device-last-seen {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .registered-devices-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .registered-devices-toolbar input {
+    width: 100%;
+  }
+
+  .registered-device-summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .registered-device-assigned,
+  .registered-device-pending {
+    grid-column: 2 / 3;
+  }
+
+  .registered-device-expand {
+    grid-column: 3 / 4;
+    grid-row: 1 / span 2;
+  }
+
+  .registered-device-assignment,
+  .registered-device-qr {
+    grid-template-columns: 1fr;
+  }
+}
