@@ -6,6 +6,7 @@ export type HeroStyle = 'explosive' | 'bands' | 'clean'
 export type HeroBackgroundMode = 'none' | 'solid' | 'video'
 export type HeroElementType = 'burst' | 'band' | 'circle' | 'block' | 'glow'
 export type HeroTextAnimation = 'pulse' | 'slide' | 'zoom' | 'float' | 'blink'
+export type HeroTextCoordinateMode = 'canvas-v1'
 
 export type HeroConfig = {
   style: HeroStyle
@@ -31,6 +32,7 @@ export type HeroConfig = {
   element3Color: string
   price: string
   unit: string
+  coordinateMode: HeroTextCoordinateMode
   productColor: string
   productSize: number
   productRotation: number
@@ -85,32 +87,33 @@ const defaults: HeroConfig = {
   element3Color: '#ffd400',
   price: 'R$ 24,90',
   unit: 'UN',
+  coordinateMode: 'canvas-v1',
   productColor: '#d80d0d',
   productSize: 100,
   productRotation: 0,
   productX: 0,
-  productY: 0,
+  productY: 18,
   productAnimationEnabled: false,
   productAnimation: 'pulse',
   priceColor: '#111111',
   priceSize: 100,
   priceRotation: -3,
   priceX: 0,
-  priceY: 0,
+  priceY: 51,
   priceAnimationEnabled: false,
   priceAnimation: 'pulse',
   unitColor: '#111111',
   unitSize: 100,
   unitRotation: 0,
-  unitX: 0,
-  unitY: 0,
+  unitX: 42,
+  unitY: 60,
   unitAnimationEnabled: false,
   unitAnimation: 'float',
   complementColor: '#1d1d1d',
   complementSize: 100,
   complementRotation: 0,
   complementX: 0,
-  complementY: 0,
+  complementY: 78,
   complementAnimationEnabled: false,
   complementAnimation: 'float',
 }
@@ -141,8 +144,18 @@ function textAnimationValue(value: unknown, fallback: HeroTextAnimation): HeroTe
   return value === 'pulse' || value === 'slide' || value === 'zoom' || value === 'float' || value === 'blink' ? value : fallback
 }
 
-function canvasCoordinate(value: number, legacyBase: number) {
-  return Math.min(100, Math.max(0, legacyBase + value * 2.3))
+function clampCanvas(value: number) {
+  return Math.min(100, Math.max(0, value))
+}
+
+function legacyCanvasCoordinate(value: unknown, legacyBase: number, leftInset = 0) {
+  const legacyValue = numberValue(value, 0, -40, 40)
+  return clampCanvas(legacyBase + legacyValue * 2.3 - leftInset)
+}
+
+function textCanvasCoordinate(hero: Record<string, unknown>, key: string, fallback: number, legacyBase: number, leftInset = 0) {
+  if (hero.coordinateMode === 'canvas-v1') return numberValue(hero[key], fallback, 0, 100)
+  return legacyCanvasCoordinate(hero[key], legacyBase, leftInset)
 }
 
 export function heroStylePreset(style: HeroStyle) {
@@ -191,32 +204,33 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
     element3Color: stringValue(hero.element3Color, styleColor3),
     price: optionalStringValue(hero.price, defaults.price),
     unit: optionalStringValue(hero.unit, defaults.unit),
+    coordinateMode: 'canvas-v1',
     productColor: stringValue(hero.productColor, defaults.productColor),
     productSize: numberValue(hero.productSize, defaults.productSize, 60, 150),
     productRotation: numberValue(hero.productRotation, defaults.productRotation, -15, 15),
-    productX: numberValue(hero.productX, defaults.productX, -40, 40),
-    productY: numberValue(hero.productY, defaults.productY, -40, 40),
+    productX: textCanvasCoordinate(hero, 'productX', defaults.productX, 7, 7),
+    productY: textCanvasCoordinate(hero, 'productY', defaults.productY, 18),
     productAnimationEnabled: booleanValue(hero.productAnimationEnabled, defaults.productAnimationEnabled),
     productAnimation: textAnimationValue(hero.productAnimation, defaults.productAnimation),
     priceColor: stringValue(hero.priceColor, defaults.priceColor),
     priceSize: numberValue(hero.priceSize, defaults.priceSize, 60, 160),
     priceRotation: numberValue(hero.priceRotation, defaults.priceRotation, -15, 15),
-    priceX: numberValue(hero.priceX, defaults.priceX, -40, 40),
-    priceY: numberValue(hero.priceY, defaults.priceY, -40, 40),
+    priceX: textCanvasCoordinate(hero, 'priceX', defaults.priceX, 7, 7),
+    priceY: textCanvasCoordinate(hero, 'priceY', defaults.priceY, 51),
     priceAnimationEnabled: booleanValue(hero.priceAnimationEnabled, defaults.priceAnimationEnabled),
     priceAnimation: textAnimationValue(hero.priceAnimation, defaults.priceAnimation),
     unitColor: stringValue(hero.unitColor, hero.priceColor ? stringValue(hero.priceColor, defaults.priceColor) : defaults.unitColor),
     unitSize: numberValue(hero.unitSize, defaults.unitSize, 60, 160),
     unitRotation: numberValue(hero.unitRotation, defaults.unitRotation, -15, 15),
-    unitX: numberValue(hero.unitX, defaults.unitX, -40, 40),
-    unitY: numberValue(hero.unitY, defaults.unitY, -40, 40),
+    unitX: textCanvasCoordinate(hero, 'unitX', defaults.unitX, 42),
+    unitY: textCanvasCoordinate(hero, 'unitY', defaults.unitY, 60),
     unitAnimationEnabled: booleanValue(hero.unitAnimationEnabled, defaults.unitAnimationEnabled),
     unitAnimation: textAnimationValue(hero.unitAnimation, defaults.unitAnimation),
     complementColor: stringValue(hero.complementColor, defaults.complementColor),
     complementSize: numberValue(hero.complementSize, defaults.complementSize, 60, 160),
     complementRotation: numberValue(hero.complementRotation, defaults.complementRotation, -15, 15),
-    complementX: numberValue(hero.complementX, defaults.complementX, -40, 40),
-    complementY: numberValue(hero.complementY, defaults.complementY, -40, 40),
+    complementX: textCanvasCoordinate(hero, 'complementX', defaults.complementX, 7, 7),
+    complementY: textCanvasCoordinate(hero, 'complementY', defaults.complementY, 78),
     complementAnimationEnabled: booleanValue(hero.complementAnimationEnabled, defaults.complementAnimationEnabled),
     complementAnimation: textAnimationValue(hero.complementAnimation, defaults.complementAnimation),
   }
@@ -237,22 +251,22 @@ export function heroStyleVars(config: HeroConfig, productText = ''): CSSProperti
     '--hero-product-color': config.productColor,
     '--hero-product-scale': String((config.productSize / 100) * lengthFit),
     '--hero-product-rotation': `${config.productRotation}deg`,
-    '--hero-product-x': `${canvasCoordinate(config.productX, 7)}%`,
-    '--hero-product-y': `${canvasCoordinate(config.productY, 18)}%`,
+    '--hero-product-x': `${config.productX}%`,
+    '--hero-product-y': `${config.productY}%`,
     '--hero-price-color': config.priceColor,
     '--hero-price-scale': String(config.priceSize / 100),
     '--hero-price-rotation': `${config.priceRotation}deg`,
-    '--hero-price-x': `${canvasCoordinate(config.priceX, 7)}%`,
-    '--hero-price-y': `${canvasCoordinate(config.priceY, 51)}%`,
+    '--hero-price-x': `${config.priceX}%`,
+    '--hero-price-y': `${config.priceY}%`,
     '--hero-unit-color': config.unitColor,
     '--hero-unit-scale': String(config.unitSize / 100),
     '--hero-unit-rotation': `${config.unitRotation}deg`,
-    '--hero-unit-x': `${canvasCoordinate(config.unitX, 42)}%`,
-    '--hero-unit-y': `${canvasCoordinate(config.unitY, 60)}%`,
+    '--hero-unit-x': `${config.unitX}%`,
+    '--hero-unit-y': `${config.unitY}%`,
     '--hero-complement-color': config.complementColor,
     '--hero-complement-scale': String(config.complementSize / 100),
     '--hero-complement-rotation': `${config.complementRotation}deg`,
-    '--hero-complement-x': `${canvasCoordinate(config.complementX, 7)}%`,
-    '--hero-complement-y': `${canvasCoordinate(config.complementY, 78)}%`,
+    '--hero-complement-x': `${config.complementX}%`,
+    '--hero-complement-y': `${config.complementY}%`,
   } as CSSProperties
 }
