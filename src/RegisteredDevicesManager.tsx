@@ -70,14 +70,14 @@ function DeviceRecoveryQr({ device, onFeedback }: { device: RegisteredDevice; on
     if (!url) return
     try {
       await navigator.clipboard.writeText(url)
-      onFeedback('Link de recuperação do dispositivo copiado.')
+      onFeedback('Link copiado.')
     } catch {
-      onFeedback('Não foi possível copiar o link automaticamente.')
+      onFeedback('Não foi possível copiar o link.')
     }
   }
 
   if (!recoveryToken) {
-    return <div className="windows-device-command-status">Preparando QR de recuperação deste dispositivo…</div>
+    return <div className="windows-device-command-status">Preparando QR…</div>
   }
 
   return (
@@ -86,7 +86,6 @@ function DeviceRecoveryQr({ device, onFeedback }: { device: RegisteredDevice; on
       <div className="registered-device-qr-copy">
         <strong>QR de recuperação do dispositivo</strong>
         <span>{device.hostname || 'Dispositivo sem nome'} · {formatPlatform(device.platform)}</span>
-        <span>Este QR restaura a identidade deste mesmo dispositivo no aparelho. Ele não muda quando a playlist é alterada.</span>
         <div className="registered-device-inline-actions">
           <button type="button" onClick={() => void copyLink()}>Copiar link</button>
           <a href={url} target="_blank" rel="noreferrer">Abrir recuperação</a>
@@ -165,7 +164,7 @@ export default function RegisteredDevicesManager() {
   const assign = async (device: RegisteredDevice) => {
     const playlistId = selectionByDevice[device.id] || ''
     if (!playlistId) {
-      setFeedbackByDevice((current) => ({ ...current, [device.id]: 'Escolha uma playlist antes de associar.' }))
+      setFeedbackByDevice((current) => ({ ...current, [device.id]: 'Escolha uma playlist.' }))
       return
     }
 
@@ -180,7 +179,7 @@ export default function RegisteredDevicesManager() {
       const result = data as { playlist_name?: string }
       setFeedbackByDevice((current) => ({
         ...current,
-        [device.id]: `${result?.playlist_name || 'Playlist'} associada. O dispositivo mudará automaticamente em alguns segundos.`,
+        [device.id]: `${result?.playlist_name || 'Playlist'} associada.`,
       }))
       await load()
     } catch (nextError) {
@@ -255,12 +254,6 @@ export default function RegisteredDevicesManager() {
                     <button type="button" disabled={busy || playlists.length === 0} onClick={() => void assign(device)}>
                       {assignedPlaylist ? 'Alterar playlist' : 'Associar playlist'}
                     </button>
-                  </div>
-
-                  <div className="windows-device-command-status status-completed">
-                    {assignedPlaylist
-                      ? `Playlist atual: ${assignedPlaylist.name}. Alterações são recebidas automaticamente pelo dispositivo.`
-                      : 'Sem playlist associada. Assim que uma playlist for escolhida, o dispositivo receberá a configuração automaticamente.'}
                   </div>
 
                   <DeviceRecoveryQr
