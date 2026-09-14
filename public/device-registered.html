@@ -29,7 +29,7 @@
       <div class="mark">DH</div>
       <h1>Dispositivo registrado</h1>
       <p>Este aparelho já faz parte do DisplayHub.</p>
-      <div id="status" class="status">Aguardando o administrador associar uma playlist a este dispositivo...</div>
+      <div id="status" class="status">Restaurando a sessão deste dispositivo...</div>
     </main>
   </div>
 
@@ -37,11 +37,14 @@
     const SUPABASE_URL = 'https://meqeluddtwthqmrtbhbr.supabase.co'
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_yjnvIPUmi8-Kt7yTFibw3w_DQlawViE'
     const IDENTITY_KEY = 'displayhub_generic_device_identity_v1'
-    const expectedDeviceId = (new URLSearchParams(window.location.search).get('device') || '').trim()
+    const query = new URLSearchParams(window.location.search)
+    const expectedDeviceId = (query.get('device') || '').trim()
+    const recoveryToken = (query.get('recover') || '').trim()
     const status = document.getElementById('status')
     const waiting = document.getElementById('waiting')
     const player = document.getElementById('player')
     let currentPlayerUrl = ''
+    let identityReady = false
 
     function getIdentity() {
       try {
@@ -51,6 +54,10 @@
         return null
       }
       return null
+    }
+
+    function saveIdentity(deviceId, deviceSecret) {
+      localStorage.setItem(IDENTITY_KEY, JSON.stringify({ deviceId, deviceSecret }))
     }
 
     function showWaiting(message, className = 'status') {
@@ -70,15 +77,60 @@
       document.title = `${name || 'DisplayHub'} · DisplayHub`
     }
 
+    async function recoverIdentityIfNeeded() {
+      const current = getIdentity()
+      if (current && (!expectedDeviceId || current.deviceId === expectedDeviceId)) {
+        identityReady = true
+        return current
+      }
+
+      if (!expectedDeviceId || !/^[a-f0-9-]{36}$/i.test(expectedDeviceId) || !/^[a-f0-9]{64}$/i.test(recoveryToken)) {
+        showWaiting('A identidade deste dispositivo não foi encontrada. Use o QR de recuperação exibido no cadastro deste aparelho.', 'status error')
+        return null
+      }
+
+      showWaiting('Recuperando a identidade deste dispositivo...')
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/recover_registered_device_identity`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            p_device_id: expectedDeviceId,
+            p_recovery_token: recoveryToken,
+          }),
+        })
+        if (!response.ok) throw new Error('recovery_failed')
+        const result = await response.json()
+        if (!result?.device_id || !result?.device_secret) throw new Error('invalid_recovery_result')
+        saveIdentity(result.device_id, result.device_secret)
+        identityReady = true
+        return { deviceId: result.device_id, deviceSecret: result.device_secret }
+      } catch {
+        showWaiting('Não foi possível recuperar este dispositivo com o QR informado.', 'status error')
+        return null
+      }
+    }
+
     async function pollAssignment() {
+      if (!identityReady) {
+        const restored = await recoverIdentityIfNeeded()
+        if (!restored) return
+      }
+
       const identity = getIdentity()
       if (!identity) {
-        showWaiting('A identidade deste dispositivo não foi encontrada. Gere um novo QR de instalação para registrá-lo novamente.', 'status error')
+        identityReady = false
+        showWaiting('A identidade deste dispositivo não foi encontrada. Use novamente o QR de recuperação.', 'status error')
         return
       }
 
       if (expectedDeviceId && identity.deviceId !== expectedDeviceId) {
-        showWaiting('Este QR de recuperação pertence a outro dispositivo. Abra o QR correspondente a este aparelho.', 'status error')
+        identityReady = false
+        showWaiting('Este QR de recuperação pertence a outro dispositivo.', 'status error')
         return
       }
 
@@ -96,7 +148,10 @@
           }),
         })
 
-        if (!response.ok) throw new Error('poll_failed')
+        if (!response.ok) {
+          if (response.status === 400 || response.status === 401 || response.status === 403) identityReady = false
+          throw new Error('poll_failed')
+        }
         const result = await response.json()
 
         if (result?.status === 'assigned' && result?.player_url) {
