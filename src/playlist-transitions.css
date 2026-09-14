@@ -51,17 +51,31 @@
   will-change: opacity, transform;
 }
 
-/* Cartazes usam transicao de entrada somente. O cartaz anterior e ocultado
-   imediatamente para que fundos animados nunca permaneçam rodando por baixo
-   do proximo item da playlist. */
 .poster-transition-old {
   z-index: 1;
-  display: none;
+  pointer-events: none;
 }
-.poster-transition-new { z-index: 2; }
+
+.poster-transition-new {
+  z-index: 2;
+}
+
+.poster-transition-fade .poster-transition-old {
+  animation-name: playlistPosterFadeOut;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
 
 .poster-transition-fade .poster-transition-new {
   animation-name: playlistPosterFadeIn;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+.poster-transition-slide_left .poster-transition-old,
+.poster-transition-slide_up .poster-transition-old,
+.poster-transition-zoom .poster-transition-old {
+  animation-name: playlistPosterSoftOut;
   animation-timing-function: ease-in-out;
   animation-fill-mode: forwards;
 }
@@ -84,18 +98,31 @@
   animation-fill-mode: forwards;
 }
 
+@keyframes playlistPosterFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes playlistPosterSoftOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: .35; transform: scale(.985); }
+}
+
 @keyframes playlistPosterFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
 @keyframes playlistPosterSlideLeftIn {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
+
 @keyframes playlistPosterSlideUpIn {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+
 @keyframes playlistPosterZoomIn {
   from { opacity: 0; transform: scale(.92); }
   to { opacity: 1; transform: scale(1); }
