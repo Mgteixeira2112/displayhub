@@ -44,7 +44,6 @@
     const waiting = document.getElementById('waiting')
     const player = document.getElementById('player')
     let currentPlayerUrl = ''
-    let currentPlaylistId = ''
     let identityReady = false
 
     function getIdentity() {
@@ -68,13 +67,10 @@
       status.className = className
     }
 
-    function showPlayer(url, name, playlistId) {
-      const nextPlaylistId = String(playlistId || '')
-      if (url !== currentPlayerUrl || nextPlaylistId !== currentPlaylistId) {
+    function showPlayer(url, name) {
+      if (url !== currentPlayerUrl) {
         currentPlayerUrl = url
-        currentPlaylistId = nextPlaylistId
-        const separator = url.includes('?') ? '&' : '?'
-        player.src = `${url}${separator}assignment=${encodeURIComponent(nextPlaylistId)}`
+        player.src = url
       }
       player.style.display = 'block'
       waiting.style.display = 'none'
@@ -159,12 +155,11 @@
         const result = await response.json()
 
         if (result?.status === 'assigned' && result?.player_url) {
-          showPlayer(result.player_url, result.playlist_name, result.playlist_id)
+          showPlayer(result.player_url, result.playlist_name)
           return
         }
 
         currentPlayerUrl = ''
-        currentPlaylistId = ''
         player.removeAttribute('src')
         showWaiting('Aguardando o administrador associar uma playlist a este dispositivo...')
       } catch {
