@@ -60,7 +60,7 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   function beginHeroDrag(event: ReactPointerEvent<HTMLElement>, target: HeroDragTarget) {
     if (!editableHero || scene.key !== 'hero' || !onHeroPositionChange) return
     const frame = target === 'badge'
-      ? event.currentTarget.getBoundingClientRect()
+      ? event.currentTarget.closest('.smart-scene-preview')?.getBoundingClientRect()
       : event.currentTarget.closest('.smart-scene-copy')?.getBoundingClientRect()
     if (!frame) return
     const position = heroPosition(target)
@@ -112,7 +112,7 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
       <div className="smart-scene-glow" />
       <div className="smart-scene-visual" {...dragHandlers('badge')} />
       <div className="smart-scene-copy">
-        <span>{headline || (scene.key === 'hero' ? 'OFERTA' : scene.category)}</span>
+        <span {...dragHandlers('badge')}>{headline || (scene.key === 'hero' ? 'OFERTA' : scene.category)}</span>
         <strong {...dragHandlers('product')}>{displayPrimary}</strong>
         {scene.key === 'hero' && <div className="smart-hero-price-row" {...dragHandlers('price')}><b>{hero.price}</b><em>{hero.unit}</em></div>}
         <small>{secondaryText || scene.accent}</small>
