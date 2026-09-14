@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
+import './device-lists-compact.css'
 
 type RegisteredDevice = {
   id: string
