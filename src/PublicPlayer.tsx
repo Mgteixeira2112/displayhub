@@ -191,12 +191,15 @@ export default function PublicPlayer({ token }: { token: string }) {
   const transitionType = publication?.playlist.transition_type || 'fade'
   const configuredTransitionMs = Math.max(0, Math.min(2000, Number(publication?.playlist.transition_duration_ms ?? 600)))
   const transitionDurationMs = item ? Math.min(configuredTransitionMs, Math.max(100, item.duration_seconds * 1000 - 100)) : configuredTransitionMs
-  const usesMediaEndedAdvance = !syncSession && !coordinatedClockActive && item?.duration_mode === 'media' && item.poster?.theme === 'animated_beer_video'
+  const hasSyncSession = Boolean(syncSession)
+  const localItemId = item?.id || null
+  const localItemContentType = item?.content?.type || null
+  const usesMediaEndedAdvance = !hasSyncSession && !coordinatedClockActive && item?.duration_mode === 'media' && item.poster?.theme === 'animated_beer_video'
 
   const advanceLocalItem = useCallback(() => {
-    if (!item || !items.length || syncSession || coordinatedClockActive) return
+    if (!localItemId || !items.length || hasSyncSession || coordinatedClockActive) return
     if (items.length === 1) {
-      if (item.content?.type === 'youtube') {
+      if (localItemContentType === 'youtube') {
         const controller = youtubeController.current
         if (controller) {
           controller.seekTo(0, true)
@@ -207,14 +210,14 @@ export default function PublicPlayer({ token }: { token: string }) {
       return
     }
     setItemIndex((value) => (value + 1) % items.length)
-  }, [item, items.length, syncSession, coordinatedClockActive, shouldPlay])
+  }, [localItemId, localItemContentType, items.length, hasSyncSession, coordinatedClockActive, shouldPlay])
 
   useEffect(() => {
-    if (syncSession || coordinatedClockActive || !item || !items.length) return
+    if (hasSyncSession || coordinatedClockActive || !item || !items.length) return
     const delayMs = (item.duration_seconds + (usesMediaEndedAdvance ? 2 : 0)) * 1000
     const timer = window.setTimeout(advanceLocalItem, delayMs)
     return () => window.clearTimeout(timer)
-  }, [item?.id, item?.duration_seconds, item?.duration_mode, items.length, syncSession, coordinatedClockActive, localCycleSerial, usesMediaEndedAdvance, advanceLocalItem])
+  }, [item?.id, item?.duration_seconds, item?.duration_mode, items.length, hasSyncSession, coordinatedClockActive, localCycleSerial, usesMediaEndedAdvance, advanceLocalItem])
 
   const handlePosterVideoEnded = useCallback(() => {
     if (!usesMediaEndedAdvance) return
