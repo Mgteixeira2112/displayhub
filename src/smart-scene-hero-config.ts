@@ -220,6 +220,7 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
 
 export function heroStyleVars(config: HeroConfig, productText = ''): CSSProperties {
   const lengthFit = productText.length > 24 ? .66 : productText.length > 18 ? .74 : productText.length > 13 ? .84 : productText.length > 9 ? .92 : 1
+  const canvasPositionScale = 2
   return {
     '--hero-background-color': config.backgroundColor,
     '--hero-style-color-1': config.element1Color,
@@ -233,22 +234,22 @@ export function heroStyleVars(config: HeroConfig, productText = ''): CSSProperti
     '--hero-product-color': config.productColor,
     '--hero-product-scale': String((config.productSize / 100) * lengthFit),
     '--hero-product-rotation': `${config.productRotation}deg`,
-    '--hero-product-x': `${config.productX}%`,
-    '--hero-product-y': `${config.productY}%`,
+    '--hero-product-x': `${config.productX * canvasPositionScale}%`,
+    '--hero-product-y': `${config.productY * canvasPositionScale}%`,
     '--hero-price-color': config.priceColor,
     '--hero-price-scale': String(config.priceSize / 100),
     '--hero-price-rotation': `${config.priceRotation}deg`,
-    '--hero-price-x': `${config.priceX}%`,
-    '--hero-price-y': `${config.priceY}%`,
+    '--hero-price-x': `${config.priceX * canvasPositionScale}%`,
+    '--hero-price-y': `${config.priceY * canvasPositionScale}%`,
     '--hero-unit-color': config.unitColor,
     '--hero-unit-scale': String(config.unitSize / 100),
     '--hero-unit-rotation': `${config.unitRotation}deg`,
-    '--hero-unit-x': `${config.unitX}%`,
-    '--hero-unit-y': `${config.unitY}%`,
+    '--hero-unit-x': `${config.unitX * canvasPositionScale}%`,
+    '--hero-unit-y': `${config.unitY * canvasPositionScale}%`,
     '--hero-complement-color': config.complementColor,
     '--hero-complement-scale': String(config.complementSize / 100),
     '--hero-complement-rotation': `${config.complementRotation}deg`,
-    '--hero-complement-x': `${config.complementX}%`,
-    '--hero-complement-y': `${config.complementY}%`,
+    '--hero-complement-x': `${config.complementX * canvasPositionScale}%`,
+    '--hero-complement-y': `${config.complementY * canvasPositionScale}%`,
   } as CSSProperties
 }
