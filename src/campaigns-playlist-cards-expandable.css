@@ -116,6 +116,101 @@
   outline-offset: 2px;
 }
 
+.view-campaigns .playlist-card:not(.is-expanded) {
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .025);
+}
+
+.view-campaigns .playlist-card:not(.is-expanded):hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, .045);
+}
+
+.view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head {
+  min-height: 52px;
+  padding: 0 48px 0 16px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head:hover {
+  background: #fbfdff;
+}
+
+.view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head > div {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) auto;
+  align-items: center;
+  gap: 4px 18px;
+  width: 100%;
+}
+
+.view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: .78rem;
+  font-weight: 750;
+  letter-spacing: -.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head p {
+  display: none;
+}
+
+.view-campaigns .playlist-card:not(.is-expanded) .campaign-playlist-summary {
+  justify-self: end;
+  min-width: 0;
+  padding: 5px 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: .62rem;
+  font-weight: 650;
+  letter-spacing: .005em;
+}
+
+.view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head > .danger-button {
+  display: none;
+}
+
+.view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head::after {
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  box-shadow: none;
+  color: #94a3b8;
+}
+
+.view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head:hover::after {
+  border: 0;
+  background: #f1f5f9;
+  box-shadow: none;
+  color: #334155;
+}
+
+@media (max-width: 900px) {
+  .view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head > div {
+    grid-template-columns: minmax(150px, 1fr) auto;
+    gap: 4px 10px;
+  }
+
+  .view-campaigns .playlist-card:not(.is-expanded) .campaign-playlist-summary {
+    max-width: 52vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 @media (max-width: 720px) {
   .view-campaigns .playlist-card-head {
     align-items: center;
@@ -128,5 +223,24 @@
 
   .view-campaigns .playlist-card-head > .danger-button {
     margin-right: 36px;
+  }
+
+  .view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head {
+    min-height: 60px;
+    padding-left: 12px;
+  }
+
+  .view-campaigns .playlist-card:not(.is-expanded) .playlist-card-head > div {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: 3px;
+  }
+
+  .view-campaigns .playlist-card:not(.is-expanded) .campaign-playlist-summary {
+    justify-self: start;
+    max-width: calc(100vw - 130px);
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
 }
