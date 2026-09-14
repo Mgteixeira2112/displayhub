@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 
 type RegisteredDevice = {
@@ -14,7 +14,13 @@ type DisplayOption = {
   id: string
   name: string
   location: string | null
+  public_token: string
 }
+
+type QrConstructor = new (
+  element: HTMLElement,
+  options: { text: string; width: number; height: number; colorDark: string; colorLight: string },
+) => unknown
 
 function formatPlatform(platform: string) {
   if (platform === 'android') return 'Android'
@@ -29,6 +35,54 @@ function formatLastSeen(lastSeenAt: string) {
   const minutes = Math.round(seconds / 60)
   if (minutes < 60) return `há ${minutes} min`
   return new Date(lastSeenAt).toLocaleString('pt-BR')
+}
+
+function displayPlayerUrl(publicToken: string) {
+  const route = `display/${publicToken}`
+  return `${window.location.origin}${import.meta.env.BASE_URL}?p=${encodeURIComponent(route)}`
+}
+
+function StoredDisplayQr({ display, onFeedback }: { display: DisplayOption; onFeedback: (message: string) => void }) {
+  const qrRef = useRef<HTMLDivElement | null>(null)
+  const url = useMemo(() => displayPlayerUrl(display.public_token), [display.public_token])
+
+  useEffect(() => {
+    const container = qrRef.current
+    if (!container) return
+    container.innerHTML = ''
+    const QRCode = (window as Window & { QRCode?: QrConstructor }).QRCode
+    if (!QRCode) return
+    new QRCode(container, {
+      text: url,
+      width: 176,
+      height: 176,
+      colorDark: '#0f172a',
+      colorLight: '#ffffff',
+    })
+  }, [url])
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url)
+      onFeedback('Link da tela copiado.')
+    } catch {
+      onFeedback('Não foi possível copiar o link automaticamente.')
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '196px minmax(0, 1fr)', gap: 16, alignItems: 'center' }}>
+      <div ref={qrRef} style={{ width: 196, minHeight: 196, padding: 10, borderRadius: 16, background: '#fff', display: 'grid', placeItems: 'center' }} />
+      <div>
+        <strong>QR da tela associada</strong>
+        <p style={{ margin: '6px 0 12px' }}>Este QR fica disponível junto ao cadastro do dispositivo e sempre abre a tela <strong>{display.name}</strong>.</p>
+        <div className="windows-device-actions">
+          <button type="button" onClick={() => void copyLink()}>Copiar link da tela</button>
+          <a href={url} target="_blank" rel="noreferrer">Abrir tela</a>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function RegisteredDevicesManager() {
@@ -49,7 +103,7 @@ export default function RegisteredDevicesManager() {
         .order('created_at', { ascending: false }),
       supabase
         .from('displays')
-        .select('id,name,location')
+        .select('id,name,location,public_token')
         .eq('is_active', true)
         .is('revoked_at', null)
         .order('name', { ascending: true }),
@@ -102,7 +156,7 @@ export default function RegisteredDevicesManager() {
       const result = data as { display_name?: string }
       setFeedbackByDevice((current) => ({
         ...current,
-        [device.id]: `${result?.display_name || 'Tela'} associada. O dispositivo receberá a configuração automaticamente.`,
+        [device.id]: `${result?.display_name || 'Tela'} associada. O QR permanente desta tela já está disponível abaixo.`,
       }))
       await load()
     } catch (nextError) {
@@ -122,7 +176,7 @@ export default function RegisteredDevicesManager() {
       <div className="windows-pairing-copy">
         <p className="eyebrow">Dispositivos registrados</p>
         <h2>Associar uma tela ao dispositivo</h2>
-        <p>O QR registra somente o aparelho. Aqui você escolhe separadamente qual tela existente ele deve exibir.</p>
+        <p>O QR inicial registra somente o aparelho. Depois da associação, o QR da tela fica guardado visualmente junto ao cadastro do dispositivo para poder ser lido novamente a qualquer momento.</p>
       </div>
 
       {error && <div className="windows-devices-feedback">{error}</div>}
@@ -178,6 +232,13 @@ export default function RegisteredDevicesManager() {
                     {assignedDisplay ? 'Alterar associação' : 'Associar tela'}
                   </button>
                 </div>
+
+                {assignedDisplay && (
+                  <StoredDisplayQr
+                    display={assignedDisplay}
+                    onFeedback={(message) => setFeedbackByDevice((current) => ({ ...current, [device.id]: message }))}
+                  />
+                )}
 
                 {feedback && <div className="windows-devices-feedback">{feedback}</div>}
               </article>
