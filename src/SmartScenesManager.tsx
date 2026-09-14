@@ -1,8 +1,9 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { supabase } from './lib/supabase'
-import { getHeroConfig, heroStyleVars, type HeroConfig, type HeroPreset } from './smart-scene-hero-config'
+import { getHeroConfig, heroStyleVars, type HeroBackgroundMode, type HeroConfig, type HeroStyle } from './smart-scene-hero-config'
 import './smart-scenes.css'
 import './smart-scenes-hero.css'
+import './smart-scenes-hero-layers.css'
 
 type SceneKind = 'hero' | 'split' | 'spotlight' | 'data' | 'countdown' | 'panorama'
 type Orientation = 'auto' | 'landscape' | 'portrait' | 'ultrawide'
@@ -51,10 +52,11 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   const displayPrimary = scene.key === 'hero'
     ? (editableHero ? (primaryText || '').trim() : (primaryText ?? 'QUEIJO MINAS FRESCAL').trim())
     : primaryText || (scene.key === 'countdown' ? '02:14:36' : scene.key === 'data' ? 'R$ 24,90' : 'DESTAQUE')
-  const heroClass = scene.key === 'hero' ? ` smart-hero-preset-${hero.preset}` : ''
+  const heroClass = scene.key === 'hero' ? ` smart-hero-style-${hero.style}` : ''
   const displaySecondary = scene.key === 'hero' ? (secondaryText || '').trim() : secondaryText || scene.accent
   const displayPrice = hero.price.trim()
   const displayUnit = hero.unit.trim()
+  const videoUrl = hero.backgroundVideoUrl.trim()
 
   function heroPosition(target: HeroDragTarget) {
     if (target === 'product') return { x: hero.productX, y: hero.productY }
@@ -111,7 +113,15 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
       style={scene.key === 'hero' ? heroStyleVars(hero, displayPrimary) : undefined}
       aria-hidden="true"
     >
-      <div className="smart-scene-glow" />
+      {scene.key === 'hero' && (
+        <>
+          <div className={`smart-hero-background is-${hero.backgroundMode}`}>
+            {hero.backgroundMode === 'video' && videoUrl && <video className="smart-hero-background-video" src={videoUrl} autoPlay muted loop playsInline />}
+          </div>
+          <div className={`smart-hero-style-layer smart-hero-style-${hero.style}`}><i className="shape-a"/><i className="shape-b"/><i className="shape-c"/></div>
+        </>
+      )}
+      {scene.key !== 'hero' && <div className="smart-scene-glow" />}
       {scene.key !== 'hero' && <div className="smart-scene-visual" />}
       <div className="smart-scene-copy">
         {scene.key !== 'hero' && <span>{headline || scene.category}</span>}
@@ -206,7 +216,7 @@ export default function SmartScenesManager() {
     setHeadline(kind === 'hero' ? '' : scene.category.toUpperCase())
     setPrimaryText(kind === 'hero' ? 'QUEIJO MINAS FRESCAL' : kind === 'countdown' ? '02:14:36' : kind === 'data' ? 'R$ 24,90' : 'DESTAQUE')
     setSecondaryText(kind === 'hero' ? 'Aproveite hoje' : scene.accent)
-    setHeroConfig(getHeroConfig(kind === 'hero' ? { hero: { price: 'R$ 24,90', unit: 'KG' } } : undefined))
+    setHeroConfig(getHeroConfig(kind === 'hero' ? { hero: { price: 'R$ 24,90', unit: 'KG', style: 'explosive', backgroundMode: 'solid', backgroundColor: '#ffd400' } } : undefined))
     setMessage('')
   }
 
@@ -289,8 +299,28 @@ export default function SmartScenesManager() {
             </div>
             {editorKind === 'hero' && (
               <div className="smart-hero-editor-block">
+                <div className="smart-hero-background-controls">
+                  <strong>Fundo</strong>
+                  <div className="smart-hero-mode-grid">
+                    {(['none', 'solid', 'video'] as HeroBackgroundMode[]).map((mode) => <button key={mode} type="button" className={heroConfig.backgroundMode === mode ? 'is-active' : ''} onClick={() => updateHero('backgroundMode', mode)}>{mode === 'none' ? 'Nenhum' : mode === 'solid' ? 'Cor sólida' : 'Vídeo'}</button>)}
+                  </div>
+                  {heroConfig.backgroundMode === 'solid' && <label>Cor do fundo<input type="color" value={heroConfig.backgroundColor} onChange={(event) => updateHero('backgroundColor', event.target.value)} /></label>}
+                  {heroConfig.backgroundMode === 'video' && <div className="smart-hero-video-row"><label>URL do vídeo<input type="url" value={heroConfig.backgroundVideoUrl} onChange={(event) => updateHero('backgroundVideoUrl', event.target.value)} placeholder="https://.../video.mp4" /></label></div>}
+                </div>
+                <div className="smart-hero-style-controls">
+                  <strong>Estilo</strong>
+                  <div className="smart-hero-style-grid">
+                    <button type="button" className={heroConfig.style === 'explosive' ? 'is-active' : ''} onClick={() => updateHero('style', 'explosive' as HeroStyle)}>Preço explosivo animado</button>
+                    <button type="button" className={heroConfig.style === 'bands' ? 'is-active' : ''} onClick={() => updateHero('style', 'bands' as HeroStyle)}>Faixas de oferta</button>
+                    <button type="button" className={heroConfig.style === 'clean' ? 'is-active' : ''} onClick={() => updateHero('style', 'clean' as HeroStyle)}>Clean Motion</button>
+                  </div>
+                  <div className="smart-hero-color-row">
+                    <label>Cor 1<input type="color" value={heroConfig.styleColor1} onChange={(event) => updateHero('styleColor1', event.target.value)} /></label>
+                    <label>Cor 2<input type="color" value={heroConfig.styleColor2} onChange={(event) => updateHero('styleColor2', event.target.value)} /></label>
+                    <label>Cor 3<input type="color" value={heroConfig.styleColor3} onChange={(event) => updateHero('styleColor3', event.target.value)} /></label>
+                  </div>
+                </div>
                 <div className="smart-scene-control-grid smart-scene-control-grid-three">
-                  <label>Visual<select value={heroConfig.preset} onChange={(event) => updateHero('preset', event.target.value as HeroPreset)}><option value="tabloid">Tabloide Clássico</option><option value="explosive">Oferta Explosiva</option><option value="clean">Oferta Limpa</option></select></label>
                   <label>Preço<input value={heroConfig.price} onChange={(event) => updateHero('price', event.target.value)} maxLength={32} /></label>
                   <label>Unidade<input value={heroConfig.unit} onChange={(event) => updateHero('unit', event.target.value)} maxLength={16} /></label>
                 </div>

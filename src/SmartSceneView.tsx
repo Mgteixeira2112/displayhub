@@ -1,6 +1,7 @@
 import { getHeroConfig, heroStyleVars } from './smart-scene-hero-config'
 import './smart-scenes.css'
 import './smart-scenes-hero.css'
+import './smart-scenes-hero-layers.css'
 
 export type SmartSceneData = {
   id: string
@@ -17,11 +18,12 @@ export type SmartSceneData = {
 
 export default function SmartSceneView({ scene, className = '' }: { scene: SmartSceneData; className?: string }) {
   const hero = getHeroConfig(scene.config)
-  const heroClass = scene.scene_type === 'hero' ? ` smart-hero-preset-${hero.preset}` : ''
+  const heroClass = scene.scene_type === 'hero' ? ` smart-hero-style-${hero.style}` : ''
   const productText = scene.primary_text.trim()
   const secondaryText = scene.secondary_text.trim()
   const priceText = hero.price.trim()
   const unitText = hero.unit.trim()
+  const videoUrl = hero.backgroundVideoUrl.trim()
 
   return (
     <div
@@ -29,7 +31,15 @@ export default function SmartSceneView({ scene, className = '' }: { scene: Smart
       data-scene-orientation={scene.orientation}
       style={scene.scene_type === 'hero' ? heroStyleVars(hero, productText) : undefined}
     >
-      <div className="smart-scene-glow" />
+      {scene.scene_type === 'hero' && (
+        <>
+          <div className={`smart-hero-background is-${hero.backgroundMode}`}>
+            {hero.backgroundMode === 'video' && videoUrl && <video className="smart-hero-background-video" src={videoUrl} autoPlay muted loop playsInline />}
+          </div>
+          <div className={`smart-hero-style-layer smart-hero-style-${hero.style}`}><i className="shape-a"/><i className="shape-b"/><i className="shape-c"/></div>
+        </>
+      )}
+      {scene.scene_type !== 'hero' && <div className="smart-scene-glow" />}
       {scene.scene_type !== 'hero' && <div className="smart-scene-visual" />}
       <div className="smart-scene-copy">
         {scene.scene_type !== 'hero' && <span>{scene.headline}</span>}

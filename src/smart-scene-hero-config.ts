@@ -1,10 +1,17 @@
 import type { CSSProperties } from 'react'
 import './smart-scenes-hero-v2.css'
 
-export type HeroPreset = 'tabloid' | 'explosive' | 'clean'
+export type HeroStyle = 'explosive' | 'bands' | 'clean'
+export type HeroBackgroundMode = 'none' | 'solid' | 'video'
 
 export type HeroConfig = {
-  preset: HeroPreset
+  style: HeroStyle
+  backgroundMode: HeroBackgroundMode
+  backgroundColor: string
+  backgroundVideoUrl: string
+  styleColor1: string
+  styleColor2: string
+  styleColor3: string
   price: string
   unit: string
   productColor: string
@@ -17,16 +24,16 @@ export type HeroConfig = {
   priceRotation: number
   priceX: number
   priceY: number
-  badgeColor: string
-  badgeBackground: string
-  badgeSize: number
-  badgeRotation: number
-  badgeX: number
-  badgeY: number
 }
 
 const defaults: HeroConfig = {
-  preset: 'tabloid',
+  style: 'explosive',
+  backgroundMode: 'solid',
+  backgroundColor: '#ffd400',
+  backgroundVideoUrl: '',
+  styleColor1: '#d80d0d',
+  styleColor2: '#ff7a00',
+  styleColor3: '#ffd400',
   price: 'R$ 24,90',
   unit: 'UN',
   productColor: '#d80d0d',
@@ -39,12 +46,6 @@ const defaults: HeroConfig = {
   priceRotation: -3,
   priceX: 0,
   priceY: 0,
-  badgeColor: '#ffffff',
-  badgeBackground: '#d80d0d',
-  badgeSize: 100,
-  badgeRotation: 0,
-  badgeX: 0,
-  badgeY: 0,
 }
 
 function numberValue(value: unknown, fallback: number, min: number, max: number) {
@@ -64,9 +65,23 @@ function optionalStringValue(value: unknown, fallback: string) {
 export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
   const raw = config?.hero
   const hero = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {}
-  const preset = hero.preset === 'explosive' || hero.preset === 'clean' ? hero.preset : 'tabloid'
+  const legacyPreset = hero.preset
+  const style: HeroStyle = hero.style === 'bands' || hero.style === 'clean' || hero.style === 'explosive'
+    ? hero.style
+    : legacyPreset === 'clean'
+      ? 'clean'
+      : legacyPreset === 'tabloid'
+        ? 'bands'
+        : 'explosive'
+  const backgroundMode: HeroBackgroundMode = hero.backgroundMode === 'none' || hero.backgroundMode === 'video' ? hero.backgroundMode : 'solid'
   return {
-    preset,
+    style,
+    backgroundMode,
+    backgroundColor: stringValue(hero.backgroundColor, defaults.backgroundColor),
+    backgroundVideoUrl: optionalStringValue(hero.backgroundVideoUrl, defaults.backgroundVideoUrl),
+    styleColor1: stringValue(hero.styleColor1, defaults.styleColor1),
+    styleColor2: stringValue(hero.styleColor2, defaults.styleColor2),
+    styleColor3: stringValue(hero.styleColor3, defaults.styleColor3),
     price: optionalStringValue(hero.price, defaults.price),
     unit: optionalStringValue(hero.unit, defaults.unit),
     productColor: stringValue(hero.productColor, defaults.productColor),
@@ -79,18 +94,16 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
     priceRotation: numberValue(hero.priceRotation, defaults.priceRotation, -15, 15),
     priceX: numberValue(hero.priceX, defaults.priceX, -40, 40),
     priceY: numberValue(hero.priceY, defaults.priceY, -40, 40),
-    badgeColor: stringValue(hero.badgeColor, defaults.badgeColor),
-    badgeBackground: stringValue(hero.badgeBackground, defaults.badgeBackground),
-    badgeSize: numberValue(hero.badgeSize, defaults.badgeSize, 70, 140),
-    badgeRotation: numberValue(hero.badgeRotation, defaults.badgeRotation, -15, 15),
-    badgeX: numberValue(hero.badgeX, defaults.badgeX, -40, 40),
-    badgeY: numberValue(hero.badgeY, defaults.badgeY, -40, 40),
   }
 }
 
 export function heroStyleVars(config: HeroConfig, productText = ''): CSSProperties {
   const lengthFit = productText.length > 24 ? .66 : productText.length > 18 ? .74 : productText.length > 13 ? .84 : productText.length > 9 ? .92 : 1
   return {
+    '--hero-background-color': config.backgroundColor,
+    '--hero-style-color-1': config.styleColor1,
+    '--hero-style-color-2': config.styleColor2,
+    '--hero-style-color-3': config.styleColor3,
     '--hero-product-color': config.productColor,
     '--hero-product-scale': String((config.productSize / 100) * lengthFit),
     '--hero-product-rotation': `${config.productRotation}deg`,
@@ -101,11 +114,5 @@ export function heroStyleVars(config: HeroConfig, productText = ''): CSSProperti
     '--hero-price-rotation': `${config.priceRotation}deg`,
     '--hero-price-x': `${config.priceX}%`,
     '--hero-price-y': `${config.priceY}%`,
-    '--hero-badge-color': config.badgeColor,
-    '--hero-badge-background': config.badgeBackground,
-    '--hero-badge-scale': String(config.badgeSize / 100),
-    '--hero-badge-rotation': `${config.badgeRotation}deg`,
-    '--hero-badge-x': `${config.badgeX}%`,
-    '--hero-badge-y': `${config.badgeY}%`,
   } as CSSProperties
 }
