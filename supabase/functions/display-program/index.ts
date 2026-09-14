@@ -40,6 +40,16 @@ type DeviceMapping = {
   player_token?: string
 }
 
+type RegisteredPlayerDevice = {
+  id: string
+  company_id: string
+  hostname: string | null
+  platform: string
+  monitors: unknown
+  mappings: unknown
+  updated_at: string
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
@@ -86,21 +96,20 @@ Deno.serve(async (req: Request) => {
         publications = (data || []) as ProgramPublication[]
       }
     } else {
-      const { data: device, error: deviceError } = await db
-        .from('player_devices')
-        .select('id,company_id,hostname,platform,monitors,mappings,updated_at')
-        .neq('platform', 'windows')
-        .contains('mappings', [{ player_token: token }])
-        .maybeSingle()
+      const { data: deviceRows, error: deviceError } = await db.rpc('resolve_registered_device_player', {
+        p_player_token: token,
+      })
 
       if (deviceError) throw deviceError
+      const device = Array.isArray(deviceRows) ? deviceRows[0] as RegisteredPlayerDevice | undefined : undefined
       if (!device) return json({ error: 'display_unavailable' }, 404)
 
       const mappings = Array.isArray(device.mappings) ? device.mappings as DeviceMapping[] : []
       const mapping = mappings.find((row) => row?.physical_display_id === 'browser' && row?.player_token === token && row?.playlist_id)
       if (!mapping?.playlist_id) return json({ error: 'display_unavailable' }, 404)
 
-      const primaryMonitor = Array.isArray(device.monitors) ? device.monitors[0] : null
+      const monitors = Array.isArray(device.monitors) ? device.monitors as Array<{ width?: number; height?: number }> : []
+      const primaryMonitor = monitors[0] || null
       const width = Math.max(320, Number(primaryMonitor?.width || 1920))
       const height = Math.max(320, Number(primaryMonitor?.height || 1080))
 
