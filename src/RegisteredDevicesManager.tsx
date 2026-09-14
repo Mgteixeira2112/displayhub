@@ -15,7 +15,6 @@ type DisplayOption = {
   id: string
   name: string
   location: string | null
-  public_token: string
 }
 
 type QrConstructor = new (
@@ -38,14 +37,13 @@ function formatLastSeen(lastSeenAt: string) {
   return new Date(lastSeenAt).toLocaleString('pt-BR')
 }
 
-function displayPlayerUrl(publicToken: string) {
-  const route = `display/${publicToken}`
-  return `${window.location.origin}${import.meta.env.BASE_URL}?p=${encodeURIComponent(route)}`
+function deviceRecoveryUrl(deviceId: string) {
+  return `${window.location.origin}${import.meta.env.BASE_URL}device-registered.html?device=${encodeURIComponent(deviceId)}`
 }
 
-function StoredDisplayQr({ display, onFeedback }: { display: DisplayOption; onFeedback: (message: string) => void }) {
+function DeviceRecoveryQr({ device, onFeedback }: { device: RegisteredDevice; onFeedback: (message: string) => void }) {
   const qrRef = useRef<HTMLDivElement | null>(null)
-  const url = useMemo(() => displayPlayerUrl(display.public_token), [display.public_token])
+  const url = useMemo(() => deviceRecoveryUrl(device.id), [device.id])
 
   useEffect(() => {
     const container = qrRef.current
@@ -65,7 +63,7 @@ function StoredDisplayQr({ display, onFeedback }: { display: DisplayOption; onFe
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(url)
-      onFeedback('Link da tela copiado.')
+      onFeedback('Link de recuperação do dispositivo copiado.')
     } catch {
       onFeedback('Não foi possível copiar o link automaticamente.')
     }
@@ -75,11 +73,12 @@ function StoredDisplayQr({ display, onFeedback }: { display: DisplayOption; onFe
     <div className="registered-device-qr">
       <div ref={qrRef} className="registered-device-qr-image" />
       <div className="registered-device-qr-copy">
-        <strong>QR de recuperação da tela</strong>
-        <span>{display.name}{display.location ? ` · ${display.location}` : ''}</span>
+        <strong>QR de recuperação do dispositivo</strong>
+        <span>{device.hostname || 'Dispositivo sem nome'} · {formatPlatform(device.platform)}</span>
+        <span>Use este QR no próprio aparelho para voltar ao Player conectado ao DisplayHub. Ele não muda quando a tela associada é alterada.</span>
         <div className="registered-device-inline-actions">
           <button type="button" onClick={() => void copyLink()}>Copiar link</button>
-          <a href={url} target="_blank" rel="noreferrer">Abrir tela</a>
+          <a href={url} target="_blank" rel="noreferrer">Abrir recuperação</a>
         </div>
       </div>
     </div>
@@ -105,7 +104,7 @@ export default function RegisteredDevicesManager() {
         .order('created_at', { ascending: false }),
       supabase
         .from('displays')
-        .select('id,name,location,public_token')
+        .select('id,name,location')
         .eq('is_active', true)
         .is('revoked_at', null)
         .order('name', { ascending: true }),
@@ -254,12 +253,10 @@ export default function RegisteredDevicesManager() {
                       : 'Sem tela associada. Assim que uma tela for escolhida, o dispositivo receberá a configuração automaticamente.'}
                   </div>
 
-                  {assignedDisplay && (
-                    <StoredDisplayQr
-                      display={assignedDisplay}
-                      onFeedback={(message) => setFeedbackByDevice((current) => ({ ...current, [device.id]: message }))}
-                    />
-                  )}
+                  <DeviceRecoveryQr
+                    device={device}
+                    onFeedback={(message) => setFeedbackByDevice((current) => ({ ...current, [device.id]: message }))}
+                  />
 
                   {feedback && <div className="windows-devices-feedback">{feedback}</div>}
                 </div>
