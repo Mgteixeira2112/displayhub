@@ -1,4 +1,5 @@
 import './smart-scenes.css'
+import './smart-scenes-hero.css'
 
 export type SmartSceneData = {
   id: string
