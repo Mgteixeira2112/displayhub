@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import './smart-scenes-hero-v2.css'
+import './smart-scenes-hero-text-animations.css'
 
 export type HeroStyle = 'explosive' | 'bands' | 'clean'
 export type HeroBackgroundMode = 'none' | 'solid' | 'video'
