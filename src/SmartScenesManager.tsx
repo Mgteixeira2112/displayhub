@@ -236,11 +236,21 @@ export default function SmartScenesManager() {
                   <label>Tamanho<input type="range" min="60" max="150" value={heroConfig.productSize} onChange={(event) => updateHero('productSize', Number(event.target.value))} /><span>{heroConfig.productSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.productRotation} onChange={(event) => updateHero('productRotation', Number(event.target.value))} /><span>{heroConfig.productRotation}°</span></label>
                 </div>
+                <div className="smart-hero-position-control">
+                  <span>Posição do produto</span>
+                  <label>X<input type="range" min="-40" max="40" value={heroConfig.productX} onChange={(event) => updateHero('productX', Number(event.target.value))} /><span>{heroConfig.productX}</span></label>
+                  <label>Y<input type="range" min="-40" max="40" value={heroConfig.productY} onChange={(event) => updateHero('productY', Number(event.target.value))} /><span>{heroConfig.productY}</span></label>
+                </div>
                 <div className="smart-hero-text-control">
                   <strong>Preço</strong>
                   <label>Cor<input type="color" value={heroConfig.priceColor} onChange={(event) => updateHero('priceColor', event.target.value)} /></label>
                   <label>Tamanho<input type="range" min="60" max="160" value={heroConfig.priceSize} onChange={(event) => updateHero('priceSize', Number(event.target.value))} /><span>{heroConfig.priceSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.priceRotation} onChange={(event) => updateHero('priceRotation', Number(event.target.value))} /><span>{heroConfig.priceRotation}°</span></label>
+                </div>
+                <div className="smart-hero-position-control">
+                  <span>Posição do preço</span>
+                  <label>X<input type="range" min="-40" max="40" value={heroConfig.priceX} onChange={(event) => updateHero('priceX', Number(event.target.value))} /><span>{heroConfig.priceX}</span></label>
+                  <label>Y<input type="range" min="-40" max="40" value={heroConfig.priceY} onChange={(event) => updateHero('priceY', Number(event.target.value))} /><span>{heroConfig.priceY}</span></label>
                 </div>
                 <div className="smart-hero-text-control smart-hero-text-control-badge">
                   <strong>Selo</strong>
@@ -248,6 +258,11 @@ export default function SmartScenesManager() {
                   <label>Fundo<input type="color" value={heroConfig.badgeBackground} onChange={(event) => updateHero('badgeBackground', event.target.value)} /></label>
                   <label>Tamanho<input type="range" min="70" max="140" value={heroConfig.badgeSize} onChange={(event) => updateHero('badgeSize', Number(event.target.value))} /><span>{heroConfig.badgeSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.badgeRotation} onChange={(event) => updateHero('badgeRotation', Number(event.target.value))} /><span>{heroConfig.badgeRotation}°</span></label>
+                </div>
+                <div className="smart-hero-position-control">
+                  <span>Posição do selo</span>
+                  <label>X<input type="range" min="-40" max="40" value={heroConfig.badgeX} onChange={(event) => updateHero('badgeX', Number(event.target.value))} /><span>{heroConfig.badgeX}</span></label>
+                  <label>Y<input type="range" min="-40" max="40" value={heroConfig.badgeY} onChange={(event) => updateHero('badgeY', Number(event.target.value))} /><span>{heroConfig.badgeY}</span></label>
                 </div>
               </div>
             )}
