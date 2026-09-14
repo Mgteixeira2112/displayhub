@@ -36,7 +36,11 @@ export default function SmartSceneView({ scene, className = '' }: { scene: Smart
           <div className={`smart-hero-background is-${hero.backgroundMode}`}>
             {hero.backgroundMode === 'video' && videoUrl && <video className="smart-hero-background-video" src={videoUrl} autoPlay muted loop playsInline />}
           </div>
-          <div className={`smart-hero-style-layer smart-hero-style-${hero.style}`}><i className="shape-a"/><i className="shape-b"/><i className="shape-c"/></div>
+          <div className={`smart-hero-style-layer smart-hero-style-${hero.style}`}>
+            {hero.element1Enabled && <i className={`hero-style-element element-1 type-${hero.element1Type}`} />}
+            {hero.element2Enabled && <i className={`hero-style-element element-2 type-${hero.element2Type}`} />}
+            {hero.element3Enabled && <i className={`hero-style-element element-3 type-${hero.element3Type}`} />}
+          </div>
         </>
       )}
       {scene.scene_type !== 'hero' && <div className="smart-scene-glow" />}

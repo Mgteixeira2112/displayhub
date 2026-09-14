@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { supabase } from './lib/supabase'
-import { getHeroConfig, heroStyleVars, type HeroBackgroundMode, type HeroConfig, type HeroStyle } from './smart-scene-hero-config'
+import { getHeroConfig, heroStylePreset, heroStyleVars, type HeroBackgroundMode, type HeroConfig, type HeroElementType, type HeroStyle } from './smart-scene-hero-config'
 import './smart-scenes.css'
 import './smart-scenes-hero.css'
 import './smart-scenes-hero-layers.css'
@@ -33,6 +33,14 @@ const scenes: Scene[] = [
   { key: 'data', name: 'Data Live', category: 'Dinâmico', orientation: 'Horizontal / Vertical', intensity: 'Alta', accent: 'Dados em tempo real' },
   { key: 'countdown', name: 'Countdown', category: 'Urgência', orientation: 'Horizontal / Vertical', intensity: 'Alta', accent: 'Contagem regressiva' },
   { key: 'panorama', name: 'Panorama', category: 'Video Wall', orientation: 'Ultrawide / Wall', intensity: 'Imersiva', accent: 'Múltiplas telas' },
+]
+
+const heroElementOptions: { value: HeroElementType; label: string }[] = [
+  { value: 'burst', label: 'Explosão' },
+  { value: 'band', label: 'Faixa' },
+  { value: 'circle', label: 'Círculo' },
+  { value: 'block', label: 'Bloco' },
+  { value: 'glow', label: 'Brilho' },
 ]
 
 function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced', heroConfig, editableHero = false, onHeroPositionChange }: {
@@ -118,7 +126,11 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
           <div className={`smart-hero-background is-${hero.backgroundMode}`}>
             {hero.backgroundMode === 'video' && videoUrl && <video className="smart-hero-background-video" src={videoUrl} autoPlay muted loop playsInline />}
           </div>
-          <div className={`smart-hero-style-layer smart-hero-style-${hero.style}`}><i className="shape-a"/><i className="shape-b"/><i className="shape-c"/></div>
+          <div className={`smart-hero-style-layer smart-hero-style-${hero.style}`}>
+            {hero.element1Enabled && <i className={`hero-style-element element-1 type-${hero.element1Type}`} />}
+            {hero.element2Enabled && <i className={`hero-style-element element-2 type-${hero.element2Type}`} />}
+            {hero.element3Enabled && <i className={`hero-style-element element-3 type-${hero.element3Type}`} />}
+          </div>
         </>
       )}
       {scene.key !== 'hero' && <div className="smart-scene-glow" />}
@@ -185,6 +197,11 @@ export default function SmartScenesManager() {
 
   function updateHero<K extends keyof HeroConfig>(key: K, value: HeroConfig[K]) {
     setHeroConfig((current) => ({ ...current, [key]: value }))
+  }
+
+  function applyHeroStyle(style: HeroStyle) {
+    const [element1Type, element2Type, element3Type] = heroStylePreset(style)
+    setHeroConfig((current) => ({ ...current, style, element1Type, element2Type, element3Type }))
   }
 
   function moveHero(target: HeroDragTarget, x: number, y: number) {
@@ -310,14 +327,26 @@ export default function SmartScenesManager() {
                 <div className="smart-hero-style-controls">
                   <strong>Estilo</strong>
                   <div className="smart-hero-style-grid">
-                    <button type="button" className={heroConfig.style === 'explosive' ? 'is-active' : ''} onClick={() => updateHero('style', 'explosive' as HeroStyle)}>Preço explosivo animado</button>
-                    <button type="button" className={heroConfig.style === 'bands' ? 'is-active' : ''} onClick={() => updateHero('style', 'bands' as HeroStyle)}>Faixas de oferta</button>
-                    <button type="button" className={heroConfig.style === 'clean' ? 'is-active' : ''} onClick={() => updateHero('style', 'clean' as HeroStyle)}>Clean Motion</button>
+                    <button type="button" className={heroConfig.style === 'explosive' ? 'is-active' : ''} onClick={() => applyHeroStyle('explosive')}>Preço explosivo animado</button>
+                    <button type="button" className={heroConfig.style === 'bands' ? 'is-active' : ''} onClick={() => applyHeroStyle('bands')}>Faixas de oferta</button>
+                    <button type="button" className={heroConfig.style === 'clean' ? 'is-active' : ''} onClick={() => applyHeroStyle('clean')}>Clean Motion</button>
                   </div>
-                  <div className="smart-hero-color-row">
-                    <label>Cor 1<input type="color" value={heroConfig.styleColor1} onChange={(event) => updateHero('styleColor1', event.target.value)} /></label>
-                    <label>Cor 2<input type="color" value={heroConfig.styleColor2} onChange={(event) => updateHero('styleColor2', event.target.value)} /></label>
-                    <label>Cor 3<input type="color" value={heroConfig.styleColor3} onChange={(event) => updateHero('styleColor3', event.target.value)} /></label>
+                  <div className="smart-hero-element-list">
+                    <div className="smart-hero-element-row">
+                      <label className="smart-hero-element-toggle"><input type="checkbox" checked={heroConfig.element1Enabled} onChange={(event) => updateHero('element1Enabled', event.target.checked)} />Elemento 1</label>
+                      <label>Tipo<select value={heroConfig.element1Type} onChange={(event) => updateHero('element1Type', event.target.value as HeroElementType)}>{heroElementOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                      <label>Cor<input type="color" value={heroConfig.element1Color} onChange={(event) => updateHero('element1Color', event.target.value)} /></label>
+                    </div>
+                    <div className="smart-hero-element-row">
+                      <label className="smart-hero-element-toggle"><input type="checkbox" checked={heroConfig.element2Enabled} onChange={(event) => updateHero('element2Enabled', event.target.checked)} />Elemento 2</label>
+                      <label>Tipo<select value={heroConfig.element2Type} onChange={(event) => updateHero('element2Type', event.target.value as HeroElementType)}>{heroElementOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                      <label>Cor<input type="color" value={heroConfig.element2Color} onChange={(event) => updateHero('element2Color', event.target.value)} /></label>
+                    </div>
+                    <div className="smart-hero-element-row">
+                      <label className="smart-hero-element-toggle"><input type="checkbox" checked={heroConfig.element3Enabled} onChange={(event) => updateHero('element3Enabled', event.target.checked)} />Elemento 3</label>
+                      <label>Tipo<select value={heroConfig.element3Type} onChange={(event) => updateHero('element3Type', event.target.value as HeroElementType)}>{heroElementOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                      <label>Cor<input type="color" value={heroConfig.element3Color} onChange={(event) => updateHero('element3Color', event.target.value)} /></label>
+                    </div>
                   </div>
                 </div>
                 <div className="smart-scene-control-grid smart-scene-control-grid-three">
