@@ -9,6 +9,41 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if (window.location.hostname === 'mgteixeira2112.github.io' && window.location.pathname.startsWith('/displayhub/display/')) {
+        let currentDisplayHubVersion = ''
+
+        async function displayHubPublishedVersion() {
+          const response = await fetch(`/displayhub/index.html?v=${Date.now()}`, { cache: 'no-store' })
+          if (!response.ok) return ''
+          const html = await response.text()
+          const bytes = new TextEncoder().encode(html)
+          const digest = await crypto.subtle.digest('SHA-256', bytes)
+          return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+        }
+
+        async function refreshDisplayHubWhenPublished() {
+          try {
+            const nextVersion = await displayHubPublishedVersion()
+            if (!nextVersion) return
+            if (!currentDisplayHubVersion) {
+              currentDisplayHubVersion = nextVersion
+              return
+            }
+            if (nextVersion !== currentDisplayHubVersion) {
+              const nextUrl = new URL(window.location.href)
+              nextUrl.searchParams.set('dhv', nextVersion.slice(0, 12))
+              window.location.replace(nextUrl.toString())
+            }
+          } catch {
+            return
+          }
+        }
+
+        void refreshDisplayHubWhenPublished()
+        window.setInterval(() => void refreshDisplayHubWhenPublished(), 15000)
+      }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
