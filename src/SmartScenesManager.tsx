@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { supabase } from './lib/supabase'
 import { getHeroConfig, heroStyleVars, type HeroConfig, type HeroPreset } from './smart-scene-hero-config'
 import './smart-scenes.css'
@@ -8,6 +8,7 @@ type SceneKind = 'hero' | 'split' | 'spotlight' | 'data' | 'countdown' | 'panora
 type Orientation = 'auto' | 'landscape' | 'portrait' | 'ultrawide'
 type Intensity = 'minimal' | 'commercial' | 'impact' | 'immersive'
 type Motion = 'soft' | 'balanced' | 'strong'
+type HeroDragTarget = 'product' | 'price' | 'badge'
 type Scene = { key: SceneKind; name: string; category: string; orientation: string; intensity: string; accent: string }
 type SavedScene = {
   id: string
@@ -33,7 +34,7 @@ const scenes: Scene[] = [
   { key: 'panorama', name: 'Panorama', category: 'Video Wall', orientation: 'Ultrawide / Wall', intensity: 'Imersiva', accent: 'Múltiplas telas' },
 ]
 
-function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced', heroConfig }: {
+function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced', heroConfig, editableHero = false, onHeroPositionChange }: {
   scene: Scene
   headline?: string
   primaryText?: string
@@ -42,23 +43,78 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   intensity?: Intensity
   motion?: Motion
   heroConfig?: HeroConfig
+  editableHero?: boolean
+  onHeroPositionChange?: (target: HeroDragTarget, x: number, y: number) => void
 }) {
   const hero = heroConfig || getHeroConfig()
+  const dragRef = useRef<{ target: HeroDragTarget; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; width: number; height: number } | null>(null)
   const displayPrimary = primaryText || (scene.key === 'hero' ? 'QUEIJO MINAS FRESCAL' : scene.key === 'countdown' ? '02:14:36' : scene.key === 'data' ? 'R$ 24,90' : 'DESTAQUE')
   const heroClass = scene.key === 'hero' ? ` smart-hero-preset-${hero.preset}` : ''
+
+  function heroPosition(target: HeroDragTarget) {
+    if (target === 'product') return { x: hero.productX, y: hero.productY }
+    if (target === 'price') return { x: hero.priceX, y: hero.priceY }
+    return { x: hero.badgeX, y: hero.badgeY }
+  }
+
+  function beginHeroDrag(event: ReactPointerEvent<HTMLElement>, target: HeroDragTarget) {
+    if (!editableHero || scene.key !== 'hero' || !onHeroPositionChange) return
+    const frame = target === 'badge'
+      ? event.currentTarget.getBoundingClientRect()
+      : event.currentTarget.closest('.smart-scene-copy')?.getBoundingClientRect()
+    if (!frame) return
+    const position = heroPosition(target)
+    event.preventDefault()
+    event.stopPropagation()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    dragRef.current = {
+      target,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startX: position.x,
+      startY: position.y,
+      width: Math.max(frame.width, 1),
+      height: Math.max(frame.height, 1),
+    }
+  }
+
+  function moveHeroDrag(event: ReactPointerEvent<HTMLElement>) {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId || !onHeroPositionChange) return
+    event.preventDefault()
+    const nextX = Math.max(-40, Math.min(40, drag.startX + ((event.clientX - drag.startClientX) / drag.width) * 100))
+    const nextY = Math.max(-40, Math.min(40, drag.startY + ((event.clientY - drag.startClientY) / drag.height) * 100))
+    onHeroPositionChange(drag.target, Math.round(nextX), Math.round(nextY))
+  }
+
+  function endHeroDrag(event: ReactPointerEvent<HTMLElement>) {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+    dragRef.current = null
+  }
+
+  const dragHandlers = (target: HeroDragTarget) => editableHero && scene.key === 'hero' ? {
+    onPointerDown: (event: ReactPointerEvent<HTMLElement>) => beginHeroDrag(event, target),
+    onPointerMove: moveHeroDrag,
+    onPointerUp: endHeroDrag,
+    onPointerCancel: endHeroDrag,
+  } : {}
+
   return (
     <div
-      className={`smart-scene-preview smart-scene-${scene.key} smart-scene-intensity-${intensity} smart-scene-motion-${motion}${heroClass}`}
+      className={`smart-scene-preview smart-scene-${scene.key} smart-scene-intensity-${intensity} smart-scene-motion-${motion}${heroClass}${editableHero && scene.key === 'hero' ? ' is-hero-editable' : ''}`}
       data-scene-orientation={orientation}
       style={scene.key === 'hero' ? heroStyleVars(hero, displayPrimary) : undefined}
       aria-hidden="true"
     >
       <div className="smart-scene-glow" />
-      <div className="smart-scene-visual" />
+      <div className="smart-scene-visual" {...dragHandlers('badge')} />
       <div className="smart-scene-copy">
         <span>{headline || (scene.key === 'hero' ? 'OFERTA' : scene.category)}</span>
-        <strong>{displayPrimary}</strong>
-        {scene.key === 'hero' && <div className="smart-hero-price-row"><b>{hero.price}</b><em>{hero.unit}</em></div>}
+        <strong {...dragHandlers('product')}>{displayPrimary}</strong>
+        {scene.key === 'hero' && <div className="smart-hero-price-row" {...dragHandlers('price')}><b>{hero.price}</b><em>{hero.unit}</em></div>}
         <small>{secondaryText || scene.accent}</small>
       </div>
       {scene.key === 'panorama' && <div className="smart-scene-wall-grid"><i/><i/><i/></div>}
@@ -117,6 +173,14 @@ export default function SmartScenesManager() {
 
   function updateHero<K extends keyof HeroConfig>(key: K, value: HeroConfig[K]) {
     setHeroConfig((current) => ({ ...current, [key]: value }))
+  }
+
+  function moveHero(target: HeroDragTarget, x: number, y: number) {
+    setHeroConfig((current) => {
+      if (target === 'product') return { ...current, productX: x, productY: y }
+      if (target === 'price') return { ...current, priceX: x, priceY: y }
+      return { ...current, badgeX: x, badgeY: y }
+    })
   }
 
   function toggleScene(kind: SceneKind) {
@@ -214,7 +278,7 @@ export default function SmartScenesManager() {
 
       {editorScene && (
         <form className="smart-scene-editor" onSubmit={saveScene}>
-          <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} orientation={orientation} intensity={intensity} motion={motion} heroConfig={heroConfig} />
+          <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} orientation={orientation} intensity={intensity} motion={motion} heroConfig={heroConfig} editableHero={editorKind === 'hero'} onHeroPositionChange={moveHero} />
           <div className="smart-scene-editor-fields">
             <div className="smart-scene-editor-title"><strong>{editingId ? 'Editar Smart Scene' : 'Nova Smart Scene'}</strong><button type="button" onClick={() => { setEditorKind(null); setEditingId(null) }}>×</button></div>
             <label>Nome<input value={name} onChange={(event) => setName(event.target.value)} required minLength={2} maxLength={120} /></label>
@@ -236,21 +300,11 @@ export default function SmartScenesManager() {
                   <label>Tamanho<input type="range" min="60" max="150" value={heroConfig.productSize} onChange={(event) => updateHero('productSize', Number(event.target.value))} /><span>{heroConfig.productSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.productRotation} onChange={(event) => updateHero('productRotation', Number(event.target.value))} /><span>{heroConfig.productRotation}°</span></label>
                 </div>
-                <div className="smart-hero-position-control">
-                  <span>Posição do produto</span>
-                  <label>X<input type="range" min="-40" max="40" value={heroConfig.productX} onChange={(event) => updateHero('productX', Number(event.target.value))} /><span>{heroConfig.productX}</span></label>
-                  <label>Y<input type="range" min="-40" max="40" value={heroConfig.productY} onChange={(event) => updateHero('productY', Number(event.target.value))} /><span>{heroConfig.productY}</span></label>
-                </div>
                 <div className="smart-hero-text-control">
                   <strong>Preço</strong>
                   <label>Cor<input type="color" value={heroConfig.priceColor} onChange={(event) => updateHero('priceColor', event.target.value)} /></label>
                   <label>Tamanho<input type="range" min="60" max="160" value={heroConfig.priceSize} onChange={(event) => updateHero('priceSize', Number(event.target.value))} /><span>{heroConfig.priceSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.priceRotation} onChange={(event) => updateHero('priceRotation', Number(event.target.value))} /><span>{heroConfig.priceRotation}°</span></label>
-                </div>
-                <div className="smart-hero-position-control">
-                  <span>Posição do preço</span>
-                  <label>X<input type="range" min="-40" max="40" value={heroConfig.priceX} onChange={(event) => updateHero('priceX', Number(event.target.value))} /><span>{heroConfig.priceX}</span></label>
-                  <label>Y<input type="range" min="-40" max="40" value={heroConfig.priceY} onChange={(event) => updateHero('priceY', Number(event.target.value))} /><span>{heroConfig.priceY}</span></label>
                 </div>
                 <div className="smart-hero-text-control smart-hero-text-control-badge">
                   <strong>Selo</strong>
@@ -258,11 +312,6 @@ export default function SmartScenesManager() {
                   <label>Fundo<input type="color" value={heroConfig.badgeBackground} onChange={(event) => updateHero('badgeBackground', event.target.value)} /></label>
                   <label>Tamanho<input type="range" min="70" max="140" value={heroConfig.badgeSize} onChange={(event) => updateHero('badgeSize', Number(event.target.value))} /><span>{heroConfig.badgeSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.badgeRotation} onChange={(event) => updateHero('badgeRotation', Number(event.target.value))} /><span>{heroConfig.badgeRotation}°</span></label>
-                </div>
-                <div className="smart-hero-position-control">
-                  <span>Posição do selo</span>
-                  <label>X<input type="range" min="-40" max="40" value={heroConfig.badgeX} onChange={(event) => updateHero('badgeX', Number(event.target.value))} /><span>{heroConfig.badgeX}</span></label>
-                  <label>Y<input type="range" min="-40" max="40" value={heroConfig.badgeY} onChange={(event) => updateHero('badgeY', Number(event.target.value))} /><span>{heroConfig.badgeY}</span></label>
                 </div>
               </div>
             )}
