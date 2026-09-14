@@ -57,14 +57,18 @@ function stringValue(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value : fallback
 }
 
+function optionalStringValue(value: unknown, fallback: string) {
+  return typeof value === 'string' ? value.trim() : fallback
+}
+
 export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
   const raw = config?.hero
   const hero = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {}
   const preset = hero.preset === 'explosive' || hero.preset === 'clean' ? hero.preset : 'tabloid'
   return {
     preset,
-    price: stringValue(hero.price, defaults.price),
-    unit: stringValue(hero.unit, defaults.unit),
+    price: optionalStringValue(hero.price, defaults.price),
+    unit: optionalStringValue(hero.unit, defaults.unit),
     productColor: stringValue(hero.productColor, defaults.productColor),
     productSize: numberValue(hero.productSize, defaults.productSize, 60, 150),
     productRotation: numberValue(hero.productRotation, defaults.productRotation, -15, 15),
