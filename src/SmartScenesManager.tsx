@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { supabase } from './lib/supabase'
-import { getHeroConfig, heroStylePreset, heroStyleVars, type HeroBackgroundMode, type HeroConfig, type HeroElementType, type HeroStyle } from './smart-scene-hero-config'
+import { getHeroConfig, heroStylePreset, heroStyleVars, type HeroBackgroundMode, type HeroConfig, type HeroElementType, type HeroStyle, type HeroTextAnimation } from './smart-scene-hero-config'
 import './smart-scenes.css'
 import './smart-scenes-hero.css'
 import './smart-scenes-hero-layers.css'
@@ -9,7 +9,7 @@ type SceneKind = 'hero' | 'split' | 'spotlight' | 'data' | 'countdown' | 'panora
 type Orientation = 'auto' | 'landscape' | 'portrait' | 'ultrawide'
 type Intensity = 'minimal' | 'commercial' | 'impact' | 'immersive'
 type Motion = 'soft' | 'balanced' | 'strong'
-type HeroDragTarget = 'product' | 'price'
+type HeroDragTarget = 'product' | 'price' | 'unit'
 type HeroElement1Patch = Partial<Pick<HeroConfig, 'element1X' | 'element1Y' | 'element1Width' | 'element1Height' | 'element1Rotation'>>
 type Scene = { key: SceneKind; name: string; category: string; orientation: string; intensity: string; accent: string }
 type SavedScene = {
@@ -42,6 +42,14 @@ const heroElementOptions: { value: HeroElementType; label: string }[] = [
   { value: 'circle', label: 'Círculo' },
   { value: 'block', label: 'Bloco' },
   { value: 'glow', label: 'Brilho' },
+]
+
+const heroTextAnimationOptions: { value: HeroTextAnimation; label: string }[] = [
+  { value: 'pulse', label: 'Pulso' },
+  { value: 'slide', label: 'Deslizar' },
+  { value: 'zoom', label: 'Zoom' },
+  { value: 'float', label: 'Flutuar' },
+  { value: 'blink', label: 'Piscar suave' },
 ]
 
 function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced', heroConfig, editableHero = false, onHeroPositionChange, onHeroElement1Change }: {
@@ -83,10 +91,14 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   const displayPrice = hero.price.trim()
   const displayUnit = hero.unit.trim()
   const videoUrl = hero.backgroundVideoUrl.trim()
+  const productAnimationClass = hero.productAnimationEnabled ? `hero-text-animation-${hero.productAnimation}` : 'hero-text-animation-none'
+  const priceAnimationClass = hero.priceAnimationEnabled ? `hero-text-animation-${hero.priceAnimation}` : 'hero-text-animation-none'
+  const unitAnimationClass = hero.unitAnimationEnabled ? `hero-text-animation-${hero.unitAnimation}` : 'hero-text-animation-none'
 
   function heroPosition(target: HeroDragTarget) {
     if (target === 'product') return { x: hero.productX, y: hero.productY }
-    return { x: hero.priceX, y: hero.priceY }
+    if (target === 'price') return { x: hero.priceX, y: hero.priceY }
+    return { x: hero.unitX, y: hero.unitY }
   }
 
   function beginHeroDrag(event: ReactPointerEvent<HTMLElement>, target: HeroDragTarget) {
@@ -241,8 +253,13 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
       {scene.key !== 'hero' && <div className="smart-scene-visual" />}
       <div className="smart-scene-copy">
         {scene.key !== 'hero' && <span>{headline || scene.category}</span>}
-        {(scene.key !== 'hero' || displayPrimary) && <strong {...dragHandlers('product')}>{displayPrimary}</strong>}
-        {scene.key === 'hero' && displayPrice && <div className="smart-hero-price-row" {...dragHandlers('price')}><b>{displayPrice}</b>{displayUnit && <em>{displayUnit}</em>}</div>}
+        {(scene.key !== 'hero' || displayPrimary) && <strong className={scene.key === 'hero' ? productAnimationClass : undefined} {...dragHandlers('product')}>{displayPrimary}</strong>}
+        {scene.key === 'hero' && (displayPrice || displayUnit) && (
+          <div className="smart-hero-price-row">
+            {displayPrice && <b className={priceAnimationClass} {...dragHandlers('price')}>{displayPrice}</b>}
+            {displayUnit && <em className={unitAnimationClass} {...dragHandlers('unit')}>{displayUnit}</em>}
+          </div>
+        )}
         {(scene.key !== 'hero' || displaySecondary) && <small>{displaySecondary}</small>}
       </div>
       {scene.key === 'panorama' && <div className="smart-scene-wall-grid"><i/><i/><i/></div>}
@@ -309,9 +326,11 @@ export default function SmartScenesManager() {
   }
 
   function moveHero(target: HeroDragTarget, x: number, y: number) {
-    setHeroConfig((current) => target === 'product'
-      ? { ...current, productX: x, productY: y }
-      : { ...current, priceX: x, priceY: y })
+    setHeroConfig((current) => {
+      if (target === 'product') return { ...current, productX: x, productY: y }
+      if (target === 'price') return { ...current, priceX: x, priceY: y }
+      return { ...current, unitX: x, unitY: y }
+    })
   }
 
   function transformHeroElement1(patch: HeroElement1Patch) {
@@ -466,12 +485,24 @@ export default function SmartScenesManager() {
                   <label>Cor<input type="color" value={heroConfig.productColor} onChange={(event) => updateHero('productColor', event.target.value)} /></label>
                   <label>Tamanho<input type="range" min="60" max="150" value={heroConfig.productSize} onChange={(event) => updateHero('productSize', Number(event.target.value))} /><span>{heroConfig.productSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.productRotation} onChange={(event) => updateHero('productRotation', Number(event.target.value))} /><span>{heroConfig.productRotation}°</span></label>
+                  <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.productAnimationEnabled} onChange={(event) => updateHero('productAnimationEnabled', event.target.checked)} />Animar</label>
+                  <label>Animação<select value={heroConfig.productAnimation} disabled={!heroConfig.productAnimationEnabled} onChange={(event) => updateHero('productAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                 </div>
                 <div className="smart-hero-text-control">
                   <strong>Preço</strong>
                   <label>Cor<input type="color" value={heroConfig.priceColor} onChange={(event) => updateHero('priceColor', event.target.value)} /></label>
                   <label>Tamanho<input type="range" min="60" max="160" value={heroConfig.priceSize} onChange={(event) => updateHero('priceSize', Number(event.target.value))} /><span>{heroConfig.priceSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.priceRotation} onChange={(event) => updateHero('priceRotation', Number(event.target.value))} /><span>{heroConfig.priceRotation}°</span></label>
+                  <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.priceAnimationEnabled} onChange={(event) => updateHero('priceAnimationEnabled', event.target.checked)} />Animar</label>
+                  <label>Animação<select value={heroConfig.priceAnimation} disabled={!heroConfig.priceAnimationEnabled} onChange={(event) => updateHero('priceAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                </div>
+                <div className="smart-hero-text-control">
+                  <strong>Unidade</strong>
+                  <label>Cor<input type="color" value={heroConfig.unitColor} onChange={(event) => updateHero('unitColor', event.target.value)} /></label>
+                  <label>Tamanho<input type="range" min="60" max="160" value={heroConfig.unitSize} onChange={(event) => updateHero('unitSize', Number(event.target.value))} /><span>{heroConfig.unitSize}%</span></label>
+                  <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.unitRotation} onChange={(event) => updateHero('unitRotation', Number(event.target.value))} /><span>{heroConfig.unitRotation}°</span></label>
+                  <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.unitAnimationEnabled} onChange={(event) => updateHero('unitAnimationEnabled', event.target.checked)} />Animar</label>
+                  <label>Animação<select value={heroConfig.unitAnimation} disabled={!heroConfig.unitAnimationEnabled} onChange={(event) => updateHero('unitAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                 </div>
               </div>
             )}
