@@ -1,0 +1,217 @@
+/* Campanhas: acabamento profissional do estado expandido sem alterar comportamento. */
+
+.view-campaigns .playlist-card.is-expanded {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .055);
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-card-head {
+  min-height: 56px;
+  padding: 0 52px 0 16px;
+  border: 0;
+  border-bottom: 1px solid #e8edf3;
+  border-radius: 0;
+  background: #fff;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-card-head:hover {
+  background: #fbfdff;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-card-head > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-card-head strong {
+  color: #0f172a;
+  font-size: .86rem;
+  font-weight: 760;
+  letter-spacing: -.01em;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-card-head p {
+  margin: 0;
+  color: #64748b;
+  font-size: .64rem;
+  line-height: 1.25;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-card-head > .danger-button {
+  position: absolute;
+  right: 48px;
+  min-height: 26px;
+  height: 26px;
+  margin: 0;
+  padding-inline: 8px;
+  border-radius: 7px;
+  font-size: .59rem;
+  opacity: .72;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-card-head > .danger-button:hover {
+  opacity: 1;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-card-head::after {
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 7px;
+  background: #f1f5f9;
+  box-shadow: none;
+  color: #475569;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-transition-controls,
+.view-campaigns .playlist-card.is-expanded .playlist-items,
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content,
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-schedule,
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-publications {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-transition-controls {
+  margin-top: 10px;
+  margin-bottom: 0;
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 1px solid #edf1f5;
+  border-radius: 0;
+  background: transparent;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-transition-controls > div > strong {
+  color: #475569;
+  font-size: .62rem;
+  font-weight: 760;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-items {
+  gap: 0;
+  margin-top: 0;
+  padding-top: 2px;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-item,
+.view-campaigns .playlist-card.is-expanded .playlist-item-editable {
+  min-height: 42px;
+  padding: 7px 4px;
+  border: 0;
+  border-bottom: 1px solid #eef2f6;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-item:last-child,
+.view-campaigns .playlist-card.is-expanded .playlist-item-editable:last-child {
+  border-bottom: 0;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-item:hover,
+.view-campaigns .playlist-card.is-expanded .playlist-item-editable:hover {
+  background: #fafcff;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-item-main strong {
+  color: #1e293b;
+  font-size: .7rem;
+  font-weight: 690;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-item-main small {
+  color: #94a3b8;
+}
+
+.view-campaigns .playlist-card.is-expanded .playlist-item-actions button {
+  border-color: #e2e8f0;
+  background: #fff;
+  box-shadow: none;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content {
+  margin-top: 4px;
+  padding: 10px 0 12px;
+  border: 0;
+  border-top: 1px solid #edf1f5;
+  border-radius: 0;
+  background: transparent;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content > h3,
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-schedule .publication-form > h3,
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-publications > h3 {
+  color: #475569;
+  font-size: .62rem;
+  font-weight: 780;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-schedule {
+  margin-top: 0 !important;
+  padding: 12px 0 !important;
+  border: 0 !important;
+  border-top: 1px solid #edf1f5 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-publications {
+  margin-top: 0 !important;
+  padding: 10px 0 14px !important;
+  border-top: 1px solid #edf1f5 !important;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-publications .publication-card {
+  min-height: 32px;
+  padding: 5px 7px;
+  border: 0;
+  border-bottom: 1px solid #eef2f6;
+  border-radius: 0;
+  background: transparent;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-publications .publication-card:last-of-type {
+  border-bottom: 0;
+}
+
+.view-campaigns .playlist-card.is-expanded > .campaign-inline-publications[data-campaign-has-publications='false']::after {
+  padding: 4px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #94a3b8;
+  font-size: .61rem;
+}
+
+@media (max-width: 720px) {
+  .view-campaigns .playlist-card.is-expanded .playlist-card-head {
+    min-height: 62px;
+    padding-left: 12px;
+    padding-right: 48px;
+  }
+
+  .view-campaigns .playlist-card.is-expanded .playlist-card-head > .danger-button {
+    display: none;
+  }
+
+  .view-campaigns .playlist-card.is-expanded .playlist-transition-controls,
+  .view-campaigns .playlist-card.is-expanded .playlist-items,
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content,
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-schedule,
+  .view-campaigns .playlist-card.is-expanded > .campaign-inline-publications {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+}

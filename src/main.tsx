@@ -44,6 +44,7 @@ import './campaigns-playlist-cards-compact.css'
 import './campaigns-playlist-cards-expandable.css'
 import './campaigns-playlist-scheduling-inline.css'
 import './campaigns-playlist-add-content-inline.css'
+import './campaigns-expanded-professional.css'
 
 function getPublicToken() {
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
