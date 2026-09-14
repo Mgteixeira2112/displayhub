@@ -1,0 +1,27 @@
+.smart-scene-hero .smart-hero-price-row{left:0;top:0;rotate:0deg;scale:1;animation:none!important}
+.smart-scene-hero .smart-hero-price-row b{position:relative;left:var(--hero-price-x,0%);top:var(--hero-price-y,0%);rotate:var(--hero-price-rotation,-3deg);scale:var(--hero-price-scale,1);transform-origin:left center}
+.smart-scene-hero .smart-hero-price-row em{position:relative;left:var(--hero-unit-x,0%);top:var(--hero-unit-y,0%);color:var(--hero-unit-color,#111)!important;rotate:var(--hero-unit-rotation,0deg);scale:var(--hero-unit-scale,1);transform-origin:left center}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong,.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-hero-price-row b,.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-hero-price-row em{cursor:grab;touch-action:none;user-select:none}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong:hover,.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-hero-price-row b:hover,.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-hero-price-row em:hover{outline:2px dashed rgba(255,255,255,.88);outline-offset:5px}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong:active,.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-hero-price-row b:active,.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-hero-price-row em:active{cursor:grabbing}
+.hero-text-animation-none{animation:none!important}
+.hero-text-animation-pulse{animation:heroTextPulse 2.2s ease-in-out infinite!important}
+.hero-text-animation-slide{animation:heroTextSlide 2.8s ease-in-out infinite!important}
+.hero-text-animation-zoom{animation:heroTextZoom 2.4s ease-in-out infinite!important}
+.hero-text-animation-float{animation:heroTextFloat 3s ease-in-out infinite!important}
+.hero-text-animation-blink{animation:heroTextBlink 2.6s ease-in-out infinite!important}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong.hero-text-animation-pulse{animation:heroTextPulse 2.2s ease-in-out infinite!important}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong.hero-text-animation-slide{animation:heroTextSlide 2.8s ease-in-out infinite!important}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong.hero-text-animation-zoom{animation:heroTextZoom 2.4s ease-in-out infinite!important}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong.hero-text-animation-float{animation:heroTextFloat 3s ease-in-out infinite!important}
+.smart-scene-preview.smart-scene-hero.is-hero-editable .smart-scene-copy strong.hero-text-animation-blink{animation:heroTextBlink 2.6s ease-in-out infinite!important}
+@keyframes heroTextPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes heroTextSlide{0%,100%{transform:translateX(0)}50%{transform:translateX(8%)}}
+@keyframes heroTextZoom{0%,100%{transform:scale(.96)}50%{transform:scale(1.08)}}
+@keyframes heroTextFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10%)}}
+@keyframes heroTextBlink{0%,100%{opacity:1}45%{opacity:.55}55%{opacity:.55}}
+.smart-hero-text-control{grid-template-columns:minmax(72px,.7fr) repeat(5,minmax(0,1fr))}
+.smart-hero-text-control .smart-hero-animation-toggle{display:flex;align-items:center;gap:.4rem;align-self:center}
+.smart-hero-text-control select{width:100%}
+@media(max-width:1100px){.smart-hero-text-control{grid-template-columns:1fr 1fr 1fr}.smart-hero-text-control>strong{grid-column:1/-1}}
+@media(max-width:760px){.smart-hero-text-control{grid-template-columns:1fr 1fr}.smart-hero-text-control>strong{grid-column:1/-1}}

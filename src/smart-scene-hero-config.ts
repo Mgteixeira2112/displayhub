@@ -1,9 +1,11 @@
 import type { CSSProperties } from 'react'
 import './smart-scenes-hero-v2.css'
+import './smart-scenes-hero-text-animations.css'
 
 export type HeroStyle = 'explosive' | 'bands' | 'clean'
 export type HeroBackgroundMode = 'none' | 'solid' | 'video'
 export type HeroElementType = 'burst' | 'band' | 'circle' | 'block' | 'glow'
+export type HeroTextAnimation = 'pulse' | 'slide' | 'zoom' | 'float' | 'blink'
 
 export type HeroConfig = {
   style: HeroStyle
@@ -34,11 +36,22 @@ export type HeroConfig = {
   productRotation: number
   productX: number
   productY: number
+  productAnimationEnabled: boolean
+  productAnimation: HeroTextAnimation
   priceColor: string
   priceSize: number
   priceRotation: number
   priceX: number
   priceY: number
+  priceAnimationEnabled: boolean
+  priceAnimation: HeroTextAnimation
+  unitColor: string
+  unitSize: number
+  unitRotation: number
+  unitX: number
+  unitY: number
+  unitAnimationEnabled: boolean
+  unitAnimation: HeroTextAnimation
 }
 
 const defaults: HeroConfig = {
@@ -70,11 +83,22 @@ const defaults: HeroConfig = {
   productRotation: 0,
   productX: 0,
   productY: 0,
+  productAnimationEnabled: false,
+  productAnimation: 'pulse',
   priceColor: '#111111',
   priceSize: 100,
   priceRotation: -3,
   priceX: 0,
   priceY: 0,
+  priceAnimationEnabled: false,
+  priceAnimation: 'pulse',
+  unitColor: '#111111',
+  unitSize: 100,
+  unitRotation: 0,
+  unitX: 0,
+  unitY: 0,
+  unitAnimationEnabled: false,
+  unitAnimation: 'float',
 }
 
 function numberValue(value: unknown, fallback: number, min: number, max: number) {
@@ -97,6 +121,10 @@ function booleanValue(value: unknown, fallback: boolean) {
 
 function elementTypeValue(value: unknown, fallback: HeroElementType): HeroElementType {
   return value === 'burst' || value === 'band' || value === 'circle' || value === 'block' || value === 'glow' ? value : fallback
+}
+
+function textAnimationValue(value: unknown, fallback: HeroTextAnimation): HeroTextAnimation {
+  return value === 'pulse' || value === 'slide' || value === 'zoom' || value === 'float' || value === 'blink' ? value : fallback
 }
 
 export function heroStylePreset(style: HeroStyle) {
@@ -150,11 +178,22 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
     productRotation: numberValue(hero.productRotation, defaults.productRotation, -15, 15),
     productX: numberValue(hero.productX, defaults.productX, -40, 40),
     productY: numberValue(hero.productY, defaults.productY, -40, 40),
+    productAnimationEnabled: booleanValue(hero.productAnimationEnabled, defaults.productAnimationEnabled),
+    productAnimation: textAnimationValue(hero.productAnimation, defaults.productAnimation),
     priceColor: stringValue(hero.priceColor, defaults.priceColor),
     priceSize: numberValue(hero.priceSize, defaults.priceSize, 60, 160),
     priceRotation: numberValue(hero.priceRotation, defaults.priceRotation, -15, 15),
     priceX: numberValue(hero.priceX, defaults.priceX, -40, 40),
     priceY: numberValue(hero.priceY, defaults.priceY, -40, 40),
+    priceAnimationEnabled: booleanValue(hero.priceAnimationEnabled, defaults.priceAnimationEnabled),
+    priceAnimation: textAnimationValue(hero.priceAnimation, defaults.priceAnimation),
+    unitColor: stringValue(hero.unitColor, hero.priceColor ? stringValue(hero.priceColor, defaults.priceColor) : defaults.unitColor),
+    unitSize: numberValue(hero.unitSize, defaults.unitSize, 60, 160),
+    unitRotation: numberValue(hero.unitRotation, defaults.unitRotation, -15, 15),
+    unitX: numberValue(hero.unitX, defaults.unitX, -40, 40),
+    unitY: numberValue(hero.unitY, defaults.unitY, -40, 40),
+    unitAnimationEnabled: booleanValue(hero.unitAnimationEnabled, defaults.unitAnimationEnabled),
+    unitAnimation: textAnimationValue(hero.unitAnimation, defaults.unitAnimation),
   }
 }
 
@@ -180,5 +219,10 @@ export function heroStyleVars(config: HeroConfig, productText = ''): CSSProperti
     '--hero-price-rotation': `${config.priceRotation}deg`,
     '--hero-price-x': `${config.priceX}%`,
     '--hero-price-y': `${config.priceY}%`,
+    '--hero-unit-color': config.unitColor,
+    '--hero-unit-scale': String(config.unitSize / 100),
+    '--hero-unit-rotation': `${config.unitRotation}deg`,
+    '--hero-unit-x': `${config.unitX}%`,
+    '--hero-unit-y': `${config.unitY}%`,
   } as CSSProperties
 }

@@ -24,6 +24,9 @@ export default function SmartSceneView({ scene, className = '' }: { scene: Smart
   const priceText = hero.price.trim()
   const unitText = hero.unit.trim()
   const videoUrl = hero.backgroundVideoUrl.trim()
+  const productAnimationClass = hero.productAnimationEnabled ? `hero-text-animation-${hero.productAnimation}` : 'hero-text-animation-none'
+  const priceAnimationClass = hero.priceAnimationEnabled ? `hero-text-animation-${hero.priceAnimation}` : 'hero-text-animation-none'
+  const unitAnimationClass = hero.unitAnimationEnabled ? `hero-text-animation-${hero.unitAnimation}` : 'hero-text-animation-none'
 
   return (
     <div
@@ -47,8 +50,13 @@ export default function SmartSceneView({ scene, className = '' }: { scene: Smart
       {scene.scene_type !== 'hero' && <div className="smart-scene-visual" />}
       <div className="smart-scene-copy">
         {scene.scene_type !== 'hero' && <span>{scene.headline}</span>}
-        {(scene.scene_type !== 'hero' || productText) && <strong>{scene.scene_type === 'hero' ? productText : scene.primary_text}</strong>}
-        {scene.scene_type === 'hero' && priceText && <div className="smart-hero-price-row"><b>{priceText}</b>{unitText && <em>{unitText}</em>}</div>}
+        {(scene.scene_type !== 'hero' || productText) && <strong className={scene.scene_type === 'hero' ? productAnimationClass : undefined}>{scene.scene_type === 'hero' ? productText : scene.primary_text}</strong>}
+        {scene.scene_type === 'hero' && (priceText || unitText) && (
+          <div className="smart-hero-price-row">
+            {priceText && <b className={priceAnimationClass}>{priceText}</b>}
+            {unitText && <em className={unitAnimationClass}>{unitText}</em>}
+          </div>
+        )}
         {(scene.scene_type !== 'hero' || secondaryText) && <small>{scene.scene_type === 'hero' ? secondaryText : scene.secondary_text}</small>}
       </div>
       {scene.scene_type === 'panorama' && <div className="smart-scene-wall-grid"><i/><i/><i/></div>}
