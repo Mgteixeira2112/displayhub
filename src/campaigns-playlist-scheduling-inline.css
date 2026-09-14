@@ -56,7 +56,7 @@
   min-width: 0;
 }
 
-.view-campaigns .module-playlists .campaign-inline-schedule .publication-grid > label:first-child {
+.view-campaigns .module-playlists .campaign-inline-schedule .publication-grid > label:nth-child(2) {
   display: none;
 }
 
