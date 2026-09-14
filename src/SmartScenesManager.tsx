@@ -1,19 +1,13 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './lib/supabase'
 import './smart-scenes.css'
+import './smart-scenes-hero.css'
 
 type SceneKind = 'hero' | 'split' | 'spotlight' | 'data' | 'countdown' | 'panorama'
 type Orientation = 'auto' | 'landscape' | 'portrait' | 'ultrawide'
 type Intensity = 'minimal' | 'commercial' | 'impact' | 'immersive'
 type Motion = 'soft' | 'balanced' | 'strong'
-type Scene = {
-  key: SceneKind
-  name: string
-  category: string
-  orientation: string
-  intensity: string
-  accent: string
-}
+type Scene = { key: SceneKind; name: string; category: string; orientation: string; intensity: string; accent: string }
 type SavedScene = {
   id: string
   name: string
@@ -26,7 +20,6 @@ type SavedScene = {
   secondary_text: string
   created_at: string
 }
-
 type Profile = { company_id: string; role: string }
 
 const scenes: Scene[] = [
@@ -38,9 +31,21 @@ const scenes: Scene[] = [
   { key: 'panorama', name: 'Panorama', category: 'Video Wall', orientation: 'Ultrawide / Wall', intensity: 'Imersiva', accent: 'Múltiplas telas' },
 ]
 
-function ScenePreview({ scene, headline, primaryText, secondaryText }: { scene: Scene; headline?: string; primaryText?: string; secondaryText?: string }) {
+function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced' }: {
+  scene: Scene
+  headline?: string
+  primaryText?: string
+  secondaryText?: string
+  orientation?: Orientation
+  intensity?: Intensity
+  motion?: Motion
+}) {
   return (
-    <div className={`smart-scene-preview smart-scene-${scene.key}`} aria-hidden="true">
+    <div
+      className={`smart-scene-preview smart-scene-${scene.key} smart-scene-intensity-${intensity} smart-scene-motion-${motion}`}
+      data-scene-orientation={orientation}
+      aria-hidden="true"
+    >
       <div className="smart-scene-glow" />
       <div className="smart-scene-visual" />
       <div className="smart-scene-copy">
@@ -58,6 +63,9 @@ export default function SmartScenesManager() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'dynamic' | 'wall'>('all')
   const [expanded, setExpanded] = useState<SceneKind | null>(null)
+  const [previewOrientation, setPreviewOrientation] = useState<Orientation>('auto')
+  const [previewIntensity, setPreviewIntensity] = useState<Intensity>('impact')
+  const [previewMotion, setPreviewMotion] = useState<Motion>('balanced')
   const [profile, setProfile] = useState<Profile | null>(null)
   const [savedScenes, setSavedScenes] = useState<SavedScene[]>([])
   const [editorKind, setEditorKind] = useState<SceneKind | null>(null)
@@ -98,15 +106,26 @@ export default function SmartScenesManager() {
 
   const editorScene = scenes.find((scene) => scene.key === editorKind) || null
 
+  function toggleScene(kind: SceneKind) {
+    if (expanded === kind) {
+      setExpanded(null)
+      return
+    }
+    setExpanded(kind)
+    setPreviewOrientation(kind === 'panorama' ? 'ultrawide' : 'auto')
+    setPreviewIntensity(kind === 'panorama' ? 'immersive' : 'impact')
+    setPreviewMotion('balanced')
+  }
+
   function openNewEditor(kind: SceneKind) {
     const scene = scenes.find((item) => item.key === kind)
     if (!scene) return
     setEditingId(null)
     setEditorKind(kind)
     setName(scene.name)
-    setOrientation(kind === 'panorama' ? 'ultrawide' : 'auto')
-    setIntensity(kind === 'panorama' ? 'immersive' : 'impact')
-    setMotion('balanced')
+    setOrientation(expanded === kind ? previewOrientation : kind === 'panorama' ? 'ultrawide' : 'auto')
+    setIntensity(expanded === kind ? previewIntensity : kind === 'panorama' ? 'immersive' : 'impact')
+    setMotion(expanded === kind ? previewMotion : 'balanced')
     setHeadline(scene.category.toUpperCase())
     setPrimaryText(kind === 'countdown' ? '02:14:36' : kind === 'data' ? 'R$ 24,90' : 'DESTAQUE')
     setSecondaryText(scene.accent)
@@ -180,7 +199,7 @@ export default function SmartScenesManager() {
 
       {editorScene && (
         <form className="smart-scene-editor" onSubmit={saveScene}>
-          <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} />
+          <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} orientation={orientation} intensity={intensity} motion={motion} />
           <div className="smart-scene-editor-fields">
             <div className="smart-scene-editor-title"><strong>{editingId ? 'Editar Smart Scene' : 'Nova Smart Scene'}</strong><button type="button" onClick={() => { setEditorKind(null); setEditingId(null) }}>×</button></div>
             <label>Nome<input value={name} onChange={(event) => setName(event.target.value)} required minLength={2} maxLength={120} /></label>
@@ -218,19 +237,19 @@ export default function SmartScenesManager() {
           const open = expanded === scene.key
           return (
             <article className={`smart-scene-row ${open ? 'is-expanded' : ''}`} key={scene.key}>
-              <button className="smart-scene-row-head" type="button" onClick={() => setExpanded(open ? null : scene.key)} aria-expanded={open}>
+              <button className="smart-scene-row-head" type="button" onClick={() => toggleScene(scene.key)} aria-expanded={open}>
                 <div className="smart-scene-row-copy"><strong>{scene.name}</strong><span>{scene.accent}</span></div>
                 <div className="smart-scene-row-meta"><span>{scene.category}</span><span>{scene.orientation}</span><span>{scene.intensity}</span></div>
                 <span className="smart-scene-chevron" aria-hidden="true">⌄</span>
               </button>
               {open && (
                 <div className="smart-scene-panel">
-                  <ScenePreview scene={scene} />
+                  <ScenePreview scene={scene} orientation={previewOrientation} intensity={previewIntensity} motion={previewMotion} />
                   <div className="smart-scene-panel-controls">
                     <div className="smart-scene-control-grid">
-                      <label>Orientação<select defaultValue={scene.key === 'panorama' ? 'ultrawide' : 'auto'} disabled><option value="auto">Automática</option><option value="ultrawide">Ultrawide / Wall</option></select></label>
-                      <label>Intensidade<select defaultValue={scene.key === 'panorama' ? 'immersive' : 'impact'} disabled><option value="impact">Impacto</option><option value="immersive">Imersivo</option></select></label>
-                      <label>Movimento<select defaultValue="balanced" disabled><option value="balanced">Equilibrado</option></select></label>
+                      <label>Orientação<select value={previewOrientation} onChange={(event) => setPreviewOrientation(event.target.value as Orientation)}><option value="auto">Automática</option><option value="landscape">Horizontal</option><option value="portrait">Vertical</option><option value="ultrawide">Ultrawide / Wall</option></select></label>
+                      <label>Intensidade<select value={previewIntensity} onChange={(event) => setPreviewIntensity(event.target.value as Intensity)}><option value="minimal">Minimal</option><option value="commercial">Comercial</option><option value="impact">Impacto</option><option value="immersive">Imersivo</option></select></label>
+                      <label>Movimento<select value={previewMotion} onChange={(event) => setPreviewMotion(event.target.value as Motion)}><option value="soft">Suave</option><option value="balanced">Equilibrado</option><option value="strong">Marcante</option></select></label>
                     </div>
                     <button className="primary-button smart-scene-use" type="button" onClick={() => openNewEditor(scene.key)} disabled={!canManage}>Usar esta cena</button>
                   </div>
