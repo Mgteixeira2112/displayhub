@@ -165,6 +165,23 @@
   border-top:1px solid #e7edf4;
 }
 
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-scene-editor-fields > .smart-scene-control-grid-three{
+  display:none;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-style-controls > strong,
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-style-grid{
+  display:none;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-element-list{
+  margin-top:0;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-text-control > label:nth-child(4){
+  display:none;
+}
+
 @media(max-width:1000px){
   .smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-element-row,
   .smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-text-control{
