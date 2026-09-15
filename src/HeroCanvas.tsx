@@ -223,7 +223,6 @@ const HeroGraphic = forwardRef<Konva.Group, HeroGraphicProps>(function HeroGraph
     node.position({ x: pixelWidth / 2, y: pixelHeight / 2 })
     node.scale({ x: 1, y: 1 })
     node.rotation(0)
-    if (editable) return
 
     const runner = new Konva.Animation((frame) => {
       const seconds = (frame?.time || 0) / 1000
@@ -245,7 +244,7 @@ const HeroGraphic = forwardRef<Konva.Group, HeroGraphicProps>(function HeroGraph
     }, layer)
     runner.start()
     return () => { runner.stop() }
-  }, [animationIndex, editable, pixelHeight, pixelWidth, stageWidth])
+  }, [animationIndex, pixelHeight, pixelWidth, stageWidth])
 
   const visual = useMemo(() => {
     if (type === 'burst') {
