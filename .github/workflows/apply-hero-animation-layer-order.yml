@@ -1,0 +1,40 @@
+name: Apply Hero animation layer order
+
+on:
+  push:
+    branches: [fix/hero-animation-layer-order]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/hero-animation-layer-order
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/HeroCanvas.tsx')
+          s = p.read_text()
+          e1 = "          {config.element1Enabled && <HeroGraphic ref={element1Ref} type={config.element1Type} color={config.element1Color} x={config.element1X} y={config.element1Y} width={config.element1Width} height={config.element1Height} rotation={config.element1Rotation} animationIndex={1} editable={editable} selected={element1Selected} stageWidth={size.width} stageHeight={size.height} onSelect={() => { if (!editable) return; setSelectedText(null); setElement1Selected(true) }} onChange={onElement1Change} />}"
+          e2 = "          {config.element2Enabled && <HeroGraphic type={config.element2Type} color={config.element2Color} x={56} y={-12} width={54} height={128} animationIndex={2} stageWidth={size.width} stageHeight={size.height} />}"
+          e3 = "          {config.element3Enabled && <HeroGraphic type={config.element3Type} color={config.element3Color} x={40} y={58} width={42} height={60} animationIndex={3} stageWidth={size.width} stageHeight={size.height} />}"
+          old = "\n".join([e1, e2, e3])
+          new = "\n".join([e3, e2, e1])
+          if old not in s:
+              raise SystemExit('animation layer order block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/HeroCanvas.tsx
+          git commit -m "fix: respect Hero animation stacking order"
+          git push origin HEAD:fix/hero-animation-layer-order
