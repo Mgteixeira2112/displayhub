@@ -30,6 +30,7 @@ type ProgramItemLike = {
 }
 
 const lastReadyPrograms = new Map<string, unknown>()
+const SILENT_GATE_ID = 'displayhub-android-silent-gate'
 
 function directVideoUrl(value: unknown) {
   if (typeof value !== 'string') return null
@@ -113,6 +114,36 @@ function responseWithPayload(response: Response, payload: unknown) {
   })
 }
 
+function silentPreparingProgram(payload: unknown) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return payload
+  return {
+    ...(payload as Record<string, unknown>),
+    publications: [],
+  }
+}
+
+function setAndroidSilentGate(active: boolean) {
+  if (typeof document === 'undefined') return
+  const existing = document.getElementById(SILENT_GATE_ID)
+  if (!active) {
+    existing?.remove()
+    return
+  }
+  if (existing) return
+
+  const gate = document.createElement('div')
+  gate.id = SILENT_GATE_ID
+  gate.setAttribute('aria-hidden', 'true')
+  Object.assign(gate.style, {
+    position: 'fixed',
+    inset: '0',
+    zIndex: '2147483647',
+    background: '#000',
+    pointerEvents: 'none',
+  })
+  ;(document.body || document.documentElement).appendChild(gate)
+}
+
 function requestUrl(input: RequestInfo | URL) {
   return typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
 }
@@ -146,16 +177,21 @@ async function publicAppFetch(input: RequestInfo | URL, init?: RequestInit) {
 
     if (cacheState.ready) {
       lastReadyPrograms.set(displayId, payload)
+      setAndroidSilentGate(false)
       return response
     }
 
     const previousReadyProgram = lastReadyPrograms.get(displayId)
-    if (previousReadyProgram) return responseWithPayload(response, previousReadyProgram)
+    if (previousReadyProgram) {
+      setAndroidSilentGate(false)
+      return responseWithPayload(response, previousReadyProgram)
+    }
+
+    setAndroidSilentGate(true)
+    return responseWithPayload(response, silentPreparingProgram(payload))
   } catch {
     return response
   }
-
-  return response
 }
 
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
