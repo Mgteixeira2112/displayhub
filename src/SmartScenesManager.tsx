@@ -563,8 +563,9 @@ export default function SmartScenesManager() {
                   <label>Preço<input value={heroConfig.price} onChange={(event) => updateHero('price', event.target.value)} maxLength={32} /></label>
                   <label>Unidade<input value={heroConfig.unit} onChange={(event) => updateHero('unit', event.target.value)} maxLength={16} /></label>
                 </div>
-                <div className="smart-hero-text-control">
-                  <strong>Produto</strong>
+                <details className="smart-hero-text-section">
+                  <summary>Produto</summary>
+                  <div className="smart-hero-text-control">
                   <label>Cor<input type="color" value={heroConfig.productColor} onChange={(event) => updateHero('productColor', event.target.value)} /></label>
                   <label>Fonte<select value={heroConfig.productFontFamily} onChange={(event) => updateHero('productFontFamily', event.target.value)}>{heroFontOptions.map((font) => <option key={font} value={font}>{font.split(',')[0]}</option>)}</select></label>
                   <label>Estilo<select value={heroConfig.productFontStyle} onChange={(event) => updateHero('productFontStyle', event.target.value as HeroFontStyle)}>{heroFontStyleOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
@@ -579,9 +580,11 @@ export default function SmartScenesManager() {
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.productRotation} onChange={(event) => updateHero('productRotation', Number(event.target.value))} /><span>{heroConfig.productRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.productAnimationEnabled} onChange={(event) => updateHero('productAnimationEnabled', event.target.checked)} />Animar</label>
                   <label>Animação<select value={heroConfig.productAnimation} disabled={!heroConfig.productAnimationEnabled} onChange={(event) => updateHero('productAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-                </div>
-                <div className="smart-hero-text-control">
-                  <strong>Preço</strong>
+                  </div>
+                </details>
+                <details className="smart-hero-text-section">
+                  <summary>Preço</summary>
+                  <div className="smart-hero-text-control">
                   <label>Cor<input type="color" value={heroConfig.priceColor} onChange={(event) => updateHero('priceColor', event.target.value)} /></label>
                   <label>Fonte<select value={heroConfig.priceFontFamily} onChange={(event) => updateHero('priceFontFamily', event.target.value)}>{heroFontOptions.map((font) => <option key={font} value={font}>{font.split(',')[0]}</option>)}</select></label>
                   <label>Estilo<select value={heroConfig.priceFontStyle} onChange={(event) => updateHero('priceFontStyle', event.target.value as HeroFontStyle)}>{heroFontStyleOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
@@ -596,9 +599,11 @@ export default function SmartScenesManager() {
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.priceRotation} onChange={(event) => updateHero('priceRotation', Number(event.target.value))} /><span>{heroConfig.priceRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.priceAnimationEnabled} onChange={(event) => updateHero('priceAnimationEnabled', event.target.checked)} />Animar</label>
                   <label>Animação<select value={heroConfig.priceAnimation} disabled={!heroConfig.priceAnimationEnabled} onChange={(event) => updateHero('priceAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-                </div>
-                <div className="smart-hero-text-control">
-                  <strong>Unidade</strong>
+                  </div>
+                </details>
+                <details className="smart-hero-text-section">
+                  <summary>Unidade</summary>
+                  <div className="smart-hero-text-control">
                   <label>Cor<input type="color" value={heroConfig.unitColor} onChange={(event) => updateHero('unitColor', event.target.value)} /></label>
                   <label>Fonte<select value={heroConfig.unitFontFamily} onChange={(event) => updateHero('unitFontFamily', event.target.value)}>{heroFontOptions.map((font) => <option key={font} value={font}>{font.split(',')[0]}</option>)}</select></label>
                   <label>Estilo<select value={heroConfig.unitFontStyle} onChange={(event) => updateHero('unitFontStyle', event.target.value as HeroFontStyle)}>{heroFontStyleOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
@@ -613,9 +618,11 @@ export default function SmartScenesManager() {
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.unitRotation} onChange={(event) => updateHero('unitRotation', Number(event.target.value))} /><span>{heroConfig.unitRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.unitAnimationEnabled} onChange={(event) => updateHero('unitAnimationEnabled', event.target.checked)} />Animar</label>
                   <label>Animação<select value={heroConfig.unitAnimation} disabled={!heroConfig.unitAnimationEnabled} onChange={(event) => updateHero('unitAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-                </div>
-                <div className="smart-hero-text-control">
-                  <strong>Complemento</strong>
+                  </div>
+                </details>
+                <details className="smart-hero-text-section">
+                  <summary>Complemento</summary>
+                  <div className="smart-hero-text-control">
                   <label>Cor<input type="color" value={heroConfig.complementColor} onChange={(event) => updateHero('complementColor', event.target.value)} /></label>
                   <label>Fonte<select value={heroConfig.complementFontFamily} onChange={(event) => updateHero('complementFontFamily', event.target.value)}>{heroFontOptions.map((font) => <option key={font} value={font}>{font.split(',')[0]}</option>)}</select></label>
                   <label>Estilo<select value={heroConfig.complementFontStyle} onChange={(event) => updateHero('complementFontStyle', event.target.value as HeroFontStyle)}>{heroFontStyleOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
@@ -630,7 +637,8 @@ export default function SmartScenesManager() {
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.complementRotation} onChange={(event) => updateHero('complementRotation', Number(event.target.value))} /><span>{heroConfig.complementRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.complementAnimationEnabled} onChange={(event) => updateHero('complementAnimationEnabled', event.target.checked)} />Animar</label>
                   <label>Animação<select value={heroConfig.complementAnimation} disabled={!heroConfig.complementAnimationEnabled} onChange={(event) => updateHero('complementAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-                </div>
+                  </div>
+                </details>
               </div>
             )}
             {editorKind !== 'hero' && <label>Chamada<input value={headline} onChange={(event) => setHeadline(event.target.value)} maxLength={120} /></label>}
