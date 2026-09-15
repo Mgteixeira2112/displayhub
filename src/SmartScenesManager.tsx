@@ -47,8 +47,14 @@ const heroElementOptions: { value: HeroElementType; label: string }[] = [
 
 const heroTextAnimationOptions: { value: HeroTextAnimation; label: string }[] = [
   { value: 'pulse', label: 'Pulso' },
-  { value: 'slide', label: 'Deslizar' },
   { value: 'zoom', label: 'Zoom' },
+  { value: 'neon', label: 'Neon Glow' },
+  { value: 'glitch', label: 'Glitch' },
+  { value: 'wave', label: 'Wavy Text' },
+  { value: 'shadow', label: 'Dancing Shadow' },
+  { value: 'typewriter', label: 'Typewriter' },
+  { value: 'split', label: 'Split Text' },
+  { value: 'slide', label: 'Deslizar' },
   { value: 'float', label: 'Flutuar' },
   { value: 'blink', label: 'Piscar suave' },
 ]

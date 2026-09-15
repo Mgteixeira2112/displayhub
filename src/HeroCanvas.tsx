@@ -68,11 +68,21 @@ function AnimatedInnerGroup({ enabled, animation, amplitude, children }: {
     const node = ref.current
     const layer = node?.getLayer()
     if (!node || !layer) return
+    const textNode = node.getChildren()[0] as Konva.Text | undefined
+    const originalText = textNode?.text() || ''
 
     const reset = () => {
       node.position({ x: 0, y: 0 })
       node.scale({ x: 1, y: 1 })
+      node.rotation(0)
+      node.skewX(0)
       node.opacity(1)
+      if (textNode) {
+        textNode.text(originalText)
+        textNode.shadowBlur(0)
+        textNode.shadowOpacity(0)
+        textNode.shadowOffset({ x: 0, y: 0 })
+      }
       layer.batchDraw()
     }
 
@@ -94,6 +104,38 @@ function AnimatedInnerGroup({ enabled, animation, amplitude, children }: {
         node.y(wave * amplitude * 0.7)
       } else if (animation === 'blink') {
         node.opacity(0.72 + ((wave + 1) / 2) * 0.28)
+      } else if (animation === 'neon' && textNode) {
+        textNode.shadowColor(String(textNode.fill() || '#ffffff'))
+        textNode.shadowBlur(12 + ((wave + 1) / 2) * 20)
+        textNode.shadowOpacity(0.68 + ((wave + 1) / 2) * 0.32)
+      } else if (animation === 'glitch' && textNode) {
+        const tick = Math.floor(seconds * 14)
+        const direction = tick % 2 === 0 ? 1 : -1
+        node.position({ x: direction * amplitude * 0.28, y: (tick % 3 - 1) * amplitude * 0.12 })
+        node.rotation(direction * 0.8)
+        textNode.shadowColor(tick % 2 === 0 ? '#00eaff' : '#ff2bd6')
+        textNode.shadowOffset({ x: direction * 4, y: 0 })
+        textNode.shadowOpacity(0.85)
+        textNode.shadowBlur(0)
+      } else if (animation === 'wave') {
+        node.position({ x: Math.cos(seconds * Math.PI * 1.1) * amplitude * 0.18, y: wave * amplitude * 0.62 })
+        node.rotation(wave * 1.5)
+      } else if (animation === 'shadow' && textNode) {
+        const angle = seconds * Math.PI * 1.2
+        textNode.shadowColor('#000000')
+        textNode.shadowOffset({ x: Math.cos(angle) * 8, y: Math.sin(angle) * 8 })
+        textNode.shadowOpacity(0.72)
+        textNode.shadowBlur(1)
+      } else if (animation === 'typewriter' && textNode) {
+        const length = originalText.length
+        const cursorPause = 5
+        const step = Math.floor(seconds * 9) % Math.max(1, length + cursorPause)
+        textNode.text(originalText.slice(0, Math.min(length, step)))
+      } else if (animation === 'split') {
+        const open = (Math.sin(seconds * Math.PI * 0.9) + 1) / 2
+        node.scaleX(0.78 + open * 0.22)
+        node.skewX((0.5 - open) * 0.16)
+        node.opacity(0.72 + open * 0.28)
       }
     }, layer)
 
@@ -102,7 +144,7 @@ function AnimatedInnerGroup({ enabled, animation, amplitude, children }: {
       runner.stop()
       reset()
     }
-  }, [enabled, animation, amplitude])
+  }, [enabled, animation, amplitude, children])
 
   return <Group ref={ref}>{children}</Group>
 }
