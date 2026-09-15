@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { supabase } from './lib/supabase'
 import { getHeroConfig, heroStylePreset, heroStyleVars, type HeroBackgroundMode, type HeroConfig, type HeroElementType, type HeroStyle, type HeroTextAnimation } from './smart-scene-hero-config'
+import HeroCanvas, { type HeroCanvasTextPatch, type HeroCanvasTextTarget } from './HeroCanvas'
 import './smart-scenes.css'
 import './smart-scenes-hero.css'
 import './smart-scenes-hero-layers.css'
@@ -52,7 +53,7 @@ const heroTextAnimationOptions: { value: HeroTextAnimation; label: string }[] = 
   { value: 'blink', label: 'Piscar suave' },
 ]
 
-function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced', heroConfig, editableHero = false, onHeroPositionChange, onHeroElement1Change }: {
+function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced', heroConfig, editableHero = false, onHeroPositionChange, onHeroTextChange, onHeroElement1Change }: {
   scene: Scene
   headline?: string
   primaryText?: string
@@ -63,6 +64,7 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   heroConfig?: HeroConfig
   editableHero?: boolean
   onHeroPositionChange?: (target: HeroDragTarget, x: number, y: number) => void
+  onHeroTextChange?: (target: HeroCanvasTextTarget, patch: HeroCanvasTextPatch) => void
   onHeroElement1Change?: (patch: HeroElement1Patch) => void
 }) {
   const hero = heroConfig || getHeroConfig()
@@ -95,6 +97,25 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   const priceAnimationClass = hero.priceAnimationEnabled ? `hero-text-animation-${hero.priceAnimation}` : 'hero-text-animation-none'
   const unitAnimationClass = hero.unitAnimationEnabled ? `hero-text-animation-${hero.unitAnimation}` : 'hero-text-animation-none'
   const complementAnimationClass = hero.complementAnimationEnabled ? `hero-text-animation-${hero.complementAnimation}` : 'hero-text-animation-none'
+
+  if (scene.key === 'hero') {
+    return (
+      <div
+        className={`smart-scene-preview smart-scene-hero smart-scene-intensity-${intensity} smart-scene-motion-${motion}${heroClass}${editableHero ? ' is-hero-editable' : ''}`}
+        data-scene-orientation={orientation}
+        aria-hidden="true"
+      >
+        <HeroCanvas
+          config={hero}
+          productText={displayPrimary}
+          complementText={displaySecondary}
+          editable={editableHero}
+          onTextChange={onHeroTextChange}
+          onElement1Change={onHeroElement1Change}
+        />
+      </div>
+    )
+  }
 
   function heroPosition(target: HeroDragTarget) {
     if (target === 'product') return { x: hero.productX, y: hero.productY }
@@ -336,6 +357,34 @@ export default function SmartScenesManager() {
     })
   }
 
+  function transformHeroText(target: HeroCanvasTextTarget, patch: HeroCanvasTextPatch) {
+    setHeroConfig((current) => {
+      const next = { ...current, coordinateMode: 'canvas-v1' as const }
+      if (target === 'product') {
+        if (patch.x !== undefined) next.productX = patch.x
+        if (patch.y !== undefined) next.productY = patch.y
+        if (patch.size !== undefined) next.productSize = patch.size
+        if (patch.rotation !== undefined) next.productRotation = patch.rotation
+      } else if (target === 'price') {
+        if (patch.x !== undefined) next.priceX = patch.x
+        if (patch.y !== undefined) next.priceY = patch.y
+        if (patch.size !== undefined) next.priceSize = patch.size
+        if (patch.rotation !== undefined) next.priceRotation = patch.rotation
+      } else if (target === 'unit') {
+        if (patch.x !== undefined) next.unitX = patch.x
+        if (patch.y !== undefined) next.unitY = patch.y
+        if (patch.size !== undefined) next.unitSize = patch.size
+        if (patch.rotation !== undefined) next.unitRotation = patch.rotation
+      } else {
+        if (patch.x !== undefined) next.complementX = patch.x
+        if (patch.y !== undefined) next.complementY = patch.y
+        if (patch.size !== undefined) next.complementSize = patch.size
+        if (patch.rotation !== undefined) next.complementRotation = patch.rotation
+      }
+      return next
+    })
+  }
+
   function transformHeroElement1(patch: HeroElement1Patch) {
     setHeroConfig((current) => ({ ...current, ...patch }))
   }
@@ -435,7 +484,7 @@ export default function SmartScenesManager() {
 
       {editorScene && (
         <form className="smart-scene-editor" onSubmit={saveScene}>
-          <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} orientation={orientation} intensity={intensity} motion={motion} heroConfig={heroConfig} editableHero={editorKind === 'hero'} onHeroPositionChange={moveHero} onHeroElement1Change={transformHeroElement1} />
+          <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} orientation={orientation} intensity={intensity} motion={motion} heroConfig={heroConfig} editableHero={editorKind === 'hero'} onHeroPositionChange={moveHero} onHeroTextChange={transformHeroText} onHeroElement1Change={transformHeroElement1} />
           <div className="smart-scene-editor-fields">
             <div className="smart-scene-editor-title"><strong>{editingId ? 'Editar Smart Scene' : 'Nova Smart Scene'}</strong><button type="button" onClick={() => { setEditorKind(null); setEditingId(null) }}>×</button></div>
             <label>Nome<input value={name} onChange={(event) => setName(event.target.value)} required minLength={2} maxLength={120} /></label>
@@ -486,7 +535,7 @@ export default function SmartScenesManager() {
                 <div className="smart-hero-text-control">
                   <strong>Produto</strong>
                   <label>Cor<input type="color" value={heroConfig.productColor} onChange={(event) => updateHero('productColor', event.target.value)} /></label>
-                  <label>Tamanho<input type="range" min="60" max="150" value={heroConfig.productSize} onChange={(event) => updateHero('productSize', Number(event.target.value))} /><span>{heroConfig.productSize}%</span></label>
+                  <label>Tamanho<input type="range" min="40" max="240" value={heroConfig.productSize} onChange={(event) => updateHero('productSize', Number(event.target.value))} /><span>{heroConfig.productSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.productRotation} onChange={(event) => updateHero('productRotation', Number(event.target.value))} /><span>{heroConfig.productRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.productAnimationEnabled} onChange={(event) => updateHero('productAnimationEnabled', event.target.checked)} />Animar</label>
                   <label>Animação<select value={heroConfig.productAnimation} disabled={!heroConfig.productAnimationEnabled} onChange={(event) => updateHero('productAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
@@ -494,7 +543,7 @@ export default function SmartScenesManager() {
                 <div className="smart-hero-text-control">
                   <strong>Preço</strong>
                   <label>Cor<input type="color" value={heroConfig.priceColor} onChange={(event) => updateHero('priceColor', event.target.value)} /></label>
-                  <label>Tamanho<input type="range" min="60" max="160" value={heroConfig.priceSize} onChange={(event) => updateHero('priceSize', Number(event.target.value))} /><span>{heroConfig.priceSize}%</span></label>
+                  <label>Tamanho<input type="range" min="40" max="240" value={heroConfig.priceSize} onChange={(event) => updateHero('priceSize', Number(event.target.value))} /><span>{heroConfig.priceSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.priceRotation} onChange={(event) => updateHero('priceRotation', Number(event.target.value))} /><span>{heroConfig.priceRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.priceAnimationEnabled} onChange={(event) => updateHero('priceAnimationEnabled', event.target.checked)} />Animar</label>
                   <label>Animação<select value={heroConfig.priceAnimation} disabled={!heroConfig.priceAnimationEnabled} onChange={(event) => updateHero('priceAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
@@ -502,7 +551,7 @@ export default function SmartScenesManager() {
                 <div className="smart-hero-text-control">
                   <strong>Unidade</strong>
                   <label>Cor<input type="color" value={heroConfig.unitColor} onChange={(event) => updateHero('unitColor', event.target.value)} /></label>
-                  <label>Tamanho<input type="range" min="60" max="160" value={heroConfig.unitSize} onChange={(event) => updateHero('unitSize', Number(event.target.value))} /><span>{heroConfig.unitSize}%</span></label>
+                  <label>Tamanho<input type="range" min="40" max="240" value={heroConfig.unitSize} onChange={(event) => updateHero('unitSize', Number(event.target.value))} /><span>{heroConfig.unitSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.unitRotation} onChange={(event) => updateHero('unitRotation', Number(event.target.value))} /><span>{heroConfig.unitRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.unitAnimationEnabled} onChange={(event) => updateHero('unitAnimationEnabled', event.target.checked)} />Animar</label>
                   <label>Animação<select value={heroConfig.unitAnimation} disabled={!heroConfig.unitAnimationEnabled} onChange={(event) => updateHero('unitAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
@@ -510,7 +559,7 @@ export default function SmartScenesManager() {
                 <div className="smart-hero-text-control">
                   <strong>Complemento</strong>
                   <label>Cor<input type="color" value={heroConfig.complementColor} onChange={(event) => updateHero('complementColor', event.target.value)} /></label>
-                  <label>Tamanho<input type="range" min="60" max="160" value={heroConfig.complementSize} onChange={(event) => updateHero('complementSize', Number(event.target.value))} /><span>{heroConfig.complementSize}%</span></label>
+                  <label>Tamanho<input type="range" min="40" max="240" value={heroConfig.complementSize} onChange={(event) => updateHero('complementSize', Number(event.target.value))} /><span>{heroConfig.complementSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.complementRotation} onChange={(event) => updateHero('complementRotation', Number(event.target.value))} /><span>{heroConfig.complementRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.complementAnimationEnabled} onChange={(event) => updateHero('complementAnimationEnabled', event.target.checked)} />Animar</label>
                   <label>Animação<select value={heroConfig.complementAnimation} disabled={!heroConfig.complementAnimationEnabled} onChange={(event) => updateHero('complementAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
