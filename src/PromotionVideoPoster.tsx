@@ -22,6 +22,12 @@ type CommonsCredit = {
 
 const cachedPromotionVideos = new Map<string, CachedVideo>()
 
+export function isAndroidWebViewPlayback() {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent || ''
+  return /Android/i.test(ua) && /\bwv\b/i.test(ua)
+}
+
 export function readPromotionVideoMetadata(layoutPositions: unknown): PromotionVideoMetadata {
   if (!layoutPositions || typeof layoutPositions !== 'object' || Array.isArray(layoutPositions)) return {}
   const source = layoutPositions as Record<string, unknown>
@@ -59,10 +65,13 @@ function readCommonsCredit(src: string): CommonsCredit | null {
 }
 
 export function getCachedPromotionVideoUrl(src: string) {
+  if (isAndroidWebViewPlayback()) return null
   return cachedPromotionVideos.get(src)?.objectUrl || null
 }
 
 export function preloadPromotionVideoToMemory(src: string) {
+  if (isAndroidWebViewPlayback()) return Promise.resolve(src)
+
   const existing = cachedPromotionVideos.get(src)
   if (existing) return existing.promise
 
@@ -89,15 +98,17 @@ export function preloadPromotionVideoToMemory(src: string) {
 }
 
 function BufferedPromotionVideo({ src, loop, onEnded }: { src: string; loop: boolean; onEnded?: () => void }) {
-  const [playbackSrc, setPlaybackSrc] = useState(() => getCachedPromotionVideoUrl(src) || src)
+  const directPlayback = isAndroidWebViewPlayback()
+  const [playbackSrc, setPlaybackSrc] = useState(() => directPlayback ? src : getCachedPromotionVideoUrl(src) || src)
 
   useEffect(() => {
-    // Se o arquivo já estiver integralmente em memória, a nova exibição usa o
-    // blob local. Caso contrário, esta passagem continua usando a URL remota
-    // enquanto o download completo é aquecido para a próxima passagem.
+    if (directPlayback) {
+      setPlaybackSrc(src)
+      return
+    }
     setPlaybackSrc(getCachedPromotionVideoUrl(src) || src)
     void preloadPromotionVideoToMemory(src).catch(() => undefined)
-  }, [src])
+  }, [src, directPlayback])
 
   return (
     <video

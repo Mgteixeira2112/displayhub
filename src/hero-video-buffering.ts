@@ -1,4 +1,4 @@
-import { getCachedPromotionVideoUrl, preloadPromotionVideoToMemory } from './PromotionVideoPoster'
+import { getCachedPromotionVideoUrl, isAndroidWebViewPlayback, preloadPromotionVideoToMemory } from './PromotionVideoPoster'
 
 const selector = '.hero-konva-video, .smart-hero-background-video'
 
@@ -22,6 +22,8 @@ function prepareHeroVideo(video: HTMLVideoElement) {
 
   video.preload = 'auto'
   video.dataset.dhVideoSource = source
+
+  if (isAndroidWebViewPlayback()) return
 
   const cached = getCachedPromotionVideoUrl(source)
   if (cached) {
