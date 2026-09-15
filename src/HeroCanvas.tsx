@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Konva from 'konva'
 import { Ellipse, Group, Layer, Line, Rect, Stage, Star, Text, Transformer } from 'react-konva'
-import type { HeroConfig, HeroElementType, HeroTextAnimation } from './smart-scene-hero-config'
+import type { HeroConfig, HeroElementType, HeroFontStyle, HeroTextAlign, HeroTextAnimation } from './smart-scene-hero-config'
 import './hero-canvas.css'
 
 export type HeroCanvasTextTarget = 'product' | 'price' | 'unit' | 'complement'
@@ -38,7 +38,14 @@ type CanvasTextObjectProps = {
   animation: HeroTextAnimation
   fontSize: number
   fontFamily: string
-  fontStyle?: string
+  fontStyle: HeroFontStyle
+  align: HeroTextAlign
+  strokeColor: string
+  strokeWidth: number
+  shadowEnabled: boolean
+  shadowColor: string
+  shadowBlur: number
+  shadowOffset: number
   opacity?: number
   width: number
   height: number
@@ -70,6 +77,13 @@ function AnimatedInnerGroup({ enabled, animation, amplitude, children }: {
     if (!node || !layer) return
     const textNode = node.getChildren()[0] as Konva.Text | undefined
     const originalText = textNode?.text() || ''
+    const baseShadow = textNode ? {
+      color: textNode.shadowColor(),
+      blur: textNode.shadowBlur(),
+      opacity: textNode.shadowOpacity(),
+      offset: textNode.shadowOffset(),
+      enabled: textNode.shadowEnabled(),
+    } : null
 
     const reset = () => {
       node.position({ x: 0, y: 0 })
@@ -79,9 +93,11 @@ function AnimatedInnerGroup({ enabled, animation, amplitude, children }: {
       node.opacity(1)
       if (textNode) {
         textNode.text(originalText)
-        textNode.shadowBlur(0)
-        textNode.shadowOpacity(0)
-        textNode.shadowOffset({ x: 0, y: 0 })
+        textNode.shadowColor(baseShadow?.color || '#000000')
+        textNode.shadowBlur(baseShadow?.blur || 0)
+        textNode.shadowOpacity(baseShadow?.opacity || 0)
+        textNode.shadowOffset(baseShadow?.offset || { x: 0, y: 0 })
+        textNode.shadowEnabled(baseShadow?.enabled || false)
       }
       layer.batchDraw()
     }
@@ -162,6 +178,13 @@ const CanvasTextObject = forwardRef<Konva.Group, CanvasTextObjectProps>(function
   fontSize,
   fontFamily,
   fontStyle,
+  align,
+  strokeColor,
+  strokeWidth,
+  shadowEnabled,
+  shadowColor,
+  shadowBlur,
+  shadowOffset,
   opacity = 1,
   width,
   height,
@@ -208,11 +231,17 @@ const CanvasTextObject = forwardRef<Konva.Group, CanvasTextObjectProps>(function
           fontFamily={fontFamily}
           fontStyle={fontStyle}
           fontSize={fontSize}
+          align={align}
+          stroke={strokeWidth > 0 ? strokeColor : undefined}
+          strokeWidth={strokeWidth}
+          fillAfterStrokeEnabled
           opacity={opacity}
           lineHeight={0.95}
-          shadowColor={target === 'price' ? 'rgba(255,255,255,.55)' : undefined}
-          shadowOffset={target === 'price' ? { x: 2, y: 2 } : undefined}
-          shadowBlur={0}
+          shadowEnabled={shadowEnabled}
+          shadowColor={shadowColor}
+          shadowOffset={{ x: shadowOffset, y: shadowOffset }}
+          shadowBlur={shadowBlur}
+          shadowOpacity={0.72}
           listening={editable}
         />
       </AnimatedInnerGroup>
@@ -432,10 +461,10 @@ export default function HeroCanvas({ config, productText, complementText, editab
         </Layer>
 
         <Layer>
-          <CanvasTextObject ref={productRef} target="product" text={productText.trim()} x={config.productX} y={config.productY} size={config.productSize} rotation={config.productRotation} color={config.productColor} animationEnabled={config.productAnimationEnabled} animation={config.productAnimation} fontSize={productFontSize} fontFamily="Arial Black, Arial, sans-serif" fontStyle="bold" width={size.width} height={size.height} editable={editable} selected={selectedText === 'product'} onSelect={() => selectText('product')} onChange={onTextChange} />
-          <CanvasTextObject ref={priceRef} target="price" text={priceText} x={config.priceX} y={config.priceY} size={config.priceSize} rotation={config.priceRotation} color={config.priceColor} animationEnabled={config.priceAnimationEnabled} animation={config.priceAnimation} fontSize={priceFontSize} fontFamily="Arial Black, Arial, sans-serif" fontStyle="bold" width={size.width} height={size.height} editable={editable} selected={selectedText === 'price'} onSelect={() => selectText('price')} onChange={onTextChange} />
-          <CanvasTextObject ref={unitRef} target="unit" text={unitText} x={config.unitX} y={config.unitY} size={config.unitSize} rotation={config.unitRotation} color={config.unitColor} animationEnabled={config.unitAnimationEnabled} animation={config.unitAnimation} fontSize={unitFontSize} fontFamily="Arial Black, Arial, sans-serif" fontStyle="bold" width={size.width} height={size.height} editable={editable} selected={selectedText === 'unit'} onSelect={() => selectText('unit')} onChange={onTextChange} />
-          <CanvasTextObject ref={complementRef} target="complement" text={complementText.trim()} x={config.complementX} y={config.complementY} size={config.complementSize} rotation={config.complementRotation} color={config.complementColor} animationEnabled={config.complementAnimationEnabled} animation={config.complementAnimation} fontSize={complementFontSize} fontFamily="Arial, sans-serif" width={size.width} height={size.height} editable={editable} selected={selectedText === 'complement'} onSelect={() => selectText('complement')} onChange={onTextChange} />
+          <CanvasTextObject ref={productRef} target="product" text={productText.trim()} x={config.productX} y={config.productY} size={config.productSize} rotation={config.productRotation} color={config.productColor} animationEnabled={config.productAnimationEnabled} animation={config.productAnimation} fontSize={productFontSize} fontFamily={config.productFontFamily} fontStyle={config.productFontStyle} align={config.productAlign} strokeColor={config.productStrokeColor} strokeWidth={config.productStrokeWidth} shadowEnabled={config.productShadowEnabled} shadowColor={config.productShadowColor} shadowBlur={config.productShadowBlur} shadowOffset={config.productShadowOffset} width={size.width} height={size.height} editable={editable} selected={selectedText === 'product'} onSelect={() => selectText('product')} onChange={onTextChange} />
+          <CanvasTextObject ref={priceRef} target="price" text={priceText} x={config.priceX} y={config.priceY} size={config.priceSize} rotation={config.priceRotation} color={config.priceColor} animationEnabled={config.priceAnimationEnabled} animation={config.priceAnimation} fontSize={priceFontSize} fontFamily={config.priceFontFamily} fontStyle={config.priceFontStyle} align={config.priceAlign} strokeColor={config.priceStrokeColor} strokeWidth={config.priceStrokeWidth} shadowEnabled={config.priceShadowEnabled} shadowColor={config.priceShadowColor} shadowBlur={config.priceShadowBlur} shadowOffset={config.priceShadowOffset} width={size.width} height={size.height} editable={editable} selected={selectedText === 'price'} onSelect={() => selectText('price')} onChange={onTextChange} />
+          <CanvasTextObject ref={unitRef} target="unit" text={unitText} x={config.unitX} y={config.unitY} size={config.unitSize} rotation={config.unitRotation} color={config.unitColor} animationEnabled={config.unitAnimationEnabled} animation={config.unitAnimation} fontSize={unitFontSize} fontFamily={config.unitFontFamily} fontStyle={config.unitFontStyle} align={config.unitAlign} strokeColor={config.unitStrokeColor} strokeWidth={config.unitStrokeWidth} shadowEnabled={config.unitShadowEnabled} shadowColor={config.unitShadowColor} shadowBlur={config.unitShadowBlur} shadowOffset={config.unitShadowOffset} width={size.width} height={size.height} editable={editable} selected={selectedText === 'unit'} onSelect={() => selectText('unit')} onChange={onTextChange} />
+          <CanvasTextObject ref={complementRef} target="complement" text={complementText.trim()} x={config.complementX} y={config.complementY} size={config.complementSize} rotation={config.complementRotation} color={config.complementColor} animationEnabled={config.complementAnimationEnabled} animation={config.complementAnimation} fontSize={complementFontSize} fontFamily={config.complementFontFamily} fontStyle={config.complementFontStyle} align={config.complementAlign} strokeColor={config.complementStrokeColor} strokeWidth={config.complementStrokeWidth} shadowEnabled={config.complementShadowEnabled} shadowColor={config.complementShadowColor} shadowBlur={config.complementShadowBlur} shadowOffset={config.complementShadowOffset} width={size.width} height={size.height} editable={editable} selected={selectedText === 'complement'} onSelect={() => selectText('complement')} onChange={onTextChange} />
           {editable && <Transformer ref={textTransformerRef} rotateEnabled keepRatio enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']} borderStroke="#ffffff" borderDash={[5, 4]} anchorFill="#ffffff" anchorStroke="#111111" anchorSize={8} boundBoxFunc={(oldBox, nextBox) => nextBox.width < 12 || nextBox.height < 12 ? oldBox : nextBox} />}
         </Layer>
       </Stage>

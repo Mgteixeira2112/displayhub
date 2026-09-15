@@ -6,6 +6,8 @@ export type HeroStyle = 'explosive' | 'bands' | 'clean'
 export type HeroBackgroundMode = 'none' | 'solid' | 'video'
 export type HeroElementType = 'burst' | 'band' | 'circle' | 'block' | 'glow'
 export type HeroTextAnimation = 'pulse' | 'slide' | 'zoom' | 'float' | 'blink' | 'neon' | 'glitch' | 'wave' | 'typewriter' | 'split' | 'shadow'
+export type HeroTextAlign = 'left' | 'center' | 'right'
+export type HeroFontStyle = 'normal' | 'bold' | 'italic' | 'bold italic'
 export type HeroTextCoordinateMode = 'canvas-v1'
 
 export type HeroConfig = {
@@ -34,6 +36,15 @@ export type HeroConfig = {
   unit: string
   coordinateMode: HeroTextCoordinateMode
   productColor: string
+  productFontFamily: string
+  productFontStyle: HeroFontStyle
+  productAlign: HeroTextAlign
+  productStrokeColor: string
+  productStrokeWidth: number
+  productShadowEnabled: boolean
+  productShadowColor: string
+  productShadowBlur: number
+  productShadowOffset: number
   productSize: number
   productRotation: number
   productX: number
@@ -41,6 +52,15 @@ export type HeroConfig = {
   productAnimationEnabled: boolean
   productAnimation: HeroTextAnimation
   priceColor: string
+  priceFontFamily: string
+  priceFontStyle: HeroFontStyle
+  priceAlign: HeroTextAlign
+  priceStrokeColor: string
+  priceStrokeWidth: number
+  priceShadowEnabled: boolean
+  priceShadowColor: string
+  priceShadowBlur: number
+  priceShadowOffset: number
   priceSize: number
   priceRotation: number
   priceX: number
@@ -48,6 +68,15 @@ export type HeroConfig = {
   priceAnimationEnabled: boolean
   priceAnimation: HeroTextAnimation
   unitColor: string
+  unitFontFamily: string
+  unitFontStyle: HeroFontStyle
+  unitAlign: HeroTextAlign
+  unitStrokeColor: string
+  unitStrokeWidth: number
+  unitShadowEnabled: boolean
+  unitShadowColor: string
+  unitShadowBlur: number
+  unitShadowOffset: number
   unitSize: number
   unitRotation: number
   unitX: number
@@ -55,6 +84,15 @@ export type HeroConfig = {
   unitAnimationEnabled: boolean
   unitAnimation: HeroTextAnimation
   complementColor: string
+  complementFontFamily: string
+  complementFontStyle: HeroFontStyle
+  complementAlign: HeroTextAlign
+  complementStrokeColor: string
+  complementStrokeWidth: number
+  complementShadowEnabled: boolean
+  complementShadowColor: string
+  complementShadowBlur: number
+  complementShadowOffset: number
   complementSize: number
   complementRotation: number
   complementX: number
@@ -89,6 +127,15 @@ const defaults: HeroConfig = {
   unit: 'UN',
   coordinateMode: 'canvas-v1',
   productColor: '#d80d0d',
+  productFontFamily: 'Arial Black, Arial, sans-serif',
+  productFontStyle: 'bold',
+  productAlign: 'left',
+  productStrokeColor: '#000000',
+  productStrokeWidth: 0,
+  productShadowEnabled: false,
+  productShadowColor: '#000000',
+  productShadowBlur: 8,
+  productShadowOffset: 4,
   productSize: 100,
   productRotation: 0,
   productX: 0,
@@ -96,6 +143,15 @@ const defaults: HeroConfig = {
   productAnimationEnabled: false,
   productAnimation: 'pulse',
   priceColor: '#111111',
+  priceFontFamily: 'Arial Black, Arial, sans-serif',
+  priceFontStyle: 'bold',
+  priceAlign: 'left',
+  priceStrokeColor: '#000000',
+  priceStrokeWidth: 0,
+  priceShadowEnabled: false,
+  priceShadowColor: '#000000',
+  priceShadowBlur: 8,
+  priceShadowOffset: 4,
   priceSize: 100,
   priceRotation: -3,
   priceX: 0,
@@ -103,6 +159,15 @@ const defaults: HeroConfig = {
   priceAnimationEnabled: false,
   priceAnimation: 'pulse',
   unitColor: '#111111',
+  unitFontFamily: 'Arial Black, Arial, sans-serif',
+  unitFontStyle: 'bold',
+  unitAlign: 'left',
+  unitStrokeColor: '#000000',
+  unitStrokeWidth: 0,
+  unitShadowEnabled: false,
+  unitShadowColor: '#000000',
+  unitShadowBlur: 8,
+  unitShadowOffset: 4,
   unitSize: 100,
   unitRotation: 0,
   unitX: 42,
@@ -110,6 +175,15 @@ const defaults: HeroConfig = {
   unitAnimationEnabled: false,
   unitAnimation: 'float',
   complementColor: '#1d1d1d',
+  complementFontFamily: 'Arial, sans-serif',
+  complementFontStyle: 'normal',
+  complementAlign: 'left',
+  complementStrokeColor: '#000000',
+  complementStrokeWidth: 0,
+  complementShadowEnabled: false,
+  complementShadowColor: '#000000',
+  complementShadowBlur: 8,
+  complementShadowOffset: 4,
   complementSize: 100,
   complementRotation: 0,
   complementX: 0,
@@ -142,6 +216,14 @@ function elementTypeValue(value: unknown, fallback: HeroElementType): HeroElemen
 
 function textAnimationValue(value: unknown, fallback: HeroTextAnimation): HeroTextAnimation {
   return value === 'pulse' || value === 'slide' || value === 'zoom' || value === 'float' || value === 'blink' || value === 'neon' || value === 'glitch' || value === 'wave' || value === 'typewriter' || value === 'split' || value === 'shadow' ? value : fallback
+}
+
+function textAlignValue(value: unknown, fallback: HeroTextAlign): HeroTextAlign {
+  return value === 'left' || value === 'center' || value === 'right' ? value : fallback
+}
+
+function fontStyleValue(value: unknown, fallback: HeroFontStyle): HeroFontStyle {
+  return value === 'normal' || value === 'bold' || value === 'italic' || value === 'bold italic' ? value : fallback
 }
 
 function clampCanvas(value: number) {
@@ -206,6 +288,15 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
     unit: optionalStringValue(hero.unit, defaults.unit),
     coordinateMode: 'canvas-v1',
     productColor: stringValue(hero.productColor, defaults.productColor),
+    productFontFamily: stringValue(hero.productFontFamily, defaults.productFontFamily),
+    productFontStyle: fontStyleValue(hero.productFontStyle, defaults.productFontStyle),
+    productAlign: textAlignValue(hero.productAlign, defaults.productAlign),
+    productStrokeColor: stringValue(hero.productStrokeColor, defaults.productStrokeColor),
+    productStrokeWidth: numberValue(hero.productStrokeWidth, defaults.productStrokeWidth, 0, 12),
+    productShadowEnabled: booleanValue(hero.productShadowEnabled, defaults.productShadowEnabled),
+    productShadowColor: stringValue(hero.productShadowColor, defaults.productShadowColor),
+    productShadowBlur: numberValue(hero.productShadowBlur, defaults.productShadowBlur, 0, 40),
+    productShadowOffset: numberValue(hero.productShadowOffset, defaults.productShadowOffset, 0, 20),
     productSize: numberValue(hero.productSize, defaults.productSize, 40, 240),
     productRotation: numberValue(hero.productRotation, defaults.productRotation, -15, 15),
     productX: textCanvasCoordinate(hero, 'productX', defaults.productX, 7, 7),
@@ -213,6 +304,15 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
     productAnimationEnabled: booleanValue(hero.productAnimationEnabled, defaults.productAnimationEnabled),
     productAnimation: textAnimationValue(hero.productAnimation, defaults.productAnimation),
     priceColor: stringValue(hero.priceColor, defaults.priceColor),
+    priceFontFamily: stringValue(hero.priceFontFamily, defaults.priceFontFamily),
+    priceFontStyle: fontStyleValue(hero.priceFontStyle, defaults.priceFontStyle),
+    priceAlign: textAlignValue(hero.priceAlign, defaults.priceAlign),
+    priceStrokeColor: stringValue(hero.priceStrokeColor, defaults.priceStrokeColor),
+    priceStrokeWidth: numberValue(hero.priceStrokeWidth, defaults.priceStrokeWidth, 0, 12),
+    priceShadowEnabled: booleanValue(hero.priceShadowEnabled, defaults.priceShadowEnabled),
+    priceShadowColor: stringValue(hero.priceShadowColor, defaults.priceShadowColor),
+    priceShadowBlur: numberValue(hero.priceShadowBlur, defaults.priceShadowBlur, 0, 40),
+    priceShadowOffset: numberValue(hero.priceShadowOffset, defaults.priceShadowOffset, 0, 20),
     priceSize: numberValue(hero.priceSize, defaults.priceSize, 40, 240),
     priceRotation: numberValue(hero.priceRotation, defaults.priceRotation, -15, 15),
     priceX: textCanvasCoordinate(hero, 'priceX', defaults.priceX, 7, 7),
@@ -220,6 +320,15 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
     priceAnimationEnabled: booleanValue(hero.priceAnimationEnabled, defaults.priceAnimationEnabled),
     priceAnimation: textAnimationValue(hero.priceAnimation, defaults.priceAnimation),
     unitColor: stringValue(hero.unitColor, hero.priceColor ? stringValue(hero.priceColor, defaults.priceColor) : defaults.unitColor),
+    unitFontFamily: stringValue(hero.unitFontFamily, defaults.unitFontFamily),
+    unitFontStyle: fontStyleValue(hero.unitFontStyle, defaults.unitFontStyle),
+    unitAlign: textAlignValue(hero.unitAlign, defaults.unitAlign),
+    unitStrokeColor: stringValue(hero.unitStrokeColor, defaults.unitStrokeColor),
+    unitStrokeWidth: numberValue(hero.unitStrokeWidth, defaults.unitStrokeWidth, 0, 12),
+    unitShadowEnabled: booleanValue(hero.unitShadowEnabled, defaults.unitShadowEnabled),
+    unitShadowColor: stringValue(hero.unitShadowColor, defaults.unitShadowColor),
+    unitShadowBlur: numberValue(hero.unitShadowBlur, defaults.unitShadowBlur, 0, 40),
+    unitShadowOffset: numberValue(hero.unitShadowOffset, defaults.unitShadowOffset, 0, 20),
     unitSize: numberValue(hero.unitSize, defaults.unitSize, 40, 240),
     unitRotation: numberValue(hero.unitRotation, defaults.unitRotation, -15, 15),
     unitX: textCanvasCoordinate(hero, 'unitX', defaults.unitX, 42),
@@ -227,6 +336,15 @@ export function getHeroConfig(config?: Record<string, unknown>): HeroConfig {
     unitAnimationEnabled: booleanValue(hero.unitAnimationEnabled, defaults.unitAnimationEnabled),
     unitAnimation: textAnimationValue(hero.unitAnimation, defaults.unitAnimation),
     complementColor: stringValue(hero.complementColor, defaults.complementColor),
+    complementFontFamily: stringValue(hero.complementFontFamily, defaults.complementFontFamily),
+    complementFontStyle: fontStyleValue(hero.complementFontStyle, defaults.complementFontStyle),
+    complementAlign: textAlignValue(hero.complementAlign, defaults.complementAlign),
+    complementStrokeColor: stringValue(hero.complementStrokeColor, defaults.complementStrokeColor),
+    complementStrokeWidth: numberValue(hero.complementStrokeWidth, defaults.complementStrokeWidth, 0, 12),
+    complementShadowEnabled: booleanValue(hero.complementShadowEnabled, defaults.complementShadowEnabled),
+    complementShadowColor: stringValue(hero.complementShadowColor, defaults.complementShadowColor),
+    complementShadowBlur: numberValue(hero.complementShadowBlur, defaults.complementShadowBlur, 0, 40),
+    complementShadowOffset: numberValue(hero.complementShadowOffset, defaults.complementShadowOffset, 0, 20),
     complementSize: numberValue(hero.complementSize, defaults.complementSize, 40, 240),
     complementRotation: numberValue(hero.complementRotation, defaults.complementRotation, -15, 15),
     complementX: textCanvasCoordinate(hero, 'complementX', defaults.complementX, 7, 7),
