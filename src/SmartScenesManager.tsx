@@ -514,7 +514,7 @@ export default function SmartScenesManager() {
       </div>
 
       {editorScene && (
-        <form className={`smart-scene-editor${editorKind === 'hero' ? ' is-hero-editor' : ''}`} onSubmit={saveScene}>
+        <form className="smart-scene-editor" onSubmit={saveScene}>
           <ScenePreview scene={editorScene} headline={headline} primaryText={primaryText} secondaryText={secondaryText} orientation={orientation} intensity={intensity} motion={motion} heroConfig={heroConfig} editableHero={editorKind === 'hero'} onHeroPositionChange={moveHero} onHeroTextChange={transformHeroText} onHeroElement1Change={transformHeroElement1} />
           <div className="smart-scene-editor-fields">
             <div className="smart-scene-editor-title"><strong>{editingId ? 'Editar Smart Scene' : 'Nova Smart Scene'}</strong><button type="button" onClick={() => { setEditorKind(null); setEditingId(null) }}>×</button></div>
@@ -563,7 +563,6 @@ export default function SmartScenesManager() {
                   <label>Preço<input value={heroConfig.price} onChange={(event) => updateHero('price', event.target.value)} maxLength={32} /></label>
                   <label>Unidade<input value={heroConfig.unit} onChange={(event) => updateHero('unit', event.target.value)} maxLength={16} /></label>
                 </div>
-                <div className="smart-hero-text-dock">
                 <div className="smart-hero-text-control">
                   <strong>Produto</strong>
                   <label>Cor<input type="color" value={heroConfig.productColor} onChange={(event) => updateHero('productColor', event.target.value)} /></label>
@@ -631,7 +630,6 @@ export default function SmartScenesManager() {
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.complementRotation} onChange={(event) => updateHero('complementRotation', Number(event.target.value))} /><span>{heroConfig.complementRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.complementAnimationEnabled} onChange={(event) => updateHero('complementAnimationEnabled', event.target.checked)} />Animar</label>
                   <label>Animação<select value={heroConfig.complementAnimation} disabled={!heroConfig.complementAnimationEnabled} onChange={(event) => updateHero('complementAnimation', event.target.value as HeroTextAnimation)}>{heroTextAnimationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-                </div>
                 </div>
               </div>
             )}
