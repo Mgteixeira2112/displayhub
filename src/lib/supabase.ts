@@ -12,6 +12,15 @@ const nativeFetch = globalThis.fetch.bind(globalThis)
 
 type AndroidVideoBridge = {
   prefetchVideos?: (urlsJson: string) => string
+  videoCacheStatus?: (urlsJson: string) => string
+}
+
+type CacheSnapshot = {
+  total?: number
+  ready?: number
+  downloading?: number
+  failed?: number
+  missing?: number
 }
 
 type ProgramItemLike = {
@@ -19,6 +28,8 @@ type ProgramItemLike = {
   smart_scene?: { config?: { hero?: { backgroundVideoUrl?: unknown } | null } | null } | null
   content?: { external_url?: unknown; signed_url?: unknown } | null
 }
+
+const lastReadyPrograms = new Map<string, unknown>()
 
 function directVideoUrl(value: unknown) {
   if (typeof value !== 'string') return null
@@ -55,16 +66,51 @@ function collectProgramVideoUrls(payload: unknown) {
   return Array.from(urls)
 }
 
-function prefetchAndroidProgramVideos(payload: unknown) {
+function programDisplayId(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return null
+  const display = (payload as { display?: { id?: unknown } | null }).display
+  return typeof display?.id === 'string' && display.id ? display.id : null
+}
+
+function parseCacheSnapshot(raw: string | undefined): CacheSnapshot | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as CacheSnapshot
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function androidProgramCacheState(payload: unknown) {
   const bridge = (globalThis as typeof globalThis & { DisplayHubAndroid?: AndroidVideoBridge }).DisplayHubAndroid
-  if (typeof bridge?.prefetchVideos !== 'function') return
+  if (typeof bridge?.prefetchVideos !== 'function' || typeof bridge.videoCacheStatus !== 'function') return null
+
   const urls = collectProgramVideoUrls(payload)
-  if (!urls.length) return
+  if (!urls.length) return { ready: true, urls }
+
   try {
     bridge.prefetchVideos(JSON.stringify(urls))
+    const snapshot = parseCacheSnapshot(bridge.videoCacheStatus(JSON.stringify(urls)))
+    if (!snapshot) return null
+    const total = Number(snapshot.total || 0)
+    const ready = Number(snapshot.ready || 0)
+    const failed = Number(snapshot.failed || 0)
+    return { ready: total === urls.length && ready === total && failed === 0, urls }
   } catch {
-    // Native prefetch is an optimization; the web player must keep working without it.
+    return null
   }
+}
+
+function responseWithPayload(response: Response, payload: unknown) {
+  const headers = new Headers(response.headers)
+  headers.delete('content-length')
+  if (!headers.has('content-type')) headers.set('content-type', 'application/json')
+  return new Response(JSON.stringify(payload), {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
 }
 
 function requestUrl(input: RequestInfo | URL) {
@@ -88,10 +134,25 @@ async function publicAppFetch(input: RequestInfo | URL, init?: RequestInit) {
   const response = await nativeFetch(input, init)
   const url = requestUrl(input)
 
-  if (response.ok && url.includes('/functions/v1/display-program')) {
-    void response.clone().json()
-      .then((payload) => prefetchAndroidProgramVideos(payload))
-      .catch(() => undefined)
+  if (!response.ok || !url.includes('/functions/v1/display-program')) return response
+
+  try {
+    const payload = await response.clone().json()
+    const displayId = programDisplayId(payload)
+    if (!displayId) return response
+
+    const cacheState = androidProgramCacheState(payload)
+    if (!cacheState) return response
+
+    if (cacheState.ready) {
+      lastReadyPrograms.set(displayId, payload)
+      return response
+    }
+
+    const previousReadyProgram = lastReadyPrograms.get(displayId)
+    if (previousReadyProgram) return responseWithPayload(response, previousReadyProgram)
+  } catch {
+    return response
   }
 
   return response
