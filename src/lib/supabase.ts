@@ -113,6 +113,15 @@ function responseWithPayload(response: Response, payload: unknown) {
   })
 }
 
+function silentPreparingProgram(payload: unknown) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return payload
+  return {
+    ...(payload as Record<string, unknown>),
+    publications: [],
+    __android_cache_preparing: true,
+  }
+}
+
 function requestUrl(input: RequestInfo | URL) {
   return typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
 }
@@ -151,11 +160,11 @@ async function publicAppFetch(input: RequestInfo | URL, init?: RequestInit) {
 
     const previousReadyProgram = lastReadyPrograms.get(displayId)
     if (previousReadyProgram) return responseWithPayload(response, previousReadyProgram)
+
+    return responseWithPayload(response, silentPreparingProgram(payload))
   } catch {
     return response
   }
-
-  return response
 }
 
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
