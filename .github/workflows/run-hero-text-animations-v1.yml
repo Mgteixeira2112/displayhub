@@ -1,16 +1,16 @@
 name: Run Hero text animations v1
 
 on:
-  push:
-    branches: [feat/hero-text-animations-v1]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.actor != 'github-actions[bot]' && github.head_ref == 'feat/hero-text-animations-v1'
     runs-on: ubuntu-latest
-    if: github.actor != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@v4
         with:
