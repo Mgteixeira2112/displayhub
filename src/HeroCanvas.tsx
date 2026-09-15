@@ -383,9 +383,9 @@ export default function HeroCanvas({ config, productText, complementText, editab
         </Layer>
 
         <Layer>
-          {config.element1Enabled && <HeroGraphic ref={element1Ref} type={config.element1Type} color={config.element1Color} x={config.element1X} y={config.element1Y} width={config.element1Width} height={config.element1Height} rotation={config.element1Rotation} animationIndex={1} editable={editable} selected={element1Selected} stageWidth={size.width} stageHeight={size.height} onSelect={() => { if (!editable) return; setSelectedText(null); setElement1Selected(true) }} onChange={onElement1Change} />}
-          {config.element2Enabled && <HeroGraphic type={config.element2Type} color={config.element2Color} x={56} y={-12} width={54} height={128} animationIndex={2} stageWidth={size.width} stageHeight={size.height} />}
           {config.element3Enabled && <HeroGraphic type={config.element3Type} color={config.element3Color} x={40} y={58} width={42} height={60} animationIndex={3} stageWidth={size.width} stageHeight={size.height} />}
+          {config.element2Enabled && <HeroGraphic type={config.element2Type} color={config.element2Color} x={56} y={-12} width={54} height={128} animationIndex={2} stageWidth={size.width} stageHeight={size.height} />}
+          {config.element1Enabled && <HeroGraphic ref={element1Ref} type={config.element1Type} color={config.element1Color} x={config.element1X} y={config.element1Y} width={config.element1Width} height={config.element1Height} rotation={config.element1Rotation} animationIndex={1} editable={editable} selected={element1Selected} stageWidth={size.width} stageHeight={size.height} onSelect={() => { if (!editable) return; setSelectedText(null); setElement1Selected(true) }} onChange={onElement1Change} />}
           {editable && <Transformer ref={elementTransformerRef} rotateEnabled keepRatio={false} enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']} borderStroke="#ffffff" anchorFill="#ffffff" anchorStroke="#111111" anchorSize={8} boundBoxFunc={(oldBox, nextBox) => nextBox.width < 18 || nextBox.height < 18 ? oldBox : nextBox} />}
         </Layer>
 
