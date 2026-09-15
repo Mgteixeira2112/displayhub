@@ -84,7 +84,7 @@ export default function DeviceInstallationQr() {
 
   const generate = async () => {
     setBusy(true)
-    setFeedback('Gerando QR...')
+    setFeedback('Gerando instalação...')
     try {
       const { data, error } = await supabase.rpc('create_device_installation')
       if (error) throw error
@@ -93,10 +93,10 @@ export default function DeviceInstallationQr() {
       activationDetectedRef.current = false
       setInstallation(next)
       setNow(Date.now())
-      setFeedback('QR pronto.')
+      setFeedback('Instalação pronta.')
     } catch (error) {
       setInstallation(null)
-      setFeedback(error instanceof Error ? error.message : 'Não foi possível gerar o QR de instalação.')
+      setFeedback(error instanceof Error ? error.message : 'Não foi possível gerar a instalação.')
     } finally {
       setBusy(false)
     }
@@ -112,33 +112,53 @@ export default function DeviceInstallationQr() {
     }
   }
 
+  const copyToken = async () => {
+    if (!installation?.token) return
+    try {
+      await navigator.clipboard.writeText(installation.token)
+      setFeedback('Token Android copiado.')
+    } catch {
+      setFeedback('Não foi possível copiar o token.')
+    }
+  }
+
   return (
     <>
       <section className="windows-pairing-card">
         <div className="windows-pairing-copy">
-          <p className="eyebrow">Instalação sem login</p>
-          <h2>Gerar QR para novo dispositivo</h2>
+          <p className="eyebrow">Nova instalação</p>
+          <h2>Gerar instalação de dispositivo</h2>
+          <span>Use o QR no navegador ou digite o token no DisplayHub Android Player.</span>
         </div>
 
         {!installation ? (
           <button className="windows-pairing-activate" type="button" disabled={busy} onClick={() => void generate()}>
-            {busy ? 'Gerando...' : 'Gerar QR de instalação'}
+            {busy ? 'Gerando...' : 'Gerar instalação'}
           </button>
         ) : (
           <div className="windows-pairing-preview">
             <div className="windows-pairing-preview-head">
               <div>
-                <strong>QR de instalação</strong>
+                <strong>Instalação de dispositivo</strong>
                 <span>Uso único · 1 dispositivo</span>
               </div>
-              <span>{remainingSeconds > 0 ? `Expira em ${remainingLabel}` : 'QR expirado'}</span>
+              <span>{remainingSeconds > 0 ? `Expira em ${remainingLabel}` : 'Instalação expirada'}</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 260px) minmax(0, 1fr)', gap: 22, alignItems: 'center' }}>
               <div ref={qrRef} style={{ width: 230, minHeight: 230, padding: 10, borderRadius: 16, background: '#fff', display: 'grid', placeItems: 'center' }} />
-              <div className="windows-device-actions">
-                <button type="button" onClick={() => void copyLink()}>Copiar link</button>
-                <button type="button" disabled={busy} onClick={() => void generate()}>Gerar outro QR</button>
+              <div style={{ display: 'grid', gap: 14 }}>
+                <div>
+                  <small style={{ display: 'block', marginBottom: 6 }}>Token para Android Player</small>
+                  <code style={{ display: 'block', overflowWrap: 'anywhere', padding: 12, borderRadius: 10, background: '#0f172a', color: '#f8fafc', fontSize: 15 }}>
+                    {installation.token}
+                  </code>
+                </div>
+                <div className="windows-device-actions">
+                  <button type="button" disabled={remainingSeconds === 0} onClick={() => void copyToken()}>Copiar token Android</button>
+                  <button type="button" disabled={remainingSeconds === 0} onClick={() => void copyLink()}>Copiar link</button>
+                  <button type="button" disabled={busy} onClick={() => void generate()}>Gerar nova instalação</button>
+                </div>
               </div>
             </div>
           </div>
