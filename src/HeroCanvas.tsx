@@ -244,7 +244,7 @@ const HeroGraphic = forwardRef<Konva.Group, HeroGraphicProps>(function HeroGraph
       }
     }, layer)
     runner.start()
-    return () => runner.stop()
+    return () => { runner.stop() }
   }, [animationIndex, editable, pixelHeight, pixelWidth, stageWidth])
 
   const visual = useMemo(() => {

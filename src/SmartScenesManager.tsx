@@ -98,7 +98,8 @@ function ScenePreview({ scene, headline, primaryText, secondaryText, orientation
   const unitAnimationClass = hero.unitAnimationEnabled ? `hero-text-animation-${hero.unitAnimation}` : 'hero-text-animation-none'
   const complementAnimationClass = hero.complementAnimationEnabled ? `hero-text-animation-${hero.complementAnimation}` : 'hero-text-animation-none'
 
-  if (scene.key === 'hero') {
+  const usesHeroCanvas = () => scene.key === 'hero'
+  if (usesHeroCanvas()) {
     return (
       <div
         className={`smart-scene-preview smart-scene-hero smart-scene-intensity-${intensity} smart-scene-motion-${motion}${heroClass}${editableHero ? ' is-hero-editable' : ''}`}

@@ -30,7 +30,8 @@ export default function SmartSceneView({ scene, className = '' }: { scene: Smart
   const unitAnimationClass = hero.unitAnimationEnabled ? `hero-text-animation-${hero.unitAnimation}` : 'hero-text-animation-none'
   const complementAnimationClass = hero.complementAnimationEnabled ? `hero-text-animation-${hero.complementAnimation}` : 'hero-text-animation-none'
 
-  if (scene.scene_type === 'hero') {
+  const usesHeroCanvas = () => scene.scene_type === 'hero'
+  if (usesHeroCanvas()) {
     return (
       <div
         className={`smart-scene-player smart-scene-hero smart-scene-intensity-${scene.intensity} smart-scene-motion-${scene.motion}${heroClass} ${className}`.trim()}
