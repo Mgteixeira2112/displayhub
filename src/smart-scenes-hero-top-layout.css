@@ -1,0 +1,77 @@
+.smart-scene-editor:has(.smart-hero-editor-block){
+  grid-template-columns:minmax(0,1fr);
+  align-items:start;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) > .smart-scene-preview{
+  width:min(100%,1180px);
+  justify-self:center;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) > .smart-scene-editor-fields{
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:12px;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-scene-editor-title{
+  grid-column:1/-1;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-scene-editor-fields > label{
+  grid-column:span 4;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-scene-editor-fields > .smart-scene-control-grid-three{
+  grid-column:span 8;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-editor-block{
+  grid-column:1/-1;
+  display:grid;
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:12px;
+  align-items:start;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-background-controls{
+  grid-column:span 4;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-animation-section{
+  grid-column:span 8;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-editor-block > .smart-scene-control-grid-three{
+  grid-column:span 4;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-editor-block > .smart-hero-text-section:not(.smart-hero-animation-section){
+  grid-column:span 3;
+  align-self:start;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-editor-block > .smart-hero-text-section:not(.smart-hero-animation-section)[open]{
+  grid-column:span 6;
+}
+
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-scene-editor-actions,
+.smart-scene-editor:has(.smart-hero-editor-block) .smart-scene-editor-fields > p{
+  grid-column:1/-1;
+}
+
+@media(max-width:1000px){
+  .smart-scene-editor:has(.smart-hero-editor-block) > .smart-scene-editor-fields,
+  .smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-editor-block{
+    grid-template-columns:minmax(0,1fr);
+  }
+
+  .smart-scene-editor:has(.smart-hero-editor-block) .smart-scene-editor-fields > label,
+  .smart-scene-editor:has(.smart-hero-editor-block) .smart-scene-editor-fields > .smart-scene-control-grid-three,
+  .smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-background-controls,
+  .smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-animation-section,
+  .smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-editor-block > .smart-scene-control-grid-three,
+  .smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-editor-block > .smart-hero-text-section:not(.smart-hero-animation-section),
+  .smart-scene-editor:has(.smart-hero-editor-block) .smart-hero-editor-block > .smart-hero-text-section:not(.smart-hero-animation-section)[open]{
+    grid-column:1/-1;
+  }
+}
