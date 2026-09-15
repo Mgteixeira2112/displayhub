@@ -1,0 +1,27 @@
+name: Apply Hero Konva integration
+
+on:
+  push:
+    branches: [feat/hero-konva-canvas]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/hero-konva-canvas
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python .github/apply-hero-konva.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/SmartScenesManager.tsx src/SmartSceneView.tsx src/smart-scene-hero-config.ts
+          git commit -m "feat: render Hero Impact with Konva canvas"
+          git push origin HEAD:feat/hero-konva-canvas
