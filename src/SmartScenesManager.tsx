@@ -534,7 +534,9 @@ export default function SmartScenesManager() {
                   {heroConfig.backgroundMode === 'solid' && <label>Cor do fundo<input type="color" value={heroConfig.backgroundColor} onChange={(event) => updateHero('backgroundColor', event.target.value)} /></label>}
                   {heroConfig.backgroundMode === 'video' && <div className="smart-hero-video-row"><label>URL do vídeo<input type="url" value={heroConfig.backgroundVideoUrl} onChange={(event) => updateHero('backgroundVideoUrl', event.target.value)} placeholder="https://.../video.mp4" /></label></div>}
                 </div>
-                <div className="smart-hero-style-controls">
+                <details className="smart-hero-text-section smart-hero-animation-section" open>
+                  <summary>Animações · Elemento 1 na frente</summary>
+                  <div className="smart-hero-style-controls">
                   <strong>Estilo</strong>
                   <div className="smart-hero-style-grid">
                     <button type="button" className={heroConfig.style === 'explosive' ? 'is-active' : ''} onClick={() => applyHeroStyle('explosive')}>Preço explosivo animado</button>
@@ -543,22 +545,23 @@ export default function SmartScenesManager() {
                   </div>
                   <div className="smart-hero-element-list">
                     <div className="smart-hero-element-row">
-                      <label className="smart-hero-element-toggle"><input type="checkbox" checked={heroConfig.element1Enabled} onChange={(event) => updateHero('element1Enabled', event.target.checked)} />Elemento 1</label>
+                      <label className="smart-hero-element-toggle"><input type="checkbox" checked={heroConfig.element1Enabled} onChange={(event) => updateHero('element1Enabled', event.target.checked)} />Elemento 1 · Frente</label>
                       <label>Tipo<select value={heroConfig.element1Type} onChange={(event) => updateHero('element1Type', event.target.value as HeroElementType)}>{heroElementOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                       <label>Cor<input type="color" value={heroConfig.element1Color} onChange={(event) => updateHero('element1Color', event.target.value)} /></label>
                     </div>
                     <div className="smart-hero-element-row">
-                      <label className="smart-hero-element-toggle"><input type="checkbox" checked={heroConfig.element2Enabled} onChange={(event) => updateHero('element2Enabled', event.target.checked)} />Elemento 2</label>
+                      <label className="smart-hero-element-toggle"><input type="checkbox" checked={heroConfig.element2Enabled} onChange={(event) => updateHero('element2Enabled', event.target.checked)} />Elemento 2 · Meio</label>
                       <label>Tipo<select value={heroConfig.element2Type} onChange={(event) => updateHero('element2Type', event.target.value as HeroElementType)}>{heroElementOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                       <label>Cor<input type="color" value={heroConfig.element2Color} onChange={(event) => updateHero('element2Color', event.target.value)} /></label>
                     </div>
                     <div className="smart-hero-element-row">
-                      <label className="smart-hero-element-toggle"><input type="checkbox" checked={heroConfig.element3Enabled} onChange={(event) => updateHero('element3Enabled', event.target.checked)} />Elemento 3</label>
+                      <label className="smart-hero-element-toggle"><input type="checkbox" checked={heroConfig.element3Enabled} onChange={(event) => updateHero('element3Enabled', event.target.checked)} />Elemento 3 · Fundo</label>
                       <label>Tipo<select value={heroConfig.element3Type} onChange={(event) => updateHero('element3Type', event.target.value as HeroElementType)}>{heroElementOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                       <label>Cor<input type="color" value={heroConfig.element3Color} onChange={(event) => updateHero('element3Color', event.target.value)} /></label>
                     </div>
                   </div>
-                </div>
+                  </div>
+                </details>
                 <div className="smart-scene-control-grid smart-scene-control-grid-three">
                   <label>Preço<input value={heroConfig.price} onChange={(event) => updateHero('price', event.target.value)} maxLength={32} /></label>
                   <label>Unidade<input value={heroConfig.unit} onChange={(event) => updateHero('unit', event.target.value)} maxLength={16} /></label>
