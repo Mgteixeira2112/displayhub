@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import PromotionPosterView, { type PromotionPosterData } from './PromotionPosterView'
 
 export const DEMO_BEER_VIDEO_URL = 'https://upload.wikimedia.org/wikipedia/commons/transcoded/2/2b/Jane_pouring_beer_fast.webm/Jane_pouring_beer_fast.webm.720p.vp9.webm'
@@ -100,6 +100,7 @@ export function preloadPromotionVideoToMemory(src: string) {
 function BufferedPromotionVideo({ src, loop, onEnded }: { src: string; loop: boolean; onEnded?: () => void }) {
   const directPlayback = isAndroidWebViewPlayback()
   const [playbackSrc, setPlaybackSrc] = useState(() => directPlayback ? src : getCachedPromotionVideoUrl(src) || src)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => {
     if (directPlayback) {
@@ -110,8 +111,38 @@ function BufferedPromotionVideo({ src, loop, onEnded }: { src: string; loop: boo
     void preloadPromotionVideoToMemory(src).catch(() => undefined)
   }, [src, directPlayback])
 
+  useEffect(() => {
+    if (!directPlayback) return
+    const video = videoRef.current
+    if (!video) return
+
+    video.muted = true
+    video.defaultMuted = true
+    video.preload = 'auto'
+
+    const play = () => { void video.play().catch(() => undefined) }
+    const resumeWhenReady = () => play()
+    video.addEventListener('loadedmetadata', resumeWhenReady)
+    video.addEventListener('loadeddata', resumeWhenReady)
+    video.addEventListener('canplay', resumeWhenReady)
+    video.load()
+    play()
+
+    const retry = window.setInterval(() => {
+      if (video.paused && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) play()
+    }, 1000)
+
+    return () => {
+      window.clearInterval(retry)
+      video.removeEventListener('loadedmetadata', resumeWhenReady)
+      video.removeEventListener('loadeddata', resumeWhenReady)
+      video.removeEventListener('canplay', resumeWhenReady)
+    }
+  }, [playbackSrc, directPlayback])
+
   return (
     <video
+      ref={videoRef}
       className="promo-video-background"
       src={playbackSrc}
       autoPlay
