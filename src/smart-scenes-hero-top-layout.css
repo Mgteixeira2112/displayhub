@@ -1,3 +1,5 @@
+@import './smart-scenes-hero-controls-standard.css';
+
 .smart-scene-editor:has(.smart-hero-editor-block){
   grid-template-columns:minmax(0,1fr);
   align-items:start;
