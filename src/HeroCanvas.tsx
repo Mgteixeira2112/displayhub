@@ -294,7 +294,8 @@ const HeroGraphic = forwardRef<Konva.Group, HeroGraphicProps>(function HeroGraph
         })
       }}
     >
-      <Group ref={animationRef} x={pixelWidth / 2} y={pixelHeight / 2}>{visual}</Group>
+      {editable && <Rect x={0} y={0} width={pixelWidth} height={pixelHeight} fill="rgba(0,0,0,0.001)" listening />}
+      <Group ref={animationRef} x={pixelWidth / 2} y={pixelHeight / 2} listening={false}>{visual}</Group>
     </Group>
   )
 })
