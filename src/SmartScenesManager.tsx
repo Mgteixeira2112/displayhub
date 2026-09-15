@@ -466,31 +466,52 @@ export default function SmartScenesManager() {
     if (!profile || !editorKind || !canManage) return
     setBusy(true)
     setMessage('')
-    const payload = {
-      name: name.trim(),
-      scene_type: editorKind,
-      orientation,
-      intensity,
-      motion,
-      headline: editorKind === 'hero' ? '' : headline.trim(),
-      primary_text: primaryText.trim(),
-      secondary_text: secondaryText.trim(),
-      config: editorKind === 'hero' ? { hero: heroConfig } : {},
-      is_active: true,
-    }
-    const result = editingId
-      ? await supabase.from('smart_scenes').update(payload).eq('id', editingId)
-      : await supabase.from('smart_scenes').insert({ ...payload, company_id: profile.company_id })
-    if (result.error) {
-      setMessage(result.error.message)
+    try {
+      const payload = {
+        name: name.trim(),
+        scene_type: editorKind,
+        orientation,
+        intensity,
+        motion,
+        headline: editorKind === 'hero' ? '' : headline.trim(),
+        primary_text: primaryText.trim(),
+        secondary_text: secondaryText.trim(),
+        config: editorKind === 'hero' ? { hero: { ...heroConfig } } : {},
+        is_active: true,
+      }
+
+      const result = editingId
+        ? await supabase
+            .from('smart_scenes')
+            .update(payload)
+            .eq('id', editingId)
+            .eq('company_id', profile.company_id)
+            .select('id,config,primary_text,secondary_text,updated_at')
+            .maybeSingle()
+        : await supabase
+            .from('smart_scenes')
+            .insert({ ...payload, company_id: profile.company_id })
+            .select('id,config,primary_text,secondary_text,updated_at')
+            .single()
+
+      if (result.error) throw result.error
+      if (!result.data) throw new Error('Nenhuma Smart Scene foi atualizada. Verifique as permissões do usuário.')
+      if (editorKind === 'hero') {
+        const storedConfig = result.data.config as Record<string, unknown> | null
+        if (!storedConfig || typeof storedConfig.hero !== 'object' || storedConfig.hero === null) {
+          throw new Error('A configuração do Hero não foi persistida no banco de dados.')
+        }
+      }
+
+      await load()
+      setMessage(editingId ? 'Smart Scene atualizada e persistida.' : 'Smart Scene criada e persistida.')
+      setEditingId(null)
+      setEditorKind(null)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Não foi possível salvar a Smart Scene.')
+    } finally {
       setBusy(false)
-      return
     }
-    await load()
-    setMessage(editingId ? 'Smart Scene atualizada.' : 'Smart Scene criada.')
-    setEditingId(null)
-    setEditorKind(null)
-    setBusy(false)
   }
 
   async function removeScene(id: string) {
