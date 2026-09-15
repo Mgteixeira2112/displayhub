@@ -1,4 +1,5 @@
 import { getHeroConfig, heroStyleVars } from './smart-scene-hero-config'
+import HeroCanvas from './HeroCanvas'
 import './smart-scenes.css'
 import './smart-scenes-hero.css'
 import './smart-scenes-hero-layers.css'
@@ -28,6 +29,18 @@ export default function SmartSceneView({ scene, className = '' }: { scene: Smart
   const priceAnimationClass = hero.priceAnimationEnabled ? `hero-text-animation-${hero.priceAnimation}` : 'hero-text-animation-none'
   const unitAnimationClass = hero.unitAnimationEnabled ? `hero-text-animation-${hero.unitAnimation}` : 'hero-text-animation-none'
   const complementAnimationClass = hero.complementAnimationEnabled ? `hero-text-animation-${hero.complementAnimation}` : 'hero-text-animation-none'
+
+  const usesHeroCanvas = () => scene.scene_type === 'hero'
+  if (usesHeroCanvas()) {
+    return (
+      <div
+        className={`smart-scene-player smart-scene-hero smart-scene-intensity-${scene.intensity} smart-scene-motion-${scene.motion}${heroClass} ${className}`.trim()}
+        data-scene-orientation={scene.orientation}
+      >
+        <HeroCanvas config={hero} productText={productText} complementText={secondaryText} />
+      </div>
+    )
+  }
 
   return (
     <div
