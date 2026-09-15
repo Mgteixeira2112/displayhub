@@ -5,7 +5,7 @@ import './smart-scenes-hero-text-animations.css'
 export type HeroStyle = 'explosive' | 'bands' | 'clean'
 export type HeroBackgroundMode = 'none' | 'solid' | 'video'
 export type HeroElementType = 'burst' | 'band' | 'circle' | 'block' | 'glow'
-export type HeroTextAnimation = 'pulse' | 'slide' | 'zoom' | 'float' | 'blink'
+export type HeroTextAnimation = 'pulse' | 'slide' | 'zoom' | 'float' | 'blink' | 'neon' | 'glitch' | 'wave' | 'typewriter' | 'split' | 'shadow'
 export type HeroTextCoordinateMode = 'canvas-v1'
 
 export type HeroConfig = {
@@ -141,7 +141,7 @@ function elementTypeValue(value: unknown, fallback: HeroElementType): HeroElemen
 }
 
 function textAnimationValue(value: unknown, fallback: HeroTextAnimation): HeroTextAnimation {
-  return value === 'pulse' || value === 'slide' || value === 'zoom' || value === 'float' || value === 'blink' ? value : fallback
+  return value === 'pulse' || value === 'slide' || value === 'zoom' || value === 'float' || value === 'blink' || value === 'neon' || value === 'glitch' || value === 'wave' || value === 'typewriter' || value === 'split' || value === 'shadow' ? value : fallback
 }
 
 function clampCanvas(value: number) {
