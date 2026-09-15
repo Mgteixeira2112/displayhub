@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { supabase } from './lib/supabase'
-import { getHeroConfig, heroStylePreset, heroStyleVars, type HeroBackgroundMode, type HeroConfig, type HeroElementType, type HeroStyle, type HeroTextAnimation } from './smart-scene-hero-config'
+import { getHeroConfig, heroStylePreset, heroStyleVars, type HeroBackgroundMode, type HeroConfig, type HeroElementType, type HeroFontStyle, type HeroStyle, type HeroTextAlign, type HeroTextAnimation } from './smart-scene-hero-config'
 import HeroCanvas, { type HeroCanvasTextPatch, type HeroCanvasTextTarget } from './HeroCanvas'
 import './smart-scenes.css'
 import './smart-scenes-hero.css'
@@ -57,6 +57,30 @@ const heroTextAnimationOptions: { value: HeroTextAnimation; label: string }[] = 
   { value: 'slide', label: 'Deslizar' },
   { value: 'float', label: 'Flutuar' },
   { value: 'blink', label: 'Piscar suave' },
+]
+
+const heroFontOptions = [
+  'Arial Black, Arial, sans-serif',
+  'Arial, sans-serif',
+  'Impact, Haettenschweiler, sans-serif',
+  'Verdana, Geneva, sans-serif',
+  'Trebuchet MS, Arial, sans-serif',
+  'Georgia, serif',
+  'Times New Roman, serif',
+  'Courier New, monospace',
+]
+
+const heroFontStyleOptions: { value: HeroFontStyle; label: string }[] = [
+  { value: 'normal', label: 'Normal' },
+  { value: 'bold', label: 'Negrito' },
+  { value: 'italic', label: 'Itálico' },
+  { value: 'bold italic', label: 'Negrito + itálico' },
+]
+
+const heroTextAlignOptions: { value: HeroTextAlign; label: string }[] = [
+  { value: 'left', label: 'Esquerda' },
+  { value: 'center', label: 'Centro' },
+  { value: 'right', label: 'Direita' },
 ]
 
 function ScenePreview({ scene, headline, primaryText, secondaryText, orientation = 'auto', intensity = 'impact', motion = 'balanced', heroConfig, editableHero = false, onHeroPositionChange, onHeroTextChange, onHeroElement1Change }: {
@@ -542,6 +566,15 @@ export default function SmartScenesManager() {
                 <div className="smart-hero-text-control">
                   <strong>Produto</strong>
                   <label>Cor<input type="color" value={heroConfig.productColor} onChange={(event) => updateHero('productColor', event.target.value)} /></label>
+                  <label>Fonte<select value={heroConfig.productFontFamily} onChange={(event) => updateHero('productFontFamily', event.target.value)}>{heroFontOptions.map((font) => <option key={font} value={font}>{font.split(',')[0]}</option>)}</select></label>
+                  <label>Estilo<select value={heroConfig.productFontStyle} onChange={(event) => updateHero('productFontStyle', event.target.value as HeroFontStyle)}>{heroFontStyleOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                  <label>Alinhamento<select value={heroConfig.productAlign} onChange={(event) => updateHero('productAlign', event.target.value as HeroTextAlign)}>{heroTextAlignOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                  <label>Contorno<input type="range" min="0" max="12" step="1" value={heroConfig.productStrokeWidth} onChange={(event) => updateHero('productStrokeWidth', Number(event.target.value))} /><span>{heroConfig.productStrokeWidth}px</span></label>
+                  <label>Cor do contorno<input type="color" value={heroConfig.productStrokeColor} disabled={heroConfig.productStrokeWidth === 0} onChange={(event) => updateHero('productStrokeColor', event.target.value)} /></label>
+                  <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.productShadowEnabled} onChange={(event) => updateHero('productShadowEnabled', event.target.checked)} />Sombra</label>
+                  <label>Cor da sombra<input type="color" value={heroConfig.productShadowColor} disabled={!heroConfig.productShadowEnabled} onChange={(event) => updateHero('productShadowColor', event.target.value)} /></label>
+                  <label>Suavidade da sombra<input type="range" min="0" max="40" value={heroConfig.productShadowBlur} disabled={!heroConfig.productShadowEnabled} onChange={(event) => updateHero('productShadowBlur', Number(event.target.value))} /><span>{heroConfig.productShadowBlur}px</span></label>
+                  <label>Distância da sombra<input type="range" min="0" max="20" value={heroConfig.productShadowOffset} disabled={!heroConfig.productShadowEnabled} onChange={(event) => updateHero('productShadowOffset', Number(event.target.value))} /><span>{heroConfig.productShadowOffset}px</span></label>
                   <label>Tamanho<input type="range" min="40" max="240" value={heroConfig.productSize} onChange={(event) => updateHero('productSize', Number(event.target.value))} /><span>{heroConfig.productSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.productRotation} onChange={(event) => updateHero('productRotation', Number(event.target.value))} /><span>{heroConfig.productRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.productAnimationEnabled} onChange={(event) => updateHero('productAnimationEnabled', event.target.checked)} />Animar</label>
@@ -550,6 +583,15 @@ export default function SmartScenesManager() {
                 <div className="smart-hero-text-control">
                   <strong>Preço</strong>
                   <label>Cor<input type="color" value={heroConfig.priceColor} onChange={(event) => updateHero('priceColor', event.target.value)} /></label>
+                  <label>Fonte<select value={heroConfig.priceFontFamily} onChange={(event) => updateHero('priceFontFamily', event.target.value)}>{heroFontOptions.map((font) => <option key={font} value={font}>{font.split(',')[0]}</option>)}</select></label>
+                  <label>Estilo<select value={heroConfig.priceFontStyle} onChange={(event) => updateHero('priceFontStyle', event.target.value as HeroFontStyle)}>{heroFontStyleOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                  <label>Alinhamento<select value={heroConfig.priceAlign} onChange={(event) => updateHero('priceAlign', event.target.value as HeroTextAlign)}>{heroTextAlignOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                  <label>Contorno<input type="range" min="0" max="12" step="1" value={heroConfig.priceStrokeWidth} onChange={(event) => updateHero('priceStrokeWidth', Number(event.target.value))} /><span>{heroConfig.priceStrokeWidth}px</span></label>
+                  <label>Cor do contorno<input type="color" value={heroConfig.priceStrokeColor} disabled={heroConfig.priceStrokeWidth === 0} onChange={(event) => updateHero('priceStrokeColor', event.target.value)} /></label>
+                  <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.priceShadowEnabled} onChange={(event) => updateHero('priceShadowEnabled', event.target.checked)} />Sombra</label>
+                  <label>Cor da sombra<input type="color" value={heroConfig.priceShadowColor} disabled={!heroConfig.priceShadowEnabled} onChange={(event) => updateHero('priceShadowColor', event.target.value)} /></label>
+                  <label>Suavidade da sombra<input type="range" min="0" max="40" value={heroConfig.priceShadowBlur} disabled={!heroConfig.priceShadowEnabled} onChange={(event) => updateHero('priceShadowBlur', Number(event.target.value))} /><span>{heroConfig.priceShadowBlur}px</span></label>
+                  <label>Distância da sombra<input type="range" min="0" max="20" value={heroConfig.priceShadowOffset} disabled={!heroConfig.priceShadowEnabled} onChange={(event) => updateHero('priceShadowOffset', Number(event.target.value))} /><span>{heroConfig.priceShadowOffset}px</span></label>
                   <label>Tamanho<input type="range" min="40" max="240" value={heroConfig.priceSize} onChange={(event) => updateHero('priceSize', Number(event.target.value))} /><span>{heroConfig.priceSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.priceRotation} onChange={(event) => updateHero('priceRotation', Number(event.target.value))} /><span>{heroConfig.priceRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.priceAnimationEnabled} onChange={(event) => updateHero('priceAnimationEnabled', event.target.checked)} />Animar</label>
@@ -558,6 +600,15 @@ export default function SmartScenesManager() {
                 <div className="smart-hero-text-control">
                   <strong>Unidade</strong>
                   <label>Cor<input type="color" value={heroConfig.unitColor} onChange={(event) => updateHero('unitColor', event.target.value)} /></label>
+                  <label>Fonte<select value={heroConfig.unitFontFamily} onChange={(event) => updateHero('unitFontFamily', event.target.value)}>{heroFontOptions.map((font) => <option key={font} value={font}>{font.split(',')[0]}</option>)}</select></label>
+                  <label>Estilo<select value={heroConfig.unitFontStyle} onChange={(event) => updateHero('unitFontStyle', event.target.value as HeroFontStyle)}>{heroFontStyleOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                  <label>Alinhamento<select value={heroConfig.unitAlign} onChange={(event) => updateHero('unitAlign', event.target.value as HeroTextAlign)}>{heroTextAlignOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                  <label>Contorno<input type="range" min="0" max="12" step="1" value={heroConfig.unitStrokeWidth} onChange={(event) => updateHero('unitStrokeWidth', Number(event.target.value))} /><span>{heroConfig.unitStrokeWidth}px</span></label>
+                  <label>Cor do contorno<input type="color" value={heroConfig.unitStrokeColor} disabled={heroConfig.unitStrokeWidth === 0} onChange={(event) => updateHero('unitStrokeColor', event.target.value)} /></label>
+                  <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.unitShadowEnabled} onChange={(event) => updateHero('unitShadowEnabled', event.target.checked)} />Sombra</label>
+                  <label>Cor da sombra<input type="color" value={heroConfig.unitShadowColor} disabled={!heroConfig.unitShadowEnabled} onChange={(event) => updateHero('unitShadowColor', event.target.value)} /></label>
+                  <label>Suavidade da sombra<input type="range" min="0" max="40" value={heroConfig.unitShadowBlur} disabled={!heroConfig.unitShadowEnabled} onChange={(event) => updateHero('unitShadowBlur', Number(event.target.value))} /><span>{heroConfig.unitShadowBlur}px</span></label>
+                  <label>Distância da sombra<input type="range" min="0" max="20" value={heroConfig.unitShadowOffset} disabled={!heroConfig.unitShadowEnabled} onChange={(event) => updateHero('unitShadowOffset', Number(event.target.value))} /><span>{heroConfig.unitShadowOffset}px</span></label>
                   <label>Tamanho<input type="range" min="40" max="240" value={heroConfig.unitSize} onChange={(event) => updateHero('unitSize', Number(event.target.value))} /><span>{heroConfig.unitSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.unitRotation} onChange={(event) => updateHero('unitRotation', Number(event.target.value))} /><span>{heroConfig.unitRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.unitAnimationEnabled} onChange={(event) => updateHero('unitAnimationEnabled', event.target.checked)} />Animar</label>
@@ -566,6 +617,15 @@ export default function SmartScenesManager() {
                 <div className="smart-hero-text-control">
                   <strong>Complemento</strong>
                   <label>Cor<input type="color" value={heroConfig.complementColor} onChange={(event) => updateHero('complementColor', event.target.value)} /></label>
+                  <label>Fonte<select value={heroConfig.complementFontFamily} onChange={(event) => updateHero('complementFontFamily', event.target.value)}>{heroFontOptions.map((font) => <option key={font} value={font}>{font.split(',')[0]}</option>)}</select></label>
+                  <label>Estilo<select value={heroConfig.complementFontStyle} onChange={(event) => updateHero('complementFontStyle', event.target.value as HeroFontStyle)}>{heroFontStyleOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                  <label>Alinhamento<select value={heroConfig.complementAlign} onChange={(event) => updateHero('complementAlign', event.target.value as HeroTextAlign)}>{heroTextAlignOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                  <label>Contorno<input type="range" min="0" max="12" step="1" value={heroConfig.complementStrokeWidth} onChange={(event) => updateHero('complementStrokeWidth', Number(event.target.value))} /><span>{heroConfig.complementStrokeWidth}px</span></label>
+                  <label>Cor do contorno<input type="color" value={heroConfig.complementStrokeColor} disabled={heroConfig.complementStrokeWidth === 0} onChange={(event) => updateHero('complementStrokeColor', event.target.value)} /></label>
+                  <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.complementShadowEnabled} onChange={(event) => updateHero('complementShadowEnabled', event.target.checked)} />Sombra</label>
+                  <label>Cor da sombra<input type="color" value={heroConfig.complementShadowColor} disabled={!heroConfig.complementShadowEnabled} onChange={(event) => updateHero('complementShadowColor', event.target.value)} /></label>
+                  <label>Suavidade da sombra<input type="range" min="0" max="40" value={heroConfig.complementShadowBlur} disabled={!heroConfig.complementShadowEnabled} onChange={(event) => updateHero('complementShadowBlur', Number(event.target.value))} /><span>{heroConfig.complementShadowBlur}px</span></label>
+                  <label>Distância da sombra<input type="range" min="0" max="20" value={heroConfig.complementShadowOffset} disabled={!heroConfig.complementShadowEnabled} onChange={(event) => updateHero('complementShadowOffset', Number(event.target.value))} /><span>{heroConfig.complementShadowOffset}px</span></label>
                   <label>Tamanho<input type="range" min="40" max="240" value={heroConfig.complementSize} onChange={(event) => updateHero('complementSize', Number(event.target.value))} /><span>{heroConfig.complementSize}%</span></label>
                   <label>Rotação<input type="range" min="-15" max="15" value={heroConfig.complementRotation} onChange={(event) => updateHero('complementRotation', Number(event.target.value))} /><span>{heroConfig.complementRotation}°</span></label>
                   <label className="smart-hero-animation-toggle"><input type="checkbox" checked={heroConfig.complementAnimationEnabled} onChange={(event) => updateHero('complementAnimationEnabled', event.target.checked)} />Animar</label>
