@@ -1,0 +1,49 @@
+name: Fix Hero Konva build
+
+on:
+  push:
+    branches: [feat/hero-konva-canvas]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/hero-konva-canvas
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/HeroCanvas.tsx')
+          s = p.read_text()
+          s = s.replace('return () => runner.stop()', 'return () => { runner.stop() }')
+          p.write_text(s)
+
+          p = Path('src/SmartScenesManager.tsx')
+          s = p.read_text()
+          old = "  if (scene.key === 'hero') {\n    return ("
+          new = "  const usesHeroCanvas = () => scene.key === 'hero'\n  if (usesHeroCanvas()) {\n    return ("
+          if old not in s: raise SystemExit('manager Hero canvas guard not found')
+          p.write_text(s.replace(old, new, 1))
+
+          p = Path('src/SmartSceneView.tsx')
+          s = p.read_text()
+          old = "  if (scene.scene_type === 'hero') {\n    return ("
+          new = "  const usesHeroCanvas = () => scene.scene_type === 'hero'\n  if (usesHeroCanvas()) {\n    return ("
+          if old not in s: raise SystemExit('view Hero canvas guard not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/HeroCanvas.tsx src/SmartScenesManager.tsx src/SmartSceneView.tsx
+          git commit -m "fix: resolve Hero Konva build errors"
+          git push origin HEAD:feat/hero-konva-canvas
