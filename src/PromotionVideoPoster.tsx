@@ -144,7 +144,7 @@ export default function PromotionVideoPoster({ poster, className = '', loop = tr
 
   return (
     <div className="promo-video-stage">
-      <BufferedPromotionVideo key={`${playbackUrl}:${loop ? 'loop' : 'once'}`} src={playbackUrl} loop={loop} onVideoEnded={undefined} />
+      <BufferedPromotionVideo key={`${playbackUrl}:${loop ? 'loop' : 'once'}`} src={playbackUrl} loop={loop} onEnded={onVideoEnded} />
       <div className="promo-video-overlay" style={{ opacity: overlayOpacity }} aria-hidden="true" />
       <PromotionPosterView poster={poster} className={`${className} promo-video-poster`.trim()} />
       {creditText && <small className="promo-video-credit" title={commonsCredit?.p || undefined}>{creditText}</small>}
