@@ -10,7 +10,8 @@ module.exports = defineConfig({
   expect: { timeout: 10_000 },
   // Imagens aprovadas permanecem versionadas; CI nunca aceita diferenças automaticamente.
   updateSnapshots: 'none',
-  snapshotPathTemplate: path.join(__dirname, 'baselines', 'images', '{arg}'),
+  // Playwright fornece {arg} sem a extensão; restaurar .png para o arquivo versionado.
+  snapshotPathTemplate: path.join(__dirname, 'baselines', 'images', '{arg}.png'),
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
   reporter: [

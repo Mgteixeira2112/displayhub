@@ -1,19 +1,25 @@
 # Referências visuais — aprovação obrigatória
 
-**Estado atual: `pending`.** O CI captura e anexa 45 imagens sintéticas, mas NÃO compara pixels até que imagens-base sejam examinadas e aprovadas em PR própria. CI verde neste estado não significa comparação visual aprovada. As 13 telas internas representam componentes reais em estados vazios; não testam dados preenchidos, permissões, QR, player ou Supabase de produção.
+O estado efetivo é definido exclusivamente por `manifest.json`. Após a PR #326 ser autorizada e integrada, o conjunto inicial será `approved`: 45 capturas sintéticas (13 áreas internas e duas telas públicas em desktop, tablet e celular). A aprovação específica do usuário está registrada em https://github.com/Mgteixeira2112/displayhub/pull/326#issuecomment-5722598687. A existência da aprovação **não** autoriza merge sem consentimento para a PR.
 
-## Como preparar imagens candidatas (somente em uma branch nova)
+## Estados e segurança
 
-1. Inspecione as 45 capturas do CI em desktop, tablet e celular, confirme que não há dados privados e que representam a aparência desejada. Não aprove automaticamente os artefatos do CI.
-2. Em checkout da **branch de candidatos**, execute `npm ci`, instale Playwright 1.55.0 temporariamente como no CI, `npx playwright install chromium`, `npx playwright test --config visual-standard/playwright.config.cjs` e `node visual-standard/stage-baseline-candidates.cjs`. O script exige 45 PNGs distintos e prepara `baselines/images/*.png` e `manifest.json` no estado `candidate`; não cria commit e não altera `main`.
-3. Abra uma PR **separada e identificada** contendo somente o manifesto e as 45 imagens candidatas. Compare visualmente as imagens da PR (ou o artefato). Solicite aprovação humana explícita do conjunto e registre a confirmação na conversa da PR.
-4. **Somente após confirmação**, atualize `manifest.json` para `status: "approved"` e preencha `approval: { "pr": <número da PR>, "confirmation": "<referência inequívoca à aprovação expressa>" }`. Os 45 nomes de arquivo devem corresponder exatamente ao inventário. O CI da mesma PR agora exige que todas as 45 imagens PNG existam e compara cada screenshot do navegador com o baseline versionado.
-5. Se uma comparação falhar, examine as imagens *expected/actual/diff* no relatório, corrija instabilidade legítima ou solicite novo aceite para mudanças visuais. **Nunca atualize o baseline automaticamente para deixar o CI verde.** Só fazer merge após CI aprovado e nova autorização específica para aquela PR.
+- `pending`: sem imagens aprovadas, não compara pixels.
+- `candidate`: exatamente 45 PNGs versionados e auditados, ainda não compara pixels.
+- `approved`: exige 45 PNGs, aprovação humana documentada e comparação Playwright de todas as imagens. Imagem ausente ou diferença além dos limites bloqueia o CI.
+- `updateSnapshots: 'none'`: jamais aceitar diferenças ou substituir PNGs automaticamente. O script de preparação também recusa alterar referências já aprovadas.
 
-## Critérios implementados
+## Como atualizar uma referência no futuro
 
-- Capturas `fullPage` com animações desativadas e cursor de texto oculto; Chromium/viewport fixados na configuração.
-- Playwright `toMatchSnapshot` com `threshold: 0.2` e `maxDiffPixelRatio: 0.005` (até 0,5% dos pixels alterados), sujeito à revisão por projeto. Alteração de dimensão falha. Os diffs são anexados ao relatório HTML em caso de divergência.
-- `updateSnapshots: 'none'` no teste e verificação do CI contra mudanças nas imagens de referência. O manifesto em `candidate` jamais é considerado aprovado.
-- O registro de aprovação é metadado para auditoria; sua autenticidade é confirmada por revisão humana da conversa da PR, não por um campo de texto isolado.
-- A pasta `artifacts/` não deve ser commitada. Testes são sintéticos, sem acesso à produção; o kit deve ser adaptado à arquitetura de cada novo projeto, não copiado cegamente.
+1. Inspecionar o estado real do aplicativo e executar os testes com respostas/login fictícios. Nunca usar contas, dados reais ou produção para capturas do padrão.
+2. Em branch separada, gerar novas candidatas e comparar imagens originais, `actual` e `diff` onde necessário; não aceitar imagens apenas para obter CI verde.
+3. Solicitar aprovação humana do **novo conjunto específico** e registrar a referência da aprovação na PR.
+4. Versionar somente os PNGs expressamente aprovados, conferir inventário e hashes, executar CI com comparação ativa e corrigir falhas legítimas sem afrouxar limiares para mascarar divergências.
+5. Obter autorização específica para merge; validar CI de `main` e GitHub Pages depois da integração.
+
+## Escopo e critérios
+
+- Imagens de página inteira, animações desativadas, cursor de texto oculto, Chromium e viewports padronizados.
+- `toMatchSnapshot`: `threshold: 0.2` e `maxDiffPixelRatio: 0.005` (0,5%). Diferenças e dimensões incompatíveis devem gerar falha e evidências.
+- O teste de 45 imagens cobre estados vazios com respostas HTTP fictícias; não homologa dados preenchidos, permissões específicas, QR, vídeos, player, Supabase real ou comportamento operacional.
+- Capturas temporárias ficam em `artifacts/` (não versionar). Adaptar o kit à arquitetura de cada novo projeto, sem copiar cegamente layout ou autenticação.
