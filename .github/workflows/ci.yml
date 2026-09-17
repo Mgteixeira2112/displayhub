@@ -52,3 +52,6 @@ jobs:
 
       - name: Verificar CSS Cockpit de Video Wall e Grupos no build
         run: node scripts/check-display-groups-cockpit.mjs
+
+      - name: Verificar CSS Cockpit das demais páginas no build
+        run: node scripts/check-remaining-cockpit.mjs
