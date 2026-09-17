@@ -78,6 +78,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
   const pairingRequested = hasPairingCode()
   const [view, setView] = useState<View>(pairingRequested ? 'devices' : 'overview')
   const [advancedOpen, setAdvancedOpen] = useState(pairingRequested)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isAdvanced = advancedViews.includes(view)
 
   useEffect(() => {
@@ -85,11 +86,21 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
       const target = (event as CustomEvent<string>).detail as View
       if (!allViews.has(target)) return
       setView(target)
+      setMobileMenuOpen(false)
       if (advancedViews.includes(target)) setAdvancedOpen(true)
     }
     window.addEventListener('displayhub:navigate', handleNavigate)
     return () => window.removeEventListener('displayhub:navigate', handleNavigate)
   }, [])
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [mobileMenuOpen])
 
   const nav = (target: View, label: string, icon: IconName, nested = false) => (
     <button
@@ -98,6 +109,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
       aria-current={view === target ? 'page' : undefined}
       onClick={() => {
         setView(target)
+        setMobileMenuOpen(false)
         if (nested) setAdvancedOpen(true)
       }}
     >
@@ -114,7 +126,12 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           <div><strong>DisplayHub</strong><span>Mídia para supermercados</span></div>
         </div>
 
-        <nav className="software-nav" aria-label="Navegação principal">
+        <button className="software-mobile-menu-toggle" type="button" aria-controls="software-mobile-nav" aria-expanded={mobileMenuOpen} aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'} onClick={() => setMobileMenuOpen((current) => !current)}>
+          <span aria-hidden="true">{mobileMenuOpen ? '✕' : '☰'}</span>
+          <span>Menu</span>
+        </button>
+
+        <nav id="software-mobile-nav" className={`software-nav ${mobileMenuOpen ? 'mobile-open' : ''}`} aria-label="Navegação principal">
           <span className="software-nav-group">Principal</span>
           {nav('overview', 'Início', 'home')}
           {nav('posters', 'Criar', 'create')}
@@ -155,6 +172,8 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
         </div>
       </aside>
 
+      {mobileMenuOpen && <button type="button" className="software-mobile-menu-backdrop" aria-label="Fechar menu" onClick={() => setMobileMenuOpen(false)} />}
+
       <div className={`software-main view-${view}`}>
         <header className="software-topbar">
           <div className="software-topbar-copy">
@@ -164,7 +183,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           </div>
           <div className="software-topbar-actions">
             <span className="software-company-pill">{companyName}</span>
-            {view !== 'groups' && view !== 'devices' && view !== 'smart-scenes' && <button className="software-topbar-create" type="button" onClick={() => setView('posters')}>+ Criar</button>}
+            {view !== 'groups' && view !== 'devices' && view !== 'smart-scenes' && <button className="software-topbar-create" type="button" onClick={() => { setView('posters'); setMobileMenuOpen(false) }}>+ Criar</button>}
           </div>
         </header>
         <main key={view} className="software-content">
