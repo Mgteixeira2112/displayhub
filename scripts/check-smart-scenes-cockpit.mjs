@@ -21,7 +21,9 @@ for (const rule of rules) {
 
 const assets = readdirSync('dist/assets').filter((name) => name.endsWith('.css'))
 if (!assets.length) throw new Error('O build não gerou CSS.')
-const compiled = assets.map((name) => readFileSync(join('dist/assets', name), 'utf8')).join('\n')
+// O minificador remove os espaços em torno de > sem modificar o seletor.
+const normalized = (value) => value.replace(/\s*>\s*/g, '>')
+const compiled = normalized(assets.map((name) => readFileSync(join('dist/assets', name), 'utf8')).join('\n'))
 const selectors = [
   '.modern-software-shell .view-smart-scenes .smart-scenes-toolbar > input',
   '.modern-software-shell .view-smart-scenes .smart-scene-row.is-expanded',
@@ -29,6 +31,6 @@ const selectors = [
   '.modern-software-shell .view-smart-scenes .smart-scenes-saved',
 ]
 for (const selector of selectors) {
-  if (!compiled.includes(selector)) throw new Error(`CSS de Smart Scenes ausente no build: ${selector}`)
+  if (!compiled.includes(normalized(selector))) throw new Error(`CSS de Smart Scenes ausente no build: ${selector}`)
 }
 console.log(`Cockpit Smart Scenes: ${selectors.length} seletores compilados; escopo, canvas, prévias e player protegidos.`)
