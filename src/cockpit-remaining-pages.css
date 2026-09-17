@@ -1,0 +1,244 @@
+/* Acabamento exclusivamente visual nas cinco telas ainda pendentes.
+   Cada seletor fica limitado à área autenticada correspondente. */
+
+/* Playlists avançadas */
+.modern-software-shell .view-playlists .playlist-workspace {
+  --remaining-border: #dfe7f1;
+  --remaining-focus: #2563eb;
+  gap: 16px;
+}
+
+.modern-software-shell .view-playlists .playlist-create-panel,
+.modern-software-shell .view-playlists .playlist-card {
+  border: 1px solid var(--remaining-border);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 7px 22px rgba(15, 23, 42, .045);
+}
+
+.modern-software-shell .view-playlists .playlist-create-panel {
+  border-top: 3px solid #2563eb;
+  overflow: hidden;
+}
+
+.modern-software-shell .view-playlists .playlist-create-panel > summary {
+  padding: 14px 16px;
+  color: #1d4ed8;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.modern-software-shell .view-playlists .playlist-create-grid {
+  padding: 14px;
+  gap: 12px;
+}
+
+.modern-software-shell .view-playlists .playlist-create-grid .content-form,
+.modern-software-shell .view-playlists .playlist-transition-controls,
+.modern-software-shell .view-playlists .playlist-item {
+  border: 1px solid #e4eaf2;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.modern-software-shell .view-playlists .playlist-card-head strong {
+  color: #172033;
+}
+
+.modern-software-shell .view-playlists .playlist-card-head p,
+.modern-software-shell .view-playlists .playlist-item small {
+  color: #64748b;
+}
+
+.modern-software-shell .view-playlists .playlist-workspace input,
+.modern-software-shell .view-playlists .playlist-workspace select {
+  border-color: var(--remaining-border);
+  background: #ffffff;
+}
+
+.modern-software-shell .view-playlists .playlist-workspace button:focus-visible,
+.modern-software-shell .view-playlists .playlist-workspace input:focus-visible,
+.modern-software-shell .view-playlists .playlist-workspace select:focus-visible,
+.modern-software-shell .view-playlists .playlist-create-panel > summary:focus-visible {
+  outline: 2px solid var(--remaining-focus);
+  outline-offset: 2px;
+}
+
+/* Programação avançada */
+.modern-software-shell .view-schedule .playlist-workspace {
+  --remaining-border: #dfe7f1;
+  --remaining-focus: #2563eb;
+  gap: 16px;
+}
+
+.modern-software-shell .view-schedule .schedule-create-panel,
+.modern-software-shell .view-schedule .publication-card {
+  border: 1px solid var(--remaining-border);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 7px 22px rgba(15, 23, 42, .045);
+}
+
+.modern-software-shell .view-schedule .schedule-create-panel {
+  border-top: 3px solid #2563eb;
+  overflow: hidden;
+}
+
+.modern-software-shell .view-schedule .schedule-create-panel > summary {
+  padding: 14px 16px;
+  color: #1d4ed8;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.modern-software-shell .view-schedule .publication-form {
+  margin: 0;
+  padding: 15px;
+  background: #ffffff;
+}
+
+.modern-software-shell .view-schedule .weekday-row label {
+  border-color: #dfe7f1;
+  background: #f8fafc;
+}
+
+.modern-software-shell .view-schedule .publication-card strong {
+  color: #172033;
+}
+
+.modern-software-shell .view-schedule .publication-card span,
+.modern-software-shell .view-schedule .publication-card small {
+  color: #64748b;
+}
+
+.modern-software-shell .view-schedule .playlist-workspace input,
+.modern-software-shell .view-schedule .playlist-workspace select {
+  border-color: var(--remaining-border);
+  background: #ffffff;
+}
+
+.modern-software-shell .view-schedule .playlist-workspace button:focus-visible,
+.modern-software-shell .view-schedule .playlist-workspace input:focus-visible,
+.modern-software-shell .view-schedule .playlist-workspace select:focus-visible,
+.modern-software-shell .view-schedule .schedule-create-panel > summary:focus-visible {
+  outline: 2px solid var(--remaining-focus);
+  outline-offset: 2px;
+}
+
+/* Templates técnicos */
+.modern-software-shell .view-technical-templates .template-workspace {
+  --remaining-border: #dfe7f1;
+  --remaining-focus: #2563eb;
+}
+
+.modern-software-shell .view-technical-templates .template-workspace .create-panel,
+.modern-software-shell .view-technical-templates .template-card {
+  border: 1px solid var(--remaining-border);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 7px 22px rgba(15, 23, 42, .045);
+}
+
+.modern-software-shell .view-technical-templates .template-workspace .create-panel {
+  border-top: 3px solid #2563eb;
+  overflow: hidden;
+}
+
+.modern-software-shell .view-technical-templates .template-workspace .create-panel > summary {
+  padding: 14px 16px;
+  color: #1d4ed8;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.modern-software-shell .view-technical-templates .template-form {
+  margin-top: 0;
+  padding: 15px;
+  background: #ffffff;
+}
+
+.modern-software-shell .view-technical-templates .template-card > span {
+  color: #64748b;
+}
+
+.modern-software-shell .view-technical-templates .template-card > strong {
+  color: #172033;
+}
+
+.modern-software-shell .view-technical-templates .template-workspace input,
+.modern-software-shell .view-technical-templates .template-workspace select {
+  border-color: var(--remaining-border);
+  background: #ffffff;
+}
+
+.modern-software-shell .view-technical-templates .template-workspace button:focus-visible,
+.modern-software-shell .view-technical-templates .template-workspace input:focus-visible,
+.modern-software-shell .view-technical-templates .template-workspace select:focus-visible,
+.modern-software-shell .view-technical-templates .template-workspace summary:focus-visible {
+  outline: 2px solid var(--remaining-focus);
+  outline-offset: 2px;
+}
+
+/* Histórico técnico */
+.modern-software-shell .view-history .overview-history {
+  --remaining-border: #dfe7f1;
+  --remaining-focus: #2563eb;
+  border-top: 3px solid #2563eb;
+  border-radius: 16px;
+  padding: 17px;
+  background: #ffffff;
+  box-shadow: 0 7px 22px rgba(15, 23, 42, .045);
+}
+
+.modern-software-shell .view-history .overview-history .overview-section-heading h2 {
+  color: #172033;
+}
+
+.modern-software-shell .view-history .history-list article {
+  border: 1px solid var(--remaining-border);
+  border-radius: 12px;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.modern-software-shell .view-history .history-list article strong {
+  color: #172033;
+}
+
+.modern-software-shell .view-history .history-list article span,
+.modern-software-shell .view-history .history-list article time {
+  color: #64748b;
+}
+
+/* Configurações */
+.modern-software-shell .view-settings .account-grid {
+  --remaining-border: #dfe7f1;
+  --remaining-focus: #2563eb;
+  gap: 14px;
+}
+
+.modern-software-shell .view-settings .account-grid article {
+  border: 1px solid var(--remaining-border);
+  border-top: 3px solid #2563eb;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 7px 22px rgba(15, 23, 42, .045);
+}
+
+.modern-software-shell .view-settings .account-grid article span {
+  color: #64748b;
+}
+
+.modern-software-shell .view-settings .account-grid article strong {
+  color: #172033;
+  overflow-wrap: anywhere;
+}
+
+/* Manter as medidas e a grade existentes; ampliar apenas o alvo de toque no celular. */
+@media (max-width: 700px) {
+  .modern-software-shell .view-playlists .playlist-workspace button,
+  .modern-software-shell .view-schedule .playlist-workspace button,
+  .modern-software-shell .view-technical-templates .template-workspace button {
+    min-height: 44px;
+  }
+}
