@@ -46,3 +46,6 @@ jobs:
 
       - name: Verificar CSS Cockpit de Smart Scenes no build
         run: node scripts/check-smart-scenes-cockpit.mjs
+
+      - name: Verificar CSS Cockpit de Players Windows no build
+        run: node scripts/check-devices-cockpit.mjs
