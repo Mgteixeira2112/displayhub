@@ -105,17 +105,23 @@ export default function PublicPlayer({ token }: { token: string }) {
   const handleHlsSample = useCallback((sample: HlsMediaSample | null) => { providerTelemetry.current = sample }, [])
 
   const loadProgram = useCallback(async () => {
-    const [programRes, wallRes] = await Promise.all([
-      publicSupabase.functions.invoke('display-program', { body: { token } }),
-      publicSupabase.functions.invoke('display-wall-context', { body: { token } }),
-    ])
-    const { data, error } = programRes
+    const { data, error } = await publicSupabase.functions.invoke('display-program', { body: { token } })
     if (error || !data?.display) {
       if ((error as { context?: { status?: number } })?.context?.status === 404 || data?.error === 'display_unavailable') setInvalid(true)
       else setLoadError(true)
       return
     }
     const nextProgram = data as Program
+    // Only video walls need an additional Edge Function for their viewport.
+    let nextWall: WallContext | null = null
+    if (nextProgram.group_mode === 'video_wall') {
+      const { data: wallData, error: wallError } = await publicSupabase.functions.invoke('display-wall-context', { body: { token } })
+      if (wallError) {
+        setLoadError(true)
+        return
+      }
+      nextWall = (wallData?.wall || null) as WallContext | null
+    }
     const nextPublication = nextProgram.publications.find((row) => publicationMatches(row)) || null
     const nextPlaylistId = nextPublication?.playlist.id ?? null
     if (activePlaylistIdRef.current !== nextPlaylistId) {
@@ -132,24 +138,36 @@ export default function PublicPlayer({ token }: { token: string }) {
     setInvalid(false)
     setLoadError(false)
     setProgram(nextProgram)
-    setWall((wallRes.data?.wall || null) as WallContext | null)
+    setWall(nextWall)
   }, [token])
 
+  const groupMode = program?.group_mode || null
   useEffect(() => {
     let active = true
+    let connectedOnce = false
     void loadProgram()
     const channel = publicSupabase.channel(`display:${token}`)
       .on('broadcast', { event: 'display_invalidated' }, () => { if (active) setInvalid(true) })
       .on('broadcast', { event: 'display_program_changed' }, () => { if (active) void loadProgram() })
-      .subscribe()
-    const timer = window.setInterval(() => { if (active) void loadProgram() }, 2000)
+      .subscribe((status) => {
+        if (status !== 'SUBSCRIBED') return
+        // Revalidate after a dropped Realtime connection; the first connection already loads above.
+        if (connectedOnce && active) void loadProgram()
+        connectedOnce = true
+      })
     return () => {
       active = false
-      window.clearInterval(timer)
       if (transitionTimerRef.current != null) window.clearTimeout(transitionTimerRef.current)
       void publicSupabase.removeChannel(channel)
     }
   }, [token, loadProgram])
+
+  useEffect(() => {
+    // Launch synchronization requires the existing two-second cadence.
+    // Standalone displays use Realtime plus a two-minute recovery poll.
+    const timer = window.setInterval(() => { void loadProgram() }, groupMode ? 2000 : 120000)
+    return () => window.clearInterval(timer)
+  }, [groupMode, loadProgram])
 
   const publication = useMemo(() => program?.publications.find((row) => publicationMatches(row)) || null, [program])
   const items = publication?.playlist.items || []
@@ -299,9 +317,35 @@ export default function PublicPlayer({ token }: { token: string }) {
     return expected.offsetSeconds
   }, [effectiveIndex, items, syncSession, coordinatedLaunch, launchHolding])
 
+  // Keep the current slide and playback sample fresh without restarting the heartbeat
+  // whenever a playlist item or a two-second group refresh changes React state.
+  const heartbeatContext = useRef<{
+    program: Program | null
+    invalid: boolean
+    publication: Publication | null
+    item: Item | null
+    items: Item[]
+    syncSession: SyncSession | null
+    coordinatedLaunch: GroupLaunch | null
+    effectiveIndex: number
+  } | null>(null)
+
   useEffect(() => {
-    if (!program || invalid) return
+    heartbeatContext.current = { program, invalid, publication, item, items, syncSession, coordinatedLaunch, effectiveIndex }
+  }, [program, invalid, publication, item, items, syncSession, coordinatedLaunch, effectiveIndex])
+
+  const hasProgram = program !== null
+  const heartbeatMs = groupMode ? 10000 : 60000
+  useEffect(() => {
+    if (!hasProgram || invalid) return
     const report = () => {
+      const state = heartbeatContext.current
+      if (!state?.program || state.invalid) return
+      const {
+        program: currentProgram, publication: currentPublication, item: currentItem,
+        items: currentItems, syncSession: currentSession,
+        coordinatedLaunch: currentLaunch, effectiveIndex: currentIndex,
+      } = state
       let expectedPositionMs: number | null = null
       let actualPositionMs: number | null = null
       let buffering = false
@@ -309,24 +353,26 @@ export default function PublicPlayer({ token }: { token: string }) {
       const mediaSample = providerTelemetry.current
       if (mediaSample && Date.now() - mediaSample.sampledAt <= 5000) {
         expectedPositionMs = mediaSample.expectedPositionMs; actualPositionMs = mediaSample.actualPositionMs; buffering = mediaSample.buffering; measurementKind = mediaSample.measurementKind
-      } else if ((syncSession || coordinatedLaunch) && item && items.length) {
-        const expected = syncSession ? resolveSyncCursor(items, syncSession) : coordinatedLaunch ? resolveLaunchCursor(items, coordinatedLaunch) : null
-        if (expected && expected.index === effectiveIndex) {
+      } else if ((currentSession || currentLaunch) && currentItem && currentItems.length) {
+        const expected = currentSession ? resolveSyncCursor(currentItems, currentSession) : currentLaunch ? resolveLaunchCursor(currentItems, currentLaunch) : null
+        if (expected && expected.index === currentIndex) {
           expectedPositionMs = Math.max(0, Math.round(expected.offsetSeconds * 1000))
           const anchor = playbackAnchor.current
-          if (anchor?.key === `${expected.sequence}:${item.id}`) {
+          if (anchor?.key === `${expected.sequence}:${currentItem.id}`) {
             const elapsed = Math.max(0, performance.now() - anchor.startedAt)
-            actualPositionMs = Math.min(item.duration_seconds * 1000, Math.max(0, Math.round(anchor.offsetMs + elapsed)))
+            actualPositionMs = Math.min(currentItem.duration_seconds * 1000, Math.max(0, Math.round(anchor.offsetMs + elapsed)))
           }
         }
       }
-      const sequence = syncSession?.sequence ?? coordinatedLaunch?.sequence ?? 0
-      void publicSupabase.functions.invoke('display-state', { body: { token, playlist_id: publication?.playlist.id ?? null, item_id: item?.id ?? null, group_id: program.group_id ?? null, session_id: syncSession?.id ?? null, expected_position_ms: expectedPositionMs, actual_position_ms: actualPositionMs, sequence, buffering, measurement_kind: measurementKind } })
+      const sequence = currentSession?.sequence ?? currentLaunch?.sequence ?? 0
+      void publicSupabase.functions.invoke('display-state', { body: { token, playlist_id: currentPublication?.playlist.id ?? null, item_id: currentItem?.id ?? null, group_id: currentProgram.group_id ?? null, session_id: currentSession?.id ?? null, expected_position_ms: expectedPositionMs, actual_position_ms: actualPositionMs, sequence, buffering, measurement_kind: measurementKind } })
     }
     report()
-    const timer = window.setInterval(report, 10000)
+    // The monitoring panel treats a display as online for 90 seconds; use 60s
+    // for standalone heartbeat, retaining 10s for group sync telemetry (30s TTL).
+    const timer = window.setInterval(report, heartbeatMs)
     return () => window.clearInterval(timer)
-  }, [token, program, invalid, publication?.playlist.id, item?.id, item?.duration_seconds, items, syncSession, coordinatedLaunch, effectiveIndex])
+  }, [token, hasProgram, invalid, heartbeatMs])
 
   if (invalid) return <main className="public-display invalid-display"><div className="brand-mark">DH</div><h1>Display indisponível</h1><p>Este link foi revogado, desativado ou não existe.</p></main>
   if (loadError) return <main className="public-display invalid-display"><div className="brand-mark">DH</div><h1>Falha de conexão</h1><p>O player tentará carregar novamente automaticamente.</p></main>
