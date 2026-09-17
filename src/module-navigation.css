@@ -2,6 +2,7 @@
 @import './displays-cockpit.css';
 @import './content-library-visual.css';
 @import './content-library-top-layout.css';
+@import './content-library-cockpit.css';
 
 .software-dashboard-panel > .account-grid,
 .software-dashboard-panel > .workspace-section,
