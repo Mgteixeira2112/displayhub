@@ -1,13 +1,22 @@
 # Prompt de execução — Google AI Studio
 
-Crie um protótipo visual isolado e navegável, NÃO um novo sistema de produção, para a tela `Início` / Visão Geral do DisplayHub. Leia integralmente o arquivo `design-system/DESIGN_BRIEF.md` fornecido junto a este prompt e trate o documento como contrato obrigatório.
+OBJETIVO: criar somente um protótipo visual isolado da tela Início/Visão Geral do DisplayHub. Leia `design-system/DESIGN_BRIEF.md` e `design-system/PREVIEW_STABILITY.md` antes de escrever código.
 
-Contexto de tecnologia: React 19 + TypeScript 5 + Vite 8. O projeto real usa Supabase, mas este protótipo NÃO deve ter qualquer conexão com Supabase, autenticação, APIs, credenciais, dados reais, comandos aos players nem deploy do produto. Não altere a main ou arquivos do sistema real; produza os arquivos em projeto isolado ou branch exclusiva de protótipo.
+## Pré-voo obrigatório — antes de redesenhar
+1. Confirme qual commit/branch foi importado e se todos os arquivos do projeto estão presentes. Compare importações locais com arquivos reais e confira `index.html`, `src/main.tsx`, `src/App.tsx` e o grafo de imports.
+2. O arquivo original `src/lib/dataRefresh.ts` EXISTE na branch main do DisplayHub (implementa subscribeDataChanged e notifyDataChanged). Se ele faltar no workspace importado, a importação está incompleta ou a cópia divergiu: reimporte/restaure o arquivo original da mesma revisão, não invente um barramento alternativo. Inspecione qualquer outro arquivo ausente da mesma maneira.
+3. Rode os scripts reais de `package.json` (instalação conforme lockfile, `npm run build`, `npm run lint`, se disponíveis). Registre erros; não diga que passou sem logs. Cheque também a renderização efetiva do Preview. Um build verde sozinho não comprova Preview funcional.
+4. Se o ambiente importar somente main ou não permitir selecionar uma branch, NÃO sincronize de volta ao repositório; desenvolva em projeto/cópia isolada e entregue ZIP. Jamais publique, faça merge ou envie código à main.
+5. Se a aplicação completa depender de sessão, rede, Supabase ou outros módulos para montar, NÃO altere nem simule silenciosamente o backend para fazê-la aparecer: crie uma entrada de demonstração autocontida e isolada usando fixtures locais e componentes de apresentação, sem importar App.tsx, autenticação ou managers operacionais.
 
-Preserve no protótipo todas as informações e destinos já documentados no briefing, sem criar módulos novos. Foque no design do conteúdo do dashboard; a sidebar/topbar existentes devem ser consideradas como contexto, não reescritas em produção. Use dados de demonstração explicitamente marcados e separe fixtures da apresentação. Não afirme que a presença de uma playlist prova que a mídia está tocando.
+## Desenvolvimento visual
+Contexto: React 19, TypeScript 5, Vite 8. O Supabase é a fonte da verdade do software real, mas o protótipo não pode usá-lo nem conter chaves, APIs, credenciais, dados reais ou comandos a players. Preserve navegação e informações descritas no briefing como referência, sem inventar módulos. Dashboard com hierarquia visual forte, responsivo desktop/tablet/mobile; estados carregando, erro, vazio, online e offline. Interações somente demonstrativas e identificadas. Playlist atribuída não significa mídia efetivamente tocando.
 
-Crie uma experiência de alta qualidade com hierarquia forte e layout desktop/tablet/mobile. Incluir estados: carregando, erro, vazio, online, offline e listas preenchidas. Não depender apenas de cores para status. Não adicionar textos explicativos desnecessários. Todos os controles são SOMENTE demonstrações e devem estar marcados como tal; documente a ação real correspondente, quando existir.
+## Verificação obrigatória após cada alteração
+- Identifique arquivos tocados e confirme todos os imports locais e assets referenciados (inclusive index.html, CSS e módulos tipados).
+- Execute `npm run build` e `npm run lint` quando disponíveis; corrija a causa real de falhas sem criar stubs, apagar importações funcionais ou alterar as regras do produto.
+- Abra o Preview e confira se a tela nova é a que está efetivamente montada; se não conseguir verificar o Preview, declare explicitamente a limitação e mostre erros/logs.
+- Congele visual e código depois da aprovação; não sincronize mudanças técnicas feitas apenas para rodar a cópia sem revisão específica.
 
-Entregue obrigatoriamente: (1) código-fonte completo e organizado; (2) arquivos de apresentação e fixtures separados; (3) valores concretos das variáveis visuais usadas em `DESIGN_TOKENS.json`; (4) `DESIGN_HANDOFF.md` preenchido com mapa de componentes, arquivos, ações simuladas e riscos; (5) capturas desktop/tablet/mobile para aprovação visual; (6) instruções simples para exportar ZIP ou disponibilizar o protótipo em repositório/branch isolada.
-
-Pare após a entrega do protótipo. Não integre código ao produto, não realize merge e não declare funcionalidades homologadas. A integração será feita posteriormente pelo ChatGPT, por PR separada e validação funcional.
+## Entregáveis
+Código visual e fixtures separados; `DESIGN_TOKENS.json` com valores concretos após aprovação; `DESIGN_HANDOFF.md` com mapa de componentes e interações simuladas, arquivos alterados e lista explícita de quaisquer reparos técnicos; capturas desktop/tablet/mobile e ZIP ou branch segura. Pare antes de integrar o produto real. A integração funcional será feita pelo ChatGPT em PR separada após inspeção, testes, CI e validação do usuário.
