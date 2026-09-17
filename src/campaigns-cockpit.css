@@ -1,0 +1,82 @@
+/* Acabamento visual Cockpit somente na navegação autenticada de Campanhas.
+   Mantém estruturas, formulários, filtros e expansão existentes intactos. */
+.modern-software-shell .view-campaigns .playlist-workspace {
+  --campaign-cockpit-border: #dfe7f1;
+  --campaign-cockpit-focus: #2563eb;
+  --campaign-cockpit-text: #172033;
+}
+
+.modern-software-shell .view-campaigns .playlist-create-panel {
+  border-color: var(--campaign-cockpit-border);
+  border-top: 3px solid #2563eb;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .05);
+}
+
+.modern-software-shell .view-campaigns .playlist-create-grid .content-form {
+  border-color: #e2eaf3;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.modern-software-shell .view-campaigns .playlist-create-grid .content-form h3 {
+  color: var(--campaign-cockpit-text);
+}
+
+.modern-software-shell .view-campaigns .campaign-toolbar-search {
+  border-color: var(--campaign-cockpit-border);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, .035);
+}
+
+.modern-software-shell .view-campaigns .campaign-toolbar-filters {
+  border-color: var(--campaign-cockpit-border);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.modern-software-shell .view-campaigns .campaign-toolbar-filters button.is-active {
+  color: #1d4ed8;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .08);
+}
+
+.modern-software-shell .view-campaigns .playlist-card {
+  border-color: var(--campaign-cockpit-border);
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, .04);
+}
+
+.modern-software-shell .view-campaigns .playlist-card.is-expanded {
+  border-top: 3px solid #2563eb;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .06);
+}
+
+.modern-software-shell .view-campaigns .playlist-card-head strong,
+.modern-software-shell .view-campaigns .playlist-create-grid .content-form h3 {
+  color: var(--campaign-cockpit-text);
+}
+
+.modern-software-shell .view-campaigns .playlist-card-head:focus-visible,
+.modern-software-shell .view-campaigns .campaign-toolbar-filters button:focus-visible,
+.modern-software-shell .view-campaigns .playlist-workspace button:focus-visible,
+.modern-software-shell .view-campaigns .playlist-workspace input:focus-visible,
+.modern-software-shell .view-campaigns .playlist-workspace select:focus-visible {
+  outline: 2px solid var(--campaign-cockpit-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 620px) {
+  .modern-software-shell .view-campaigns .playlist-create-grid .content-form > .primary-button,
+  .modern-software-shell .view-campaigns .playlist-card.is-expanded > .campaign-inline-add-content > .primary-button,
+  .modern-software-shell .view-campaigns .playlist-card.is-expanded .campaign-inline-schedule .publication-form > .primary-button {
+    min-height: 44px;
+    height: auto;
+  }
+
+  .modern-software-shell .view-campaigns .campaign-toolbar-filters button {
+    min-height: 36px;
+  }
+}
