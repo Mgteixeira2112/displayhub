@@ -1,52 +1,49 @@
-# Padrão Visual Universal — v1.0
+# Padrão Visual Universal — v1.1 (piloto DisplayHub)
 
-**Objetivo:** reduzir trabalho repetitivo de revisão visual nos projetos sem copiar a identidade gráfica nem a arquitetura do DisplayHub. Esta pasta é um **kit portátil de referência**, criado inicialmente no DisplayHub; não é um repositório central separado, nem está automaticamente instalado em outros projetos.
+**Objetivo:** reduzir trabalho repetitivo de revisão visual em projetos diferentes, sem copiar identidade gráfica ou arquitetura do DisplayHub. Este é um kit portátil de referência, não um repositório central e não está instalado automaticamente nos outros projetos.
 
-## Acordo de trabalho para cada projeto
+## Procedimento obrigatório
 
-1. **Inspecionar o estado real**: identificar stack, rotas, menu, design system, CSS, telas desktop/tablet/mobile, fluxos críticos, autenticação, banco, testes, CI e deploy. Registrar páginas encontradas e excluir rotas públicas/player de mudanças administrativas.
-2. **Definir a referência**: aprovar uma direção visual própria do produto antes de expandi-la. Preservar cores, identidade, nomenclatura, funcionalidades e componentes já existentes. Não clonar a aparência do DisplayHub em sistemas de hotel, seguro ou salão.
-3. **Inventariar e estabelecer evidência anterior**: para cada página, viewport e estado importante, obter captura sem dados pessoais, anotar comportamento e detectar elementos cortados, sobrepostos ou desalinhados. Se não for possível acessar tela autenticada com segurança, marcar como **não coberta**, jamais como aprovada.
-4. **Implementar em branch**: uma PR para o lote visual explicitamente solicitado, arquivos pequenos e CSS limitado à área correta. Alterações de lógica, banco, player, segurança, deploy ou performance são outras PRs; só entram quando indispensáveis, justificadas e revisadas separadamente. Nunca gravar diretamente na `main`.
-5. **Executar gates automáticos**: dependências reprodutíveis, lint, build, testes existentes, smoke visual no navegador, três tamanhos de tela, ausência de rolagem horizontal indevida, erros de página, controles com nomes acessíveis e capturas anexadas à execução. Testes de CSS isolado complementam, mas não substituem teste renderizado.
-6. **Revisar diferenças**: confrontar capturas anterior/posterior. Referências oficiais de screenshot só podem ser atualizadas por PR revisada; nunca sobrescrevê-las automaticamente após uma mudança. Se não houver baseline, disponibilizar capturas para aprovação e registrar que comparação pixel a pixel ainda não existe.
-7. **Publicar com aprovação específica**: confirmar escopo, arquivos, SHA do head e CI verde, pedir autorização **para a PR identificada**. Só após autorização executar merge; a publicação deve aguardar o CI verde da `main` e usar o commit exato que passou. Conferir sucesso real do deploy.
-8. **Homologar no produto real**: proprietário acessa a versão autenticada, revisa navegação e o lote combinado em desktop/celular e confirma ou descreve ajustes. CI verde e screenshots de login não são homologação de todo o produto. Registrar aprovação na PR.
+1. Inspecionar arquitetura, telas, componentes, identidade existente, autenticação, permissões, dados, CI e publicação antes de modificar.
+2. Aprovar uma referência visual específica do produto; preservar cores, nomes, operações e componentes úteis. Nunca copiar cegamente o CSS do DisplayHub para hotéis, seguros ou salões.
+3. Registrar páginas e estados desktop/tablet/mobile, com capturas **sem dados reais**. Se um estado não puder ser reproduzido de forma isolada, declarar **não coberto**.
+4. Implementar em branch, com PR limitada ao lote visual autorizado. Corrigir lógica, banco, segurança, deploy e players em PRs distintas quando necessário. Nunca escrever na `main`.
+5. Executar lint, build, testes de CSS e testes renderizados de navegador com checagem de navegação, overflow, erros e capturas. Screenshots são evidência, não homologação.
+6. Comparar capturas anteriores e posteriores com referência aprovada. Baselines oficiais só mudam em PR revisada, nunca automaticamente.
+7. Confirmar arquivos, SHA e CI verde, pedir autorização **específica para a PR** e só então fazer merge. Deploy deve aguardar CI da `main`, publicar o SHA testado e ter sucesso confirmado.
+8. Proprietário homologa a aplicação real após deploy. Registrar aprovação na PR. Lote com várias páginas é permitido quando solicitado, sem misturar mudanças funcionais.
 
-### Preferência de organização
+## Regras de segurança
 
-**Lotes visuais são permitidos e preferidos quando o usuário solicitar revisão final de uma só vez.** O lote consiste de várias páginas do **mesmo assunto visual**, não de múltiplas mudanças funcionais. Em situações de risco, criar PRs pequenas mesmo durante o lote. Se o usuário não especificar, combinar previamente a forma de revisão.
+- Nunca usar credenciais pessoais, registros de clientes, banco de produção, tokens de TV ou sessões reais nas capturas. Testar ambientes autenticados somente com respostas/contas sintéticas e isolamento verificável.
+- Não gravar tokens, screenshots privados ou dados pessoais em repositórios e artefatos públicos. Não escrever no Supabase, alterar schema ou contornar RBAC para mudar aparência.
+- Nunca automatizar o merge, a aprovação do usuário, o aceite de snapshots nem publicar antes de autorização concreta.
+- Ajustar caminhos, seletores, servidor, dados falsos, autenticação e CI à arquitetura inspecionada de cada projeto. Não presumir Vite, React, Supabase ou GitHub Pages.
 
-### Regras de isolamento
+## Testes executáveis neste repositório
 
-- Nunca usar credenciais pessoais, dados de clientes, banco de produção ou tokens de TV para gerar screenshots.
-- Testar áreas autenticadas somente com conta sintética, banco/fixtures isolados, política explícita de descarte e mascaramento; sem esse ambiente, o teste fica pendente.
-- Não colocar chaves secretas, arquivos de sessão, tokens, screenshots privados ou dados pessoais em commits/artefatos públicos.
-- Não mexer no Supabase, schema, RLS ou integrações só para mudar a aparência.
-- Não automatizar merge, aprovação, atualização de snapshots oficiais ou publicação sem autorização concreta para a PR em questão.
-- Ajustar paths, seletor e servidor por projeto; nunca presumir que todos usam Vite, GitHub Pages, Supabase ou a mesma versão do React.
+`visual-standard/playwright.config.cjs` roda Chromium em desktop (1440×900), tablet (768×1024) e celular (390×844). O job `visual-public` instala Playwright temporariamente e roda os dois arquivos abaixo sem alterar o lockfile:
 
-## Piloto executável neste repositório
+- `tests/public-auth.spec.cjs`: tela pública de entrada e cadastro vazio; valida visibilidade, labels, ausência de overflow e erros e salva **seis capturas**.
+- `tests/internal-auth.spec.cjs`: monta o **App real**, simula login somente com HTTP interceptado, usa empresa/usuário artificiais e respostas vazias para listas, percorre **13 áreas internas** pelo evento de navegação existente, verifica título, contêiner visível, overflow e erros e gera **39 capturas**. O teste aborta solicitações externas não autorizadas, encerra WebSockets para o host fictício e bloqueia operações de gravação/RPC. O script remoto estático de QR Code é substituído por resposta vazia **somente no teste**: QR e pareamento não são cobertos.
 
-`visual-standard/playwright.config.cjs` e `visual-standard/tests/public-auth.spec.cjs` executam Chromium sem conta real, com URL/ chave pública **fictícias**, testam apenas o login público no desktop, tablet e celular, verificam overflow, erros de página, campos identificados e fluxo visual de alternância entre entrar/cadastrar, gerando capturas para download na execução do Actions. **Não testam as áreas logadas.** O job `visual-public` no CI instala Playwright em ambiente efêmero, sem atualizar `package.json` ou lockfile. Para testar localmente, rode `npm ci`, instale `@playwright/test@1.55.0` com `npm install --no-save --package-lock=false @playwright/test@1.55.0`, execute `npx playwright install chromium` e `npx playwright test --config visual-standard/playwright.config.cjs` com variáveis fictícias `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` presentes no ambiente.
+Todos os acessos Supabase do navegador são interceptados para `https://example.supabase.co` com chave de ambiente fictícia; nenhuma chamada alcança o banco real. O job exige pelo menos **45 capturas e relatório HTML** como condição do CI. Execução local: `npm ci`; `npm install --no-save --package-lock=false @playwright/test@1.55.0`; `npx playwright install chromium`; `npx playwright test --config visual-standard/playwright.config.cjs` (Vite iniciado pelo Playwright com variáveis fictícias).
 
-As capturas são **evidência inicial**, não comparação automatizada com imagem aprovada. Depois de aprovação das imagens-base, adicionar `toHaveScreenshot` com snapshots versionados e limites de variação documentados; nunca aceitar diferenças automaticamente.
+**Limites:** os testes internos cobrem componentes e navegação em estados **vazios**, mas não verificam operações de escrita, dados preenchidos, QR Codes, player/TV, Supabase real, RLS ou permissões de acesso. Capturas ainda não são comparadas automaticamente com imagens-base aprovadas; para isso, aprovar snapshots e adicionar `toHaveScreenshot` em outra PR com limites definidos. Uma captura bem-sucedida não significa aprovação estética ou funcional em produção.
 
-## Portar para outro projeto
+## Reutilização em outros projetos
 
-Copiar este documento, o teste e a configuração como referência. Adaptar a rota pública, `webServer`, seletores, variáveis fictícias e CI à stack real; criar páginas sintéticas representativas ou fixtures isoladas para cobrir o login e a navegação autenticada. Não copiar arquivos de CSS de um negócio para outro. Garantir que deploy depende do CI na branch principal; para outro provedor, usar o mecanismo equivalente. Registrar em cada PR as páginas efetivamente cobertas e as pendências.
+Usar `PROJECT_SETUP_TEMPLATE.md` para inventariar cada projeto. Adaptar o teste, a fixture isolada, endpoints e páginas reais; descartar tudo que for específico do DisplayHub. Nunca copiar credenciais, URLs de produção ou CSS do DisplayHub. Separar evidência de tela pública, navegação interna vazia, telas com dados sintéticos e homologação no sistema real; não marcar como concluída uma categoria que não foi testada.
 
-## Estado inicial (DisplayHub)
+## Histórico e próximos passos
 
-- Antes: CI já tinha lint/build e smokes específicos de CSS; deploy GitHub Pages era disparado pelo push em `main` independentemente do resultado do CI.
-- Este piloto propõe: job de navegador público com artefatos + deploy disparado apenas após conclusão bem-sucedida do fluxo `CI` para push em `main`, com checkout do SHA testado.
-- Continuam pendentes: fixtures seguras da área logada, baseline aprovada, comparação visual automatizada de todas as páginas e homologação humana. **Não declarar cobertura total antes de implementar esses itens.**
+- PR #319, piloto aprovado: CI de navegador público com artefatos e deploy Pages condicionado a CI/main verde; usuário homologou tela de entrada e navegação real.
+- Esta etapa propõe navegação interna com respostas sintéticas e 45 capturas, ainda sujeita a merge e homologação da PR própria.
+- Pendentes: fixtures ricas para estados internos, baselines oficiais aprovados, comparação visual automatizada, testes por permissões, e homologação funcional real. Nunca declarar cobertura completa antes desses itens.
 
-## Checklist de aceitação da PR
+## Checklist para cada PR
 
-- [ ] Somente arquivos esperados, sem funcionalidades/dados novos.
-- [ ] Testes existentes e teste visual público verdes.
-- [ ] Capturas desktop/tablet/mobile disponíveis; sem segredos ou dados de cliente.
-- [ ] O CI é condição necessária para deploy da `main` e usa o mesmo commit.
-- [ ] Diferenças visuais autenticadas ainda não cobertas são declaradas explicitamente.
-- [ ] Merge somente após autorização específica; deploy confirmado; homologação real registrada depois.
+- [ ] Escopo e estado real inspecionados; nenhuma modificação funcional fora da PR.
+- [ ] CI do commit exato verde, evidências e relatórios presentes, sem segredos.
+- [ ] Cobertura e pendências explicitadas; screenshots-base não atualizados automaticamente.
+- [ ] Merge autorizado especificamente; CI/main e publicação verificados; homologação real registrada depois.
