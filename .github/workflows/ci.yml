@@ -28,3 +28,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Verificar CSS Cockpit no build
+        run: node scripts/check-home-cockpit.mjs
