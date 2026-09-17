@@ -49,3 +49,6 @@ jobs:
 
       - name: Verificar CSS Cockpit de Players Windows no build
         run: node scripts/check-windows-players-cockpit.mjs
+
+      - name: Verificar CSS Cockpit de Video Wall e Grupos no build
+        run: node scripts/check-display-groups-cockpit.mjs
