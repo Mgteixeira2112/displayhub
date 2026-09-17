@@ -30,7 +30,7 @@ type ProgramItemLike = {
 }
 
 const lastReadyPrograms = new Map<string, unknown>()
-const SILENT_GATE_ID = 'displayhub-android-silent-gate'
+const PREPARATION_GATE_ID = 'displayhub-android-silent-gate'
 
 function directVideoUrl(value: unknown) {
   if (typeof value !== 'string') return null
@@ -97,7 +97,7 @@ function androidProgramCacheState(payload: unknown) {
     const total = Number(snapshot.total || 0)
     const ready = Number(snapshot.ready || 0)
     const failed = Number(snapshot.failed || 0)
-    return { ready: total === urls.length && ready === total && failed === 0, urls }
+    return { ready: total === urls.length && ready === total && failed === 0, urls, snapshot }
   } catch {
     return null
   }
@@ -122,26 +122,46 @@ function silentPreparingProgram(payload: unknown) {
   }
 }
 
-function setAndroidSilentGate(active: boolean) {
+function setAndroidSilentGate(active: boolean, snapshot?: CacheSnapshot) {
   if (typeof document === 'undefined') return
-  const existing = document.getElementById(SILENT_GATE_ID)
+  let gate = document.getElementById(PREPARATION_GATE_ID)
   if (!active) {
-    existing?.remove()
+    gate?.remove()
     return
   }
-  if (existing) return
-
-  const gate = document.createElement('div')
-  gate.id = SILENT_GATE_ID
-  gate.setAttribute('aria-hidden', 'true')
-  Object.assign(gate.style, {
-    position: 'fixed',
-    inset: '0',
-    zIndex: '2147483647',
-    background: '#000',
-    pointerEvents: 'none',
-  })
-  ;(document.body || document.documentElement).appendChild(gate)
+  if (!gate) {
+    gate = document.createElement('div')
+    gate.id = PREPARATION_GATE_ID
+    gate.setAttribute('role', 'status')
+    gate.setAttribute('aria-live', 'polite')
+    Object.assign(gate.style, {
+      position: 'fixed',
+      inset: '0',
+      zIndex: '2147483647',
+      background: '#000',
+      color: '#fff',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      textAlign: 'center',
+      fontFamily: 'sans-serif',
+      fontSize: '28px',
+      lineHeight: '1.5',
+      padding: '32px',
+      boxSizing: 'border-box',
+      pointerEvents: 'none',
+    })
+    ;(document.body || document.documentElement).appendChild(gate)
+  }
+  const total = Number(snapshot?.total || 0)
+  const ready = Number(snapshot?.ready || 0)
+  const failed = Number(snapshot?.failed || 0)
+  gate.textContent = failed > 0
+    ? `Preparação interrompida: ${failed} vídeo(s) não carregaram. Prontos: ${ready} de ${total}. Verifique a conexão e o console.`
+    : total > 0
+      ? `Preparando vídeos para exibição… ${ready} de ${total} prontos.`
+      : 'Preparando vídeos para exibição…'
+  console.info('[DisplayHub][Android] Estado da preparação', { total, ready, downloading: snapshot?.downloading, missing: snapshot?.missing, failed })
 }
 
 function requestUrl(input: RequestInfo | URL) {
@@ -187,9 +207,10 @@ async function publicAppFetch(input: RequestInfo | URL, init?: RequestInit) {
       return responseWithPayload(response, previousReadyProgram)
     }
 
-    setAndroidSilentGate(true)
+    setAndroidSilentGate(true, cacheState.snapshot)
     return responseWithPayload(response, silentPreparingProgram(payload))
-  } catch {
+  } catch (error) {
+    console.error('[DisplayHub][Android] Falha ao verificar preparação dos vídeos', error)
     return response
   }
 }
