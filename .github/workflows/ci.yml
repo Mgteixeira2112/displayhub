@@ -76,10 +76,10 @@ jobs:
       - name: Playwright efêmero sem alterar lockfile
         run: npm install --no-save --package-lock=false @playwright/test@1.55.0
 
-      - name: Validar manifesto de referências (pendente não significa aprovado)
+      - name: Validar manifesto e estado de aprovação das referências
         run: node visual-standard/visual-baseline.cjs
 
-      - name: Auditar 45 hashes das capturas candidatas sem aprovação automática
+      - name: Auditar integridade SHA-256 das 45 imagens de referência
         run: node visual-standard/check-candidate-review.cjs
 
       - name: Instalar Chromium
