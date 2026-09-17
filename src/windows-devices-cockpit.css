@@ -1,0 +1,90 @@
+/* Acabamento visual exclusivo da área Avançado > Players Windows.
+   Mantém QR, pareamento, estados, comandos remotos e grades existentes. */
+.modern-software-shell .view-devices .windows-devices-panel {
+  --devices-cockpit-border: #dfe7f1;
+  --devices-cockpit-focus: #2563eb;
+}
+
+.modern-software-shell .view-devices .windows-devices-heading h1 {
+  color: #172033;
+  letter-spacing: -.025em;
+}
+
+.modern-software-shell .view-devices .windows-devices-heading .secondary-button {
+  border-color: var(--devices-cockpit-border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.modern-software-shell .view-devices .windows-pairing-card {
+  border-color: var(--devices-cockpit-border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 6px 22px rgba(15, 23, 42, .04);
+}
+
+.modern-software-shell .view-devices .windows-pairing-code-row input,
+.modern-software-shell .view-devices .windows-pairing-monitor select,
+.modern-software-shell .view-devices .registered-devices-toolbar input,
+.modern-software-shell .view-devices .registered-device-assignment select {
+  border-color: var(--devices-cockpit-border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.modern-software-shell .view-devices .windows-pairing-preview,
+.modern-software-shell .view-devices .windows-pairing-monitor {
+  border-color: var(--devices-cockpit-border);
+  border-radius: 12px;
+}
+
+.modern-software-shell .view-devices .windows-player-row,
+.modern-software-shell .view-devices .registered-device-row {
+  border-color: var(--devices-cockpit-border);
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, .035);
+}
+
+.modern-software-shell .view-devices .windows-player-row[open],
+.modern-software-shell .view-devices .registered-device-row[open] {
+  border-color: #bfdbfe;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .055);
+}
+
+.modern-software-shell .view-devices .windows-player-summary strong,
+.modern-software-shell .view-devices .registered-device-summary strong,
+.modern-software-shell .view-devices .registered-devices-toolbar h2 {
+  color: #172033;
+}
+
+.modern-software-shell .view-devices .windows-device-actions button,
+.modern-software-shell .view-devices .registered-device-assignment button,
+.modern-software-shell .view-devices .registered-device-inline-actions button,
+.modern-software-shell .view-devices .registered-device-inline-actions a {
+  border-color: var(--devices-cockpit-border);
+  border-radius: 9px;
+}
+
+.modern-software-shell .view-devices .windows-devices-heading button:focus-visible,
+.modern-software-shell .view-devices .windows-pairing-card button:focus-visible,
+.modern-software-shell .view-devices .windows-pairing-card input:focus-visible,
+.modern-software-shell .view-devices .windows-pairing-card select:focus-visible,
+.modern-software-shell .view-devices .windows-player-summary:focus-visible,
+.modern-software-shell .view-devices .registered-device-summary:focus-visible,
+.modern-software-shell .view-devices .windows-device-actions button:focus-visible,
+.modern-software-shell .view-devices .registered-device-inline-actions a:focus-visible {
+  outline: 2px solid var(--devices-cockpit-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 620px) {
+  .modern-software-shell .view-devices .windows-devices-heading button,
+  .modern-software-shell .view-devices .windows-device-actions button,
+  .modern-software-shell .view-devices .registered-device-assignment button,
+  .modern-software-shell .view-devices .registered-device-inline-actions button,
+  .modern-software-shell .view-devices .registered-device-inline-actions a {
+    min-height: 44px;
+    height: auto;
+  }
+}
