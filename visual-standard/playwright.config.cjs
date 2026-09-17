@@ -1,6 +1,8 @@
+const path = require('node:path')
 const { defineConfig } = require('@playwright/test')
 
 const baseURL = 'http://127.0.0.1:4173/displayhub/'
+const artifactDir = path.join(__dirname, 'artifacts')
 
 module.exports = defineConfig({
   testDir: './tests',
@@ -10,9 +12,9 @@ module.exports = defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: [
     ['list'],
-    ['html', { outputFolder: 'visual-standard/artifacts/report', open: 'never' }],
+    ['html', { outputFolder: path.join(artifactDir, 'report'), open: 'never' }],
   ],
-  outputDir: 'visual-standard/artifacts/test-results',
+  outputDir: path.join(artifactDir, 'test-results'),
   use: {
     baseURL,
     browserName: 'chromium',
