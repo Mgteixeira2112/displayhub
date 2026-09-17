@@ -79,6 +79,9 @@ jobs:
       - name: Validar manifesto de referências (pendente não significa aprovado)
         run: node visual-standard/visual-baseline.cjs
 
+      - name: Auditar 45 hashes das capturas candidatas sem aprovação automática
+        run: node visual-standard/check-candidate-review.cjs
+
       - name: Instalar Chromium
         run: npx playwright install --with-deps chromium
 
