@@ -79,19 +79,20 @@ jobs:
       - name: Instalar Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Inspecionar login público e registrar imagens
+      - name: Inspecionar login público e navegação interna com dados fictícios
         run: npx playwright test --config visual-standard/playwright.config.cjs
 
-      - name: Exigir as seis imagens e o relatório
+      - name: Exigir imagens de 13 páginas internas e duas telas públicas em três tamanhos
         run: |
-          test "$(find visual-standard/artifacts/test-results -name '*.png' | wc -l)" -ge 6
+          test "$(find visual-standard/artifacts/test-results -name '*-interno-*.png' | wc -l)" -ge 39
+          test "$(find visual-standard/artifacts/test-results -name '*.png' | wc -l)" -ge 45
           test -f visual-standard/artifacts/report/index.html
 
-      - name: Anexar evidências visuais sem dados de clientes
+      - name: Anexar evidências fictícias sem dados de clientes
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-public-login
+          name: visual-public-and-internal-fixtures
           path: visual-standard/artifacts/
           retention-days: 7
           if-no-files-found: error
