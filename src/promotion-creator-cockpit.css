@@ -1,0 +1,75 @@
+/* Acabamento visual do Cockpit restrito ao Criar.
+   Não muda ordem, grade, área do cartaz, pré-visualização nem controles de edição. */
+.modern-software-shell .view-posters .promotion-workspace {
+  --creator-primary: #2563eb;
+  --creator-primary-soft: #eff6ff;
+  --creator-border: #dfe7f1;
+  --creator-surface: #ffffff;
+  --creator-surface-muted: #f8fafc;
+  --creator-text: #172033;
+  gap: 14px;
+}
+
+.modern-software-shell .view-posters .promotion-workspace .promotion-form {
+  border-color: #dfe7f1;
+  border-top: 3px solid #2563eb;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .05);
+}
+
+.modern-software-shell .view-posters .promotion-workspace .promotion-preview-panel {
+  border-color: #dfe7f1;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .05);
+}
+
+.modern-software-shell .view-posters .promotion-workspace .promotion-video-controls,
+.modern-software-shell .view-posters .promotion-workspace .promotion-toolbox-status,
+.modern-software-shell .view-posters .promotion-workspace .promotion-toolbox-grid {
+  border-color: #dfe7f1;
+  background: #f8fafc;
+}
+
+.modern-software-shell .view-posters .promotion-workspace .promotion-saved-heading {
+  border-color: #dfe7f1;
+}
+
+.modern-software-shell .view-posters .promotion-workspace .promotion-saved-heading h3,
+.modern-software-shell .view-posters .promotion-workspace .promotion-card-actions > strong {
+  color: #172033;
+}
+
+.modern-software-shell .view-posters .promotion-workspace .promotion-poster-card {
+  border-color: #dfe7f1;
+  border-top: 3px solid #f59e0b;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, .04);
+}
+
+.modern-software-shell .view-posters .promotion-workspace .promotion-poster-card:hover {
+  border-color: #bfdbfe;
+  border-top-color: #f59e0b;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .07);
+}
+
+.modern-software-shell .view-posters .promotion-workspace .promotion-form input:not([type='range']):not([type='color']):focus-visible,
+.modern-software-shell .view-posters .promotion-workspace .promotion-form select:focus-visible,
+.modern-software-shell .view-posters .promotion-workspace .promotion-card-actions button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+@media (max-width: 620px) {
+  .modern-software-shell .view-posters .promotion-workspace .promotion-actions button,
+  .modern-software-shell .view-posters .promotion-workspace .promotion-card-actions > div > button {
+    min-height: 44px;
+    height: auto;
+  }
+
+  .modern-software-shell .view-posters .promotion-workspace .promotion-poster-card {
+    border-radius: 14px;
+  }
+}

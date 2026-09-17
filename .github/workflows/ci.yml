@@ -37,3 +37,6 @@ jobs:
 
       - name: Verificar CSS Cockpit de Conteúdo no build
         run: node scripts/check-content-cockpit.mjs
+
+      - name: Verificar CSS Cockpit de Criar no build
+        run: node scripts/check-create-cockpit.mjs
