@@ -1,0 +1,91 @@
+/* Acabamento Cockpit restrito à área Players Windows. Mantém pairing, comandos e listas funcionais intactos. */
+.modern-software-shell .view-devices .windows-devices-panel {
+  --players-cockpit-border: #dfe7f1;
+  --players-cockpit-text: #172033;
+  --players-cockpit-muted: #69768a;
+  --players-cockpit-focus: #2563eb;
+}
+
+.modern-software-shell .view-devices .windows-pairing-card,
+.modern-software-shell .view-devices .windows-player-row,
+.modern-software-shell .view-devices .windows-devices-feedback,
+.modern-software-shell .view-devices .windows-device-empty {
+  border-color: var(--players-cockpit-border);
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, .04);
+}
+
+.modern-software-shell .view-devices .windows-pairing-card {
+  border-top: 3px solid #2563eb;
+  border-radius: 16px;
+}
+
+.modern-software-shell .view-devices .windows-pairing-preview {
+  border-color: var(--players-cockpit-border);
+  background: #f8fafc;
+}
+
+.modern-software-shell .view-devices .windows-pairing-monitor {
+  border-color: var(--players-cockpit-border);
+  background: #ffffff;
+}
+
+.modern-software-shell .view-devices .windows-pairing-code-row input,
+.modern-software-shell .view-devices .windows-pairing-monitor select {
+  border-color: var(--players-cockpit-border);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, .03);
+}
+
+.modern-software-shell .view-devices .windows-player-row {
+  border-radius: 14px;
+}
+
+.modern-software-shell .view-devices .windows-player-row[open] {
+  border-color: #bfdbfe;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .06);
+}
+
+.modern-software-shell .view-devices .windows-player-details {
+  border-top-color: var(--players-cockpit-border);
+  background: #f8fafc;
+}
+
+.modern-software-shell .view-devices .windows-device-facts span {
+  border: 1px solid #edf1f6;
+  background: #ffffff;
+}
+
+.modern-software-shell .view-devices .windows-device-actions button {
+  border-color: var(--players-cockpit-border);
+  background: #ffffff;
+  border-radius: 10px;
+}
+
+.modern-software-shell .view-devices .windows-devices-heading h1,
+.modern-software-shell .view-devices .windows-pairing-card h2,
+.modern-software-shell .view-devices .windows-player-summary > strong {
+  color: var(--players-cockpit-text);
+}
+
+.modern-software-shell .view-devices .windows-pairing-code-row input:focus-visible,
+.modern-software-shell .view-devices .windows-pairing-monitor select:focus-visible,
+.modern-software-shell .view-devices .windows-pairing-code-row button:focus-visible,
+.modern-software-shell .view-devices .windows-pairing-activate:focus-visible,
+.modern-software-shell .view-devices .windows-player-summary:focus-visible,
+.modern-software-shell .view-devices .windows-device-actions button:focus-visible {
+  outline: 2px solid var(--players-cockpit-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .modern-software-shell .view-devices .windows-pairing-code-row button,
+  .modern-software-shell .view-devices .windows-pairing-activate,
+  .modern-software-shell .view-devices .windows-device-actions button {
+    min-height: 44px;
+  }
+
+  .modern-software-shell .view-devices .windows-pairing-card,
+  .modern-software-shell .view-devices .windows-player-row {
+    border-radius: 13px;
+  }
+}
