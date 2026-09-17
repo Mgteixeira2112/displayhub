@@ -28,7 +28,7 @@ type PublicationRow = {
   is_active: boolean
 }
 
-type NavigateTarget = 'posters' | 'templates' | 'campaigns' | 'displays'
+type NavigateTarget = 'posters' | 'campaigns' | 'displays'
 
 function goTo(target: NavigateTarget) {
   window.dispatchEvent(new CustomEvent('displayhub:navigate', { detail: target }))
@@ -147,7 +147,7 @@ export default function HomeDashboard({ companyId }: Props) {
           <span><strong>Criar oferta</strong><small>Monte uma peça promocional</small></span>
           <em>→</em>
         </button>
-        <button type="button" className="home-action" onClick={() => goTo('templates')}>
+        <button type="button" className="home-action" onClick={() => goTo('posters')}>
           <span className="home-action-icon">▦</span>
           <span><strong>Galeria</strong><small>Escolha um template pronto</small></span>
           <em>→</em>
