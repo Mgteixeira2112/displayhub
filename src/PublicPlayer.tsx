@@ -53,7 +53,7 @@ function resolveSyncCursor(items: Item[], session: SyncSession): SyncCursor | nu
 }
 
 function resolveLaunchCursor(items: Item[], launch: GroupLaunch): SyncCursor | null {
-  if (!items.length || !launch.start_at || !['armed', 'started'].includes(launch.status) || !launch.start_at) return null
+  if (!items.length || !launch.start_at || !['armed', 'started'].includes(launch.status)) return null
   const startMs = new Date(launch.start_at).getTime()
   if (!Number.isFinite(startMs)) return null
   const waitMs = startMs - Date.now()
@@ -396,6 +396,6 @@ function ItemView({ item, display, mediaFit, startSeconds, syncKey, shouldPlay, 
   const content = item.structured
   if (!content) return <div className="text-template"><h1>Conteúdo indisponível</h1></div>
   if (content.kind === 'menu' || content.kind === 'price_table') return <div className="menu-template"><header><p className="eyebrow">{display.name}</p><h1>{content.title}</h1>{content.description && <p>{content.description}</p>}</header><div className="menu-rows">{content.rows.map((row) => <div className="menu-row" key={row.id}><div><strong>{row.title}</strong>{row.description && <small>{row.description}</small>}</div><div className="menu-price">{row.promo_price != null && <del>{money(row.price)}</del>}<strong>{money(row.promo_price ?? row.price)}</strong></div></div>)}</div></div>
-  if (content.kind === 'product') return <div className="product-template"><p className="eyebrow">{content.category || 'Destaque'}</p><h1>{content.title}</h1>{content.description && <p>{content.description}</p>}<div className="hero-price">{content.promo_price != null && <del>{money(content.price)}</del>}<strong>{money(content.promo_price ?? content.price)}</strong></div></div>
-  return <div className="text-template"><h1>{content.title}</h1><p>{content.description || content.qr_value || ''}</p></div>
+  if (content.kind === 'product') return <div className="product-template"><p className="eyebrow">{content.category || 'Destaque'}</p><h1>{content.title}</h1>{content.description && <p>{content.description}</p>}<div className="hero-price">{row.promo_price != null && <del>{money(content.price)}</del>}<strong>{money(content.promo_price ?? content.price)}</strong></div></div>
+  return <div className="text-template"><p className="eyebrow">{content.kind === 'qr' ? 'QR / Link' : 'Aviso'}</p><h1>{content.title}</h1><p>{content.description || content.qr_value || ''}</p></div>
 }
