@@ -82,6 +82,11 @@ jobs:
       - name: Inspecionar login público e registrar imagens
         run: npx playwright test --config visual-standard/playwright.config.cjs
 
+      - name: Exigir as seis imagens e o relatório
+        run: |
+          test "$(find visual-standard/artifacts/test-results -name '*.png' | wc -l)" -ge 6
+          test -f visual-standard/artifacts/report/index.html
+
       - name: Anexar evidências visuais sem dados de clientes
         if: always()
         uses: actions/upload-artifact@v4
@@ -89,4 +94,4 @@ jobs:
           name: visual-public-login
           path: visual-standard/artifacts/
           retention-days: 7
-          if-no-files-found: warn
+          if-no-files-found: error
