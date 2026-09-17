@@ -125,12 +125,12 @@ function BufferedPromotionVideo({ src, loop, onEnded }: { src: string; loop: boo
     video.addEventListener('loadedmetadata', resumeWhenReady)
     video.addEventListener('loadeddata', resumeWhenReady)
     video.addEventListener('canplay', resumeWhenReady)
-    video.load()
+    // The src attribute already starts loading. Calling load() here restarts the request and may abort autoplay.
     play()
 
     const retry = window.setInterval(() => {
-      if (video.paused && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) play()
-    }, 1000)
+      if (video.paused && video.readyState >= HTMLMediaElement.HAVE_METADATA) play()
+    }, 3000)
 
     return () => {
       window.clearInterval(retry)
