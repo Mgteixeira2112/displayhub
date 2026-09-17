@@ -1,0 +1,126 @@
+/* Acabamento do padrão Cockpit aprovado no Início, restrito à área Telas.
+   Mantém formulários, status, links, permissões e navegação existentes. */
+.modern-software-shell .view-displays .software-content { padding-top: 24px; }
+
+.modern-software-shell .view-displays .software-dashboard-panel > .workspace-section + .workspace-section {
+  margin-top: 20px;
+}
+
+.modern-software-shell .view-displays .create-panel-display {
+  position: relative;
+  border-color: #dfe7f1;
+  border-top: 3px solid #2563eb;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .05);
+}
+
+.modern-software-shell .view-displays .display-form {
+  gap: 10px;
+  padding: 18px;
+}
+
+.modern-software-shell .view-displays .display-form label {
+  gap: 6px;
+  color: #475569;
+  font-size: .7rem;
+}
+
+.modern-software-shell .view-displays .display-form input,
+.modern-software-shell .view-displays .display-form select {
+  min-height: 38px;
+  height: 38px;
+  border-color: #d8e2ee;
+  border-radius: 9px;
+  font-size: .78rem;
+}
+
+.modern-software-shell .view-displays .display-form .primary-button {
+  min-height: 38px;
+  height: 38px;
+  border-radius: 9px;
+  font-size: .74rem;
+}
+
+.modern-software-shell .view-displays .workspace-section > .section-heading {
+  min-height: 58px;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 11px 15px;
+  border-color: #dfe7f1;
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, .035);
+}
+
+.modern-software-shell .view-displays .workspace-section > .section-heading h2 {
+  color: #172033;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.modern-software-shell .view-displays .workspace-section > .section-heading .secondary-button {
+  min-height: 36px;
+  height: 36px;
+  border-color: #dbe5f0;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #1d4ed8;
+  font-size: .73rem;
+}
+
+.modern-software-shell .view-displays .display-list { gap: 12px; }
+
+.modern-software-shell .view-displays .display-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 152px;
+  gap: 9px 12px;
+  padding: 18px;
+  border-color: #dfe7f1;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, .04);
+}
+
+.modern-software-shell .view-displays .display-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: #f59e0b;
+}
+
+.modern-software-shell .view-displays .display-card:has(.status-dot.online)::before {
+  background: #22c55e;
+}
+
+.modern-software-shell .view-displays .display-card > div:first-child strong {
+  color: #172033;
+  font-size: .88rem;
+}
+
+.modern-software-shell .view-displays .display-card > a,
+.modern-software-shell .view-displays .display-card > .danger-button {
+  min-height: 38px;
+  height: 38px;
+  border-radius: 9px;
+  font-size: .72rem;
+}
+
+.modern-software-shell .view-displays .display-card > a:focus-visible,
+.modern-software-shell .view-displays .display-card > .danger-button:focus-visible,
+.modern-software-shell .view-displays .workspace-section > .section-heading .secondary-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .modern-software-shell .view-displays .software-content { padding-top: 16px; }
+  .modern-software-shell .view-displays .display-form { gap: 12px; padding: 16px; }
+  .modern-software-shell .view-displays .display-form input,
+  .modern-software-shell .view-displays .display-form select,
+  .modern-software-shell .view-displays .display-form .primary-button { min-height: 44px; height: 44px; }
+  .modern-software-shell .view-displays .display-card { min-height: 0; padding: 16px; }
+  .modern-software-shell .view-displays .display-card > a,
+  .modern-software-shell .view-displays .display-card > .danger-button { min-height: 44px; height: 44px; }
+  .modern-software-shell .view-displays .workspace-section > .section-heading { flex-wrap: wrap; }
+}
