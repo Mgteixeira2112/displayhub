@@ -1,3 +1,5 @@
+@import './home-dashboard-cockpit.css';
+
 .home-dashboard {
   display: grid;
   gap: 26px;
