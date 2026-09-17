@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "status": "candidate",
+  "status": "approved",
   "screenshots": [
     "desktop-entrar.png",
     "desktop-cadastro-vazio.png",
@@ -48,5 +48,8 @@
     "mobile-interno-history.png",
     "mobile-interno-settings.png"
   ],
-  "approval": null
+  "approval": {
+    "pr": 326,
+    "confirmation": "Usuário aprovou expressamente o conjunto de 45 PNGs respondendo 'tudo correto' após receber a galeria e os originais; registro: https://github.com/Mgteixeira2112/displayhub/pull/326#issuecomment-5722598687"
+  }
 }
