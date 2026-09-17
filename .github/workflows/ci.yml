@@ -76,6 +76,9 @@ jobs:
       - name: Playwright efêmero sem alterar lockfile
         run: npm install --no-save --package-lock=false @playwright/test@1.55.0
 
+      - name: Validar manifesto de referências (pendente não significa aprovado)
+        run: node visual-standard/visual-baseline.cjs
+
       - name: Instalar Chromium
         run: npx playwright install --with-deps chromium
 
@@ -87,6 +90,7 @@ jobs:
           test "$(find visual-standard/artifacts/test-results -name '*-interno-*.png' | wc -l)" -ge 39
           test "$(find visual-standard/artifacts/test-results -name '*.png' | wc -l)" -ge 45
           test -f visual-standard/artifacts/report/index.html
+          git diff --exit-code -- visual-standard/baselines
 
       - name: Anexar evidências fictícias sem dados de clientes
         if: always()

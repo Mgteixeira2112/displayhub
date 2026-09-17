@@ -8,6 +8,9 @@ module.exports = defineConfig({
   testDir: './tests',
   timeout: 30_000,
   expect: { timeout: 10_000 },
+  // Imagens aprovadas permanecem versionadas; CI nunca aceita diferenças automaticamente.
+  updateSnapshots: 'none',
+  snapshotPathTemplate: path.join(__dirname, 'baselines', 'images', '{arg}'),
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
   reporter: [

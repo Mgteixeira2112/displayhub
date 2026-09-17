@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test')
+const { captureAndCompare } = require('../visual-baseline.cjs')
 
 test('acesso público é utilizável e responsivo sem contas reais', async ({ page }, testInfo) => {
   const uncaught = []
@@ -21,7 +22,7 @@ test('acesso público é utilizável e responsivo sem contas reais', async ({ pa
     })
     expect(quality.documentWidth, `Rolagem horizontal em ${testInfo.project.name}/${state}`).toBeLessThanOrEqual(quality.width + 1)
     expect(quality.unlabeled, `Campos sem identificação em ${state}`).toBe(0)
-    await page.screenshot({ path: testInfo.outputPath(`${testInfo.project.name}-${state}.png`), fullPage: true, animations: 'disabled' })
+    await captureAndCompare(page, testInfo, state)
   }
 
   await inspect('entrar')
