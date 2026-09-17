@@ -6,7 +6,7 @@ if (!imports.includes("@import './campaigns-cockpit.css';")) {
   throw new Error('O CSS Cockpit de Campanhas não está importado.')
 }
 
-const source = readFileSync('src/campaigns-cockpit.css', 'utf8')
+const source = readFileSync('src/campaigns-cockpit.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
 if (/grid-template-columns\s*:|display\s*:\s*none|pointer-events\s*:|!important/.test(source)) {
   throw new Error('O acabamento Cockpit não pode reordenar, ocultar ou desativar a operação de Campanhas.')
 }
