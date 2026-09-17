@@ -24,9 +24,9 @@ type CacheSnapshot = {
 }
 
 type ProgramItemLike = {
-  poster?: { layout_positions?: { background_video_url?: unknown } | null } | null
+  poster?: { theme?: string; layout_positions?: { background_video_url?: unknown } | null } | null
   smart_scene?: { config?: { hero?: { backgroundVideoUrl?: unknown } | null } | null } | null
-  content?: { external_url?: unknown; signed_url?: unknown } | null
+  content?: { type?: string; external_url?: unknown; signed_url?: unknown } | null
 }
 
 const lastReadyPrograms = new Map<string, unknown>()
@@ -40,14 +40,16 @@ function directVideoUrl(value: unknown) {
 }
 
 function collectProgramVideoUrls(payload: unknown) {
-  if (!payload || typeof payload !== 'object') return []
+  if (!payload || typeof payload !== 'object') return { urls: [] as string[], unresolved: 0 }
   const publications = (payload as { publications?: unknown }).publications
-  if (!Array.isArray(publications)) return []
+  if (!Array.isArray(publications)) return { urls: [] as string[], unresolved: 0 }
 
   const urls = new Set<string>()
+  let unresolved = 0
   const add = (value: unknown) => {
     const url = directVideoUrl(value)
     if (url) urls.add(url)
+    else unresolved += 1
   }
 
   for (const publication of publications) {
@@ -57,14 +59,13 @@ function collectProgramVideoUrls(payload: unknown) {
     for (const rawItem of playlist.items) {
       if (!rawItem || typeof rawItem !== 'object') continue
       const item = rawItem as ProgramItemLike
-      add(item.poster?.layout_positions?.background_video_url)
-      add(item.smart_scene?.config?.hero?.backgroundVideoUrl)
-      add(item.content?.external_url)
-      add(item.content?.signed_url)
+      if (item.poster?.theme === 'animated_beer_video') add(item.poster.layout_positions?.background_video_url)
+      if (item.smart_scene?.config?.hero?.backgroundVideoUrl) add(item.smart_scene.config.hero.backgroundVideoUrl)
+      if (item.content?.type === 'video') add(item.content.external_url || item.content.signed_url)
     }
   }
 
-  return Array.from(urls)
+  return { urls: Array.from(urls), unresolved }
 }
 
 function programDisplayId(payload: unknown) {
@@ -87,8 +88,12 @@ function androidProgramCacheState(payload: unknown) {
   const bridge = (globalThis as typeof globalThis & { DisplayHubAndroid?: AndroidVideoBridge }).DisplayHubAndroid
   if (typeof bridge?.prefetchVideos !== 'function' || typeof bridge.videoCacheStatus !== 'function') return null
 
-  const urls = collectProgramVideoUrls(payload)
-  if (!urls.length) return { ready: true, urls }
+  const { urls, unresolved } = collectProgramVideoUrls(payload)
+  if (unresolved > 0) {
+    console.error('[DisplayHub][Android] Vídeos sem URL direta reconhecida', { unresolved, detected: urls.length })
+  }
+  if (!urls.length && unresolved === 0) return { ready: true, urls }
+  if (!urls.length) return { ready: false, urls, snapshot: { total: unresolved, ready: 0, missing: unresolved }, unresolved }
 
   try {
     bridge.prefetchVideos(JSON.stringify(urls))
@@ -97,7 +102,8 @@ function androidProgramCacheState(payload: unknown) {
     const total = Number(snapshot.total || 0)
     const ready = Number(snapshot.ready || 0)
     const failed = Number(snapshot.failed || 0)
-    return { ready: total === urls.length && ready === total && failed === 0, urls, snapshot }
+    const effectiveSnapshot = { ...snapshot, total: urls.length + unresolved, missing: Number(snapshot.missing || 0) + unresolved }
+    return { ready: unresolved === 0 && total === urls.length && ready === total && failed === 0, urls, snapshot: effectiveSnapshot, unresolved }
   } catch {
     return null
   }
@@ -122,7 +128,7 @@ function silentPreparingProgram(payload: unknown) {
   }
 }
 
-function setAndroidSilentGate(active: boolean, snapshot?: CacheSnapshot) {
+function setAndroidSilentGate(active: boolean, snapshot?: CacheSnapshot, unresolved = 0) {
   if (typeof document === 'undefined') return
   let gate = document.getElementById(PREPARATION_GATE_ID)
   if (!active) {
@@ -156,12 +162,14 @@ function setAndroidSilentGate(active: boolean, snapshot?: CacheSnapshot) {
   const total = Number(snapshot?.total || 0)
   const ready = Number(snapshot?.ready || 0)
   const failed = Number(snapshot?.failed || 0)
-  gate.textContent = failed > 0
-    ? `Preparação interrompida: ${failed} vídeo(s) não carregaram. Prontos: ${ready} de ${total}. Verifique a conexão e o console.`
-    : total > 0
-      ? `Preparando vídeos para exibição… ${ready} de ${total} prontos.`
-      : 'Preparando vídeos para exibição…'
-  console.info('[DisplayHub][Android] Estado da preparação', { total, ready, downloading: snapshot?.downloading, missing: snapshot?.missing, failed })
+  gate.textContent = unresolved > 0
+    ? `Preparação interrompida: ${unresolved} vídeo(s) sem endereço de download reconhecido. Prontos: ${ready} de ${total}. Verifique o console.`
+    : failed > 0
+      ? `Preparação interrompida: ${failed} vídeo(s) não carregaram. Prontos: ${ready} de ${total}. Verifique a conexão e o console.`
+      : total > 0
+        ? `Preparando vídeos para exibição… ${ready} de ${total} prontos.`
+        : 'Preparando vídeos para exibição…'
+  console.info('[DisplayHub][Android] Estado da preparação', { total, ready, downloading: snapshot?.downloading, missing: snapshot?.missing, failed, unresolved })
 }
 
 function requestUrl(input: RequestInfo | URL) {
@@ -207,7 +215,7 @@ async function publicAppFetch(input: RequestInfo | URL, init?: RequestInit) {
       return responseWithPayload(response, previousReadyProgram)
     }
 
-    setAndroidSilentGate(true, cacheState.snapshot)
+    setAndroidSilentGate(true, cacheState.snapshot, cacheState.unresolved)
     return responseWithPayload(response, silentPreparingProgram(payload))
   } catch (error) {
     console.error('[DisplayHub][Android] Falha ao verificar preparação dos vídeos', error)
