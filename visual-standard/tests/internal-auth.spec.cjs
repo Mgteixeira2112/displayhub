@@ -1,4 +1,6 @@
 const { test, expect } = require('@playwright/test')
+const { views } = require('../screen-inventory.cjs')
+const { captureAndCompare } = require('../visual-baseline.cjs')
 
 // Este teste monta o aplicativo real; somente as respostas HTTP são sintéticas.
 // Nenhuma credencial, conta, registro ou serviço de produção participa do teste.
@@ -15,21 +17,6 @@ const fakeUser = {
   confirmed_at: '2020-01-01T00:00:00.000Z',
 }
 const account = { company_id: '00000000-0000-4000-8000-000000000002', unit_id: null, role: 'admin', full_name: 'Pessoa Fictícia' }
-const views = [
-  ['overview', 'Início'],
-  ['displays', 'Telas'],
-  ['library', 'Conteúdo'],
-  ['posters', 'Criar'],
-  ['smart-scenes', 'Smart Scenes'],
-  ['campaigns', 'Campanhas'],
-  ['devices', 'Players Windows'],
-  ['groups', 'Video Wall e Grupos'],
-  ['playlists', 'Playlists avançadas'],
-  ['schedule', 'Programação avançada'],
-  ['technical-templates', 'Templates técnicos'],
-  ['history', 'Histórico técnico'],
-  ['settings', 'Configurações'],
-]
 
 function json(data, status = 200) {
   return { status, contentType: 'application/json; charset=utf-8', headers: { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' }, body: JSON.stringify(data) }
@@ -88,7 +75,7 @@ test('navegação interna real com banco e login completamente fictícios', asyn
     await expect(surface.locator('.software-content')).toBeVisible()
     const metrics = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }))
     expect(metrics.document, `Rolagem horizontal em ${testInfo.project.name}/${view}`).toBeLessThanOrEqual(metrics.viewport + 1)
-    await page.screenshot({ path: testInfo.outputPath(`${testInfo.project.name}-interno-${view}.png`), fullPage: true, animations: 'disabled' })
+    await captureAndCompare(page, testInfo, `interno-${view}`)
   }
 
   expect(unexpected, 'Toda requisição deve ficar local ou receber resposta fictícia; nenhuma escrita é permitida').toEqual([])
