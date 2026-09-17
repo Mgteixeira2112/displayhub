@@ -5,6 +5,7 @@
 @import './content-library-cockpit.css';
 @import './windows-players-cockpit.css';
 @import './display-groups-cockpit.css';
+@import './cockpit-remaining-pages.css';
 
 .software-dashboard-panel > .account-grid,
 .software-dashboard-panel > .workspace-section,
