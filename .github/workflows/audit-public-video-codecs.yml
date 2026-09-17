@@ -1,0 +1,39 @@
+name: Audit public video codecs (off-device)
+
+on:
+  pull_request:
+    paths:
+      - scripts/audit-public-video-codecs.py
+      - .github/workflows/audit-public-video-codecs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-videos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare audit tools
+        run: |
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq --no-install-recommends ffmpeg
+          fi
+          command -v curl
+          command -v ffprobe
+          command -v ffmpeg
+          command -v python3
+      - name: Audit five public Pexels media files outside any TV or APK
+        run: python3 -u scripts/audit-public-video-codecs.py 2>&1 | tee /tmp/displayhub-media-audit.txt
+        shell: bash
+      - name: Attach text-only evidence (no videos or tokens)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-video-codec-audit
+          path: /tmp/displayhub-media-audit.txt
+          if-no-files-found: warn
+          retention-days: 7
