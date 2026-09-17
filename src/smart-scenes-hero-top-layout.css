@@ -1,4 +1,5 @@
 @import './smart-scenes-hero-controls-standard.css';
+@import './smart-scenes-cockpit.css';
 
 .smart-scene-editor:has(.smart-hero-editor-block){
   grid-template-columns:minmax(0,1fr);

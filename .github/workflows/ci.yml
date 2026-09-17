@@ -43,3 +43,6 @@ jobs:
 
       - name: Verificar CSS Cockpit de Campanhas no build
         run: node scripts/check-campaigns-cockpit.mjs
+
+      - name: Verificar CSS Cockpit de Smart Scenes no build
+        run: node scripts/check-smart-scenes-cockpit.mjs
