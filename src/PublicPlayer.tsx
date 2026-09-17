@@ -3,7 +3,7 @@ import { publicSupabase } from './lib/supabase'
 import YouTubeSyncPlayer, { type MediaFit, type YouTubeController } from './YouTubeSyncPlayer'
 import HlsSyncPlayer, { type HlsMediaSample } from './HlsSyncPlayer'
 import { type PromotionPosterData } from './PromotionPosterView'
-import PromotionVideoPoster, { readPromotionVideoMetadata } from './PromotionVideoPoster'
+import PromotionVideoPoster, { isAndroidWebViewPlayback, readPromotionVideoMetadata } from './PromotionVideoPoster'
 import SmartSceneView, { type SmartSceneData } from './SmartSceneView'
 
 type Display = { id: string; name: string; location: string | null; orientation: string; resolution_width: number; resolution_height: number }
@@ -354,7 +354,8 @@ export default function PublicPlayer({ token }: { token: string }) {
 }
 
 function PromotionVideoPreloader({ urls }: { urls: string[] }) {
-  if (!urls.length) return null
+  // Android WebView already uses direct video URLs; hidden <video> preloads compete with the visible video for decoder/network resources.
+  if (!urls.length || isAndroidWebViewPlayback()) return null
   return <div aria-hidden="true" style={{ position: 'fixed', left: '-10000px', top: '-10000px', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }}>
     {urls.map((url) => <video key={url} src={url} preload="auto" muted playsInline />)}
   </div>
