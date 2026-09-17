@@ -46,6 +46,11 @@ test('navegação interna real com banco e login completamente fictícios', asyn
     const request = route.request()
     const url = new URL(request.url())
     if (url.origin === localOrigin) return route.continue()
+    // O script público de QR é referenciado no HTML, mas o teste de estados vazios não
+    // precisa gerar QR. Neutralizá-lo somente no navegador de teste, sem acessar a CDN.
+    if (url.href === 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js' && request.method() === 'GET') {
+      return route.fulfill({ status: 200, contentType: 'application/javascript', body: '/* QR fora do escopo dos estados vazios */' })
+    }
     if (url.origin !== fakeOrigin) {
       unexpected.push(`Endereço externo bloqueado: ${url.origin}`)
       return route.abort()
