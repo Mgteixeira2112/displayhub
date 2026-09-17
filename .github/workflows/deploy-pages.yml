@@ -1,9 +1,11 @@
 name: Deploy Pages
 
+# O deploy só é iniciado depois de todos os jobs de CI concluírem com sucesso.
+# A publicação não roda em pull requests nem por acionamento manual que ignore o gate.
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
 
 permissions:
   contents: read
@@ -16,13 +18,21 @@ concurrency:
 
 jobs:
   build:
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main' &&
+          github.event.workflow_run.head_repository.full_name == github.repository }}
     runs-on: ubuntu-latest
     env:
       VITE_SUPABASE_URL: https://meqeluddtwthqmrtbhbr.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_yjnvIPUmi8-Kt7yTFibw3w_DQlawViE
     steps:
-      - name: Checkout
+      - name: Checkout do commit aprovado pelo CI
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
