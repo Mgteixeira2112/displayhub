@@ -1,0 +1,37 @@
+name: Build baseline video reference (off-device)
+
+on:
+  pull_request:
+    paths:
+      - scripts/build-video-baseline-reference.sh
+      - .github/workflows/build-video-baseline-reference.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare FFmpeg and FFprobe
+        run: |
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq --no-install-recommends ffmpeg
+          fi
+          command -v curl
+          command -v ffmpeg
+          command -v ffprobe
+      - name: Convert one actual Pexels video and verify reference independently of TVs
+        run: bash scripts/build-video-baseline-reference.sh
+      - name: Store only conversion sample; never publish it in player/site
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-video-reference-not-for-production
+          path: video-compatibility-artifact/reference-h264-baseline.mp4
+          if-no-files-found: error
+          retention-days: 3
