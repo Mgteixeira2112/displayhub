@@ -1,0 +1,155 @@
+/* Continuidade visual do Cockpit: somente a área autenticada Conteúdo.
+   Preserva a grade densa (7/5/3/2), a ordem dos slots e todos os handlers. */
+.modern-software-shell .view-library .content-library-controls-stack {
+  gap: 14px;
+}
+
+.modern-software-shell .view-library .content-controls-section .section-heading {
+  margin-bottom: 14px;
+}
+
+.modern-software-shell .view-library .content-controls-section .section-heading h2 {
+  color: #172033;
+  font-size: 1.15rem;
+}
+
+.modern-software-shell .view-library .content-create-toolbar {
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.modern-software-shell .view-library .content-create-choice {
+  min-height: 38px;
+  height: auto;
+  padding: 8px 10px;
+  border-color: #dfe7f1;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, .03);
+  font-size: .72rem;
+}
+
+.modern-software-shell .view-library .content-create-choice.active {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .06);
+}
+
+.modern-software-shell .view-library .content-create-workspace {
+  overflow: hidden;
+  padding: 12px;
+  border-color: #dfe7f1;
+  border-top: 3px solid #2563eb;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #fff 0%, #f8fbff 100%);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .045);
+}
+
+.modern-software-shell .view-library .content-create-workspace .content-form {
+  gap: 10px;
+  padding: 14px;
+  border-color: #e2e8f0;
+  border-radius: 11px;
+}
+
+.modern-software-shell .view-library .content-form-head h3 {
+  color: #172033;
+  font-size: .88rem;
+}
+
+.modern-software-shell .view-library .content-form label {
+  gap: 5px;
+  font-size: .7rem;
+}
+
+.modern-software-shell .view-library .content-form input,
+.modern-software-shell .view-library .content-form select {
+  min-height: 38px;
+  height: 38px;
+  border-color: #d8e2ee;
+  border-radius: 9px;
+  font-size: .78rem;
+}
+
+.modern-software-shell .view-library .content-form input[type='file'] {
+  height: auto;
+  min-height: 38px;
+}
+
+.modern-software-shell .view-library .content-form .primary-button {
+  min-height: 38px;
+  height: 38px;
+  border-radius: 9px;
+  font-size: .74rem;
+}
+
+.modern-software-shell .view-library .content-create-close {
+  min-height: 32px;
+  height: 32px;
+  border-radius: 9px;
+  font-size: .7rem;
+}
+
+.modern-software-shell .view-library .content-library-galleries-stack {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-color: #dfe7f1;
+}
+
+.modern-software-shell .view-library .content-gallery-heading {
+  min-height: 36px;
+  margin-bottom: 12px;
+}
+
+.modern-software-shell .view-library .content-gallery-heading h3 {
+  color: #172033;
+  font-size: 1rem;
+}
+
+.modern-software-shell .view-library .content-gallery-heading span {
+  min-width: 30px;
+  min-height: 26px;
+  border-color: #dbeafe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: .7rem;
+}
+
+.modern-software-shell .view-library .content-card,
+.modern-software-shell .view-library .structured-card {
+  border-color: #dfe7f1;
+  border-radius: 13px;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, .045);
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.modern-software-shell .view-library .content-card:hover,
+.modern-software-shell .view-library .structured-card:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, .07);
+}
+
+.modern-software-shell .view-library .content-meta .danger-button:focus-visible,
+.modern-software-shell .view-library .structured-card .danger-button:focus-visible,
+.modern-software-shell .view-library .content-create-choice:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+@media (max-width: 680px) {
+  .modern-software-shell .view-library .content-create-choice,
+  .modern-software-shell .view-library .content-form input,
+  .modern-software-shell .view-library .content-form select,
+  .modern-software-shell .view-library .content-form .primary-button {
+    min-height: 44px;
+  }
+
+  .modern-software-shell .view-library .content-form input:not([type='file']),
+  .modern-software-shell .view-library .content-form select,
+  .modern-software-shell .view-library .content-form .primary-button {
+    height: 44px;
+  }
+
+  .modern-software-shell .view-library .content-create-workspace { padding: 10px; }
+  .modern-software-shell .view-library .content-create-workspace .content-form { padding: 12px; }
+}

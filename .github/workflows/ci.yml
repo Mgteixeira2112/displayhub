@@ -34,3 +34,6 @@ jobs:
 
       - name: Verificar CSS Cockpit de Telas no build
         run: node scripts/check-displays-cockpit.mjs
+
+      - name: Verificar CSS Cockpit de Conteúdo no build
+        run: node scripts/check-content-cockpit.mjs
