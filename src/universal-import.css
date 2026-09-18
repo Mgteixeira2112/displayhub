@@ -1,4 +1,6 @@
 .content-import-section { margin-top: 1rem; }
+/* A regra antiga oculta apenas Atualizar; o novo gatilho de importação deve permanecer visível. */
+.view-library .content-import-section .section-heading .secondary-button { display: inline-flex !important; }
 .content-import-workspace { display: grid; gap: 1rem; }
 .content-import-workspace > p { margin: 0; }
 .content-import-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 1rem; }
