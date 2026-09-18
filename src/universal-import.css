@@ -1,0 +1,16 @@
+.content-import-section { margin-top: 1rem; }
+.content-import-workspace { display: grid; gap: 1rem; }
+.content-import-workspace > p { margin: 0; }
+.content-import-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 1rem; }
+.content-import-mapping { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: .8rem; }
+.content-import-mapping label { display: grid; gap: .35rem; min-width: 0; }
+.content-import-mapping select, .content-import-controls select, .content-import-controls input { width: 100%; min-width: 0; }
+.content-import-ack { display: flex; align-items: flex-start; gap: .55rem; line-height: 1.5; }
+.content-import-ack input { flex: none; margin-top: .25rem; }
+.content-import-help { font-size: .86rem; opacity: .8; }
+.content-import-scroll { overflow: auto; max-height: 420px; border: 1px solid var(--border, #dbe3f2); border-radius: 12px; }
+.content-import-table { width: 100%; min-width: 850px; border-collapse: collapse; font-size: .84rem; }
+.content-import-table th, .content-import-table td { padding: .45rem; border-bottom: 1px solid var(--border, #dbe3f2); text-align: left; }
+.content-import-table th { position: sticky; top: 0; background: var(--surface, #fff); z-index: 1; }
+.content-import-table input { min-width: 115px; width: 100%; box-sizing: border-box; }
+.content-import-table td:nth-child(2) input { min-width: 170px; }
