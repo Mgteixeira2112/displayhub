@@ -8,6 +8,7 @@
 - PR #320: 13 áreas internas reais com autenticação e HTTP **fictícios**, além de duas telas públicas, em três dimensões; total de **45 capturas**. A navegação é exercitada em estados vazios.
 - PR #323: mecanismo de comparação com snapshots e bloqueio de atualização automática, inicialmente sem referências aprovadas.
 - PR #326: proprietário aprovou expressamente o conjunto de 45 PNGs; arquivos originais e hashes versionados; `manifest.json` passou para `approved` e as **45 comparações estão ativas**. CI da PR e da `main`, além do deploy Pages, concluídos com sucesso. O aceite dessas imagens não equivale a homologar todas as operações do produto.
+- PR #328: kit portátil v1.2 documentado, CI da `main` e deploy validados. O kit continua exigindo inspeção e adaptação por projeto.
 
 A fonte efetiva do estado das imagens é [`baselines/manifest.json`](baselines/manifest.json), não a data do texto. O fluxo de produção está em `.github/workflows/deploy-pages.yml` e publica exclusivamente o SHA aprovado por CI integral da `main`.
 
@@ -22,24 +23,25 @@ A fonte efetiva do estado das imagens é [`baselines/manifest.json`](baselines/m
 7. **Publicar com autorização:** comparar diff e SHA, exigir CI da PR verde e permissão específica para **aquela PR**; após merge, conferir CI integral da `main`, build/deploy do **mesmo SHA** e URL publicada.
 8. **Homologar operação real:** proprietário testa a área combinada na aplicação publicada; registrar aceite ou pendências, sem chamar CI ou screenshots de homologação funcional.
 
-## Implementação que já funciona no DisplayHub
+## Implementação disponível no DisplayHub
 
 - [`playwright.config.cjs`](playwright.config.cjs): Chromium, desktop 1440×900, tablet 768×1024, mobile 390×844; `updateSnapshots: 'none'`; base local Vite com variável de Supabase fictícia.
 - [`screen-inventory.cjs`](screen-inventory.cjs): inventário **específico deste produto** (13 áreas internas + 2 telas públicas × 3). Não transportá-lo para outro projeto sem reescrever.
 - [`tests/public-auth.spec.cjs`](tests/public-auth.spec.cjs): login e cadastro público vazios, rótulos, overflow e exceções; seis capturas.
 - [`tests/internal-auth.spec.cjs`](tests/internal-auth.spec.cjs): monta o aplicativo real com autenticação/HTTP interceptados e sintéticos, bloqueia requisições externas não previstas, gravações, RPC e WebSocket fictício; verifica 13 áreas vazias, overflow, títulos e exceções; 39 capturas. Script de QR neutralizado exclusivamente no teste.
-- [`visual-baseline.cjs`](visual-baseline.cjs): para manifesto `approved`, `toMatchSnapshot` compara cada PNG com `threshold: 0.2` e `maxDiffPixelRatio: 0.005`; não modifica referências.
+- [`tests/filled-roles.spec.cjs`](tests/filled-roles.spec.cjs): cobertura adicional com dois displays fictícios, uma playlist/publicação, uma oferta e um conteúdo HLS de exemplo. Nos perfis `admin`, `manager` e `operator`, confere métricas, cartões e visibilidade dos controles de criação/exclusão de telas e mídia em Início/Telas/Conteúdo, nos três tamanhos. Gera **27 capturas adicionais apenas como evidência**, sem compará-las com snapshots oficiais: a aprovação das imagens-base continua restrita às 45 imagens originais. Não testa o backend/RLS nem executa escritas ou mídias.
+- [`visual-baseline.cjs`](visual-baseline.cjs): para manifesto `approved`, `toMatchSnapshot` compara cada PNG oficial com `threshold: 0.2` e `maxDiffPixelRatio: 0.005`; não modifica referências.
 - [`check-candidate-review.cjs`](check-candidate-review.cjs): confere nomes, origem e hashes SHA-256 das 45 imagens. O inventário e quantidade são propositalmente fixos para o DisplayHub.
-- [CI](../.github/workflows/ci.yml): `validate` exige lint, build e smokes Cockpit; `visual-public` valida manifesto/hashes, executa Playwright e exige capturas e relatório HTML, anexados como artefato por 7 dias.
+- [CI](../.github/workflows/ci.yml): `validate` exige lint, build e smokes Cockpit; `visual-public` valida manifesto/hashes, executa Playwright, exige 45 capturas comparadas e 27 capturas adicionais preenchidas e anexa relatório HTML e imagens por 7 dias.
 - [Deploy Pages](../.github/workflows/deploy-pages.yml): só inicia após CI da `main` concluído com sucesso e publica o SHA testado.
 
 **Execução local deste piloto:** `npm ci`; `npm install --no-save --package-lock=false @playwright/test@1.55.0`; `npx playwright install chromium`; `npx playwright test --config visual-standard/playwright.config.cjs`. A aplicação local de teste usa dados fictícios; nunca aponte esse fluxo para produção.
 
 ## O que está e não está coberto
 
-**Coberto:** comparação de 45 imagens aprovadas em estados vazios; navegação das 13 áreas, duas telas públicas, três dimensões, overflow, campos públicos sem rótulo, erros JS, build/lint/smokes e gate do deploy.
+**Coberto pelos testes existentes:** comparação de 45 imagens aprovadas em estados vazios; navegação das 13 áreas, duas telas públicas, três dimensões, overflow, campos públicos sem rótulo, erros JS, build/lint/smokes e gate do deploy. O teste complementar verifica dados preenchidos **somente** em Início/Telas/Conteúdo e presença/ausência dos controles de criação/exclusão de telas e mídia para três perfis de interface, com 27 screenshots adicionais não aprovados como baseline.
 
-**Não coberto:** listas/tabelas preenchidas, formulários de gravação, permissões por função e RLS, QR/pareamento, playlists em execução, player/TV/Android/Windows, Supabase real, diferenças em outros navegadores e teste funcional de ponta a ponta. Não afirmar cobertura integral do produto.
+**Não coberto:** todos os estados preenchidos de todas as áreas, formulários de gravação, autenticação/autorização real, RLS e permissões efetivas do Supabase, QR/pareamento, playlists em execução, player/TV/Android/Windows, bancos de produção, diferenças em outros navegadores e teste funcional de ponta a ponta. A ausência de botões para operador não demonstra segurança do backend. Não afirmar cobertura integral do produto.
 
 ## Como reutilizar em outro projeto
 
@@ -49,8 +51,8 @@ O roteiro apresenta checkpoints executáveis e critérios de parada; a migraçã
 
 ## Próximas etapas separadas
 
-1. Criar fixtures de estados internos preenchidos com dados artificiais e testes de perfis/permissões, respeitando isolamento.
+1. Ampliar os estados sintéticos com formulários e dados complexos, e testar permissões reais em ambiente de teste isolado apropriado, sem expor produção.
 2. Aplicar o roteiro a um segundo repositório, medir quais partes são realmente reaproveitadas e aprimorar o kit com o resultado.
-3. Quando houver mudança visual intencional, propor novas candidatas em PR específica, solicitar novo aceite do conjunto alterado e só então atualizar baselines; nunca fazer `--update-snapshots` no CI.
+3. Se desejar comparar as 27 capturas preenchidas por pixels, submetê-las primeiro à revisão humana e criar baselines em outra PR; nunca aprovar automaticamente.
 
 **Checklist de fechamento de toda PR:** escopo/diff verificados, dados protegidos, CI do SHA verde, comparações e evidências presentes, merge especificamente autorizado, CI `main` e deploy conferidos, homologação real registrada ou indicada como pendente.
