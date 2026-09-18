@@ -9,6 +9,7 @@
     "desktop-interno-library.png",
     "desktop-interno-posters.png",
     "desktop-interno-smart-scenes.png",
+    "desktop-interno-universal-tables.png",
     "desktop-interno-campaigns.png",
     "desktop-interno-devices.png",
     "desktop-interno-groups.png",
@@ -24,6 +25,7 @@
     "tablet-interno-library.png",
     "tablet-interno-posters.png",
     "tablet-interno-smart-scenes.png",
+    "tablet-interno-universal-tables.png",
     "tablet-interno-campaigns.png",
     "tablet-interno-devices.png",
     "tablet-interno-groups.png",
@@ -39,6 +41,7 @@
     "mobile-interno-library.png",
     "mobile-interno-posters.png",
     "mobile-interno-smart-scenes.png",
+    "mobile-interno-universal-tables.png",
     "mobile-interno-campaigns.png",
     "mobile-interno-devices.png",
     "mobile-interno-groups.png",
@@ -49,7 +52,7 @@
     "mobile-interno-settings.png"
   ],
   "approval": {
-    "pr": 326,
-    "confirmation": "Usuário aprovou expressamente o conjunto de 45 PNGs respondendo 'tudo correto' após receber a galeria e os originais; registro: https://github.com/Mgteixeira2112/displayhub/pull/326#issuecomment-5722598687"
+    "pr": 327,
+    "confirmation": "Usuário aprovou expressamente o conjunto completo das 48 referências em 17/09/2026, após ver galeria e página em 3 tamanhos. Prova: visual-standard/approval-record-327.md; origem: workflow 35292801888, artifact 10526133280. Aprovação visual não autoriza merge."
   }
 }

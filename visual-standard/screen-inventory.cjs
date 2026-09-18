@@ -7,6 +7,7 @@ const views = [
   ['library', 'Conteúdo'],
   ['posters', 'Criar'],
   ['smart-scenes', 'Smart Scenes'],
+  ['universal-tables', 'Editor Universal'],
   ['campaigns', 'Campanhas'],
   ['devices', 'Players Windows'],
   ['groups', 'Video Wall e Grupos'],
