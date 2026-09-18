@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import StructuredContent from './StructuredContent'
+import UniversalTableCsvImport from './UniversalTableCsvImport'
 import { supabase } from './lib/supabase'
 
 type Profile = { company_id: string; role: string }
@@ -9,6 +10,7 @@ export default function UniversalTablesManager() {
   const [error, setError] = useState('')
   const [controlsTarget, setControlsTarget] = useState<HTMLDivElement | null>(null)
   const [galleryTarget, setGalleryTarget] = useState<HTMLDivElement | null>(null)
+  const [importVersion, setImportVersion] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -32,17 +34,18 @@ export default function UniversalTablesManager() {
   if (error) return <p className="form-message" role="alert">{error}</p>
   if (!profile) return <p className="empty-state">Carregando conteúdo comercial...</p>
 
-  // Reuse the existing Content page styling and editor without copying forms or changing data.
   return (
     <section className="view-library" aria-label="Editor Universal">
       <div className="software-module module-library">
         <div className="content-library-controls-stack">
           <div className="content-library-slot" ref={setControlsTarget} />
+          <UniversalTableCsvImport companyId={profile.company_id} role={profile.role} onImported={() => setImportVersion((version) => version + 1)} />
         </div>
         <div className="content-library-galleries-stack">
           <div className="content-library-slot" ref={setGalleryTarget} />
         </div>
         <StructuredContent
+          key={importVersion}
           companyId={profile.company_id}
           role={profile.role}
           controlsTarget={controlsTarget}

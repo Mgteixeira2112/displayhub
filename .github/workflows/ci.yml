@@ -29,6 +29,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Testar parser de CSV comercial
+        run: node --experimental-strip-types --test tests/commercial-csv.test.mjs
+
       - name: Testar rotação gradual de tabelas e ofertas
         run: node --experimental-strip-types --test tests/commercial-rotation.test.mjs
 
