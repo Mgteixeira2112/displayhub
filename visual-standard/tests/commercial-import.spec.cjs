@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test')
+const { zipSync, strToU8 } = require('fflate')
 
 const origin = 'https://example.supabase.co'
 const appOrigin = 'http://127.0.0.1:4173'
@@ -16,7 +17,22 @@ const json = (data, status = 200) => ({
   body: JSON.stringify(data),
 })
 
-test('CSV: prévia, validação, permissão e inserção simulada sem acesso a produção', async ({ page }, testInfo) => {
+function xlsxFixture() {
+  const names = ['Cardapio', 'Ofertas']
+  const entries = {
+    '[Content_Types].xml': `<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${names.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`,
+    '_rels/.rels': '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+    'xl/workbook.xml': `<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${names.map((name, i) => `<sheet name="${name}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`,
+    'xl/_rels/workbook.xml.rels': `<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${names.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}</Relationships>`,
+  }
+  const rows = [[['Produto', 'Preço'], ['Cafe', '12,50']], [['Produto', 'Preço'], ['Suco', '8,90']]]
+  rows.forEach((sheet, index) => {
+    entries[`xl/worksheets/sheet${index + 1}.xml`] = `<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${sheet.map((row, i) => `<row r="${i + 1}">${row.map((value, col) => `<c r="${String.fromCharCode(65 + col)}${i + 1}" t="inlineStr"><is><t>${value}</t></is></c>`).join('')}</row>`).join('')}</sheetData></worksheet>`
+  })
+  return Buffer.from(zipSync(Object.fromEntries(Object.entries(entries).map(([path, xml]) => [path, strToU8(xml)]))))
+}
+
+test('CSV e XLSX real: prévia, seleção de abas e inserção somente após confirmação com banco fictício', async ({ page }, testInfo) => {
   const unexpected = []
   const errors = []
   const writes = []
@@ -62,10 +78,8 @@ test('CSV: prévia, validação, permissão e inserção simulada sem acesso a p
   await expect(panel.getByRole('button', { name: 'Importar planilha' })).toBeVisible()
   await panel.getByRole('button', { name: 'Importar planilha' }).click()
   await expect(panel.getByText('Crie antes uma estrutura vazia', { exact: false })).toBeVisible()
-  await panel.locator('input[type="file"]').setInputFiles({
-    name: 'produtos.csv', mimeType: 'text/csv',
-    buffer: Buffer.from('Produto;Categoria;Unidade;Preço;Promoção\nPicanha;Carnes;kg;89,90;79,90\nAcém;Carnes;kg;32,90;\n', 'utf8'),
-  })
+  const upload = panel.locator('input[type="file"]')
+  await upload.setInputFiles({ name: 'produtos.csv', mimeType: 'text/csv', buffer: Buffer.from('Produto;Categoria;Unidade;Preço;Promoção\nPicanha;Carnes;kg;89,90;79,90\nAcém;Carnes;kg;32,90;\n', 'utf8') })
   await expect(panel.getByText('Arquivo lido localmente: 2 linhas.', { exact: false })).toBeVisible()
   await expect(panel.getByRole('button', { name: /Confirmar importação de 2 itens/ })).toBeDisabled()
   await panel.locator('.content-import-controls select').selectOption(tableId)
@@ -79,6 +93,26 @@ test('CSV: prévia, validação, permissão e inserção simulada sem acesso a p
   expect(writes[0]).toHaveLength(2)
   expect(writes[0][0]).toMatchObject({ title: 'Picanha', price: 89.9, promo_price: 79.9, description: 'Unidade: kg', company_id: companyId, content_id: tableId })
   expect(writes[0][1]).toMatchObject({ title: 'Acém', price: 32.9, promo_price: null })
+
+  // Invalid uploads must not keep a stale preview or trigger a write.
+  await upload.setInputFiles({ name: 'invalido.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from('not an excel workbook') })
+  await expect(panel.getByText('assinatura ZIP ausente', { exact: false })).toBeVisible()
+  await expect(panel.getByRole('button', { name: /Confirmar importação/ })).toHaveCount(0)
+  expect(writes).toHaveLength(1)
+
+  await upload.setInputFiles({ name: 'produtos.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: xlsxFixture() })
+  await expect(panel.getByText('Selecione a aba do Excel que deseja importar.', { exact: false })).toBeVisible()
+  await expect(panel.getByRole('button', { name: /Confirmar importação/ })).toHaveCount(0)
+  expect(writes).toHaveLength(1)
+  await panel.getByLabel('Aba do Excel').selectOption('Ofertas')
+  await expect(panel.getByText('Aba Ofertas: 1 linhas.', { exact: false })).toBeVisible()
+  await expect(panel.getByRole('button', { name: /Confirmar importação de 1 itens/ })).toBeEnabled()
+  expect(writes).toHaveLength(1)
+  await panel.getByRole('button', { name: /Confirmar importação de 1 itens/ }).click()
+  await expect(panel.getByText('1 itens importados com sucesso.', { exact: false })).toBeVisible()
+  expect(writes).toHaveLength(2)
+  expect(writes[1]).toHaveLength(1)
+  expect(writes[1][0]).toMatchObject({ title: 'Suco', price: 8.9, company_id: companyId, content_id: tableId })
   expect(unexpected).toEqual([])
   expect(errors).toEqual([])
 })
