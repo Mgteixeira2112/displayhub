@@ -1,0 +1,7 @@
+# Aprovação visual específica — PR #330
+
+Em 18/09/2026, após apresentação dos comparativos das capturas do Editor Universal em tablet e celular, o proprietário declarou expressamente: “Aprovo expressamente os layouts de tablet e celular apresentados para a PR #330. Continue a validação, sem fazer merge sem minha autorização específica.”
+
+Escopo estrito: somente `tablet-interno-universal-tables.png` e `mobile-interno-universal-tables.png`, conforme imagens `actual` do workflow CI #892, execução 35337804540, artefato 10542744389, testado no commit `ad73a9a4aba1c0a9a0020821f6ea064b76a26798` (checkout sintético da PR `997722999809ed3184335b1329caf7eebf58877c`). Artefato: https://github.com/Mgteixeira2112/displayhub/actions/runs/35337804540/artifacts/10542744389. O proprietário recebeu e aprovou os comparativos apresentados no chat; esta declaração não equivale à aprovação das outras 46 referências, nem a homologação funcional de produção.
+
+Procedimento: versionar somente os dois PNGs `actual` aprovados, verificar SHA-256 e inventário das 48 referências, manter limiares e `updateSnapshots: none`, executar CI completa na branch e revisar relatório. Não alterar banco, players, outras referências ou `main`. **Aprovação visual não autoriza merge**, nem publicação. Solicitar autorização específica para PR #330 após CI verde; validação real de permissões Supabase e homologação operacional permanecem pendentes.
