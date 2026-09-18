@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { mapImportRow, parseBrl, parseCommercialCsv, suggestMapping, validateImport } from '../src/lib/commercialCsv.ts'
+import { normalizeXlsxSheets } from '../src/lib/commercialXlsx.ts'
 
 test('imports Brazilian semicolon CSV, BOM, sep hint and escaped quotes', () => {
   const parsed = parseCommercialCsv('\uFEFFsep=;\r\nProduto;Categoria;Preço;Promoção\r\n"Café ""especial""";Bebidas;R$ 12,50;R$ 10,00\r\n')
@@ -71,4 +72,26 @@ test('accepts 200 data rows but rejects 201', () => {
   const header = 'Produto;Preço\n'
   assert.equal(parseCommercialCsv(header + lines.slice(0, 200).join('\n')).rows.length, 200)
   assert.throws(() => parseCommercialCsv(header + lines.join('\n')), /200 linhas/)
+})
+
+test('normalizes XLSX sheets and reuses CSV mapping, currency validation and order', () => {
+  const sheets = normalizeXlsxSheets([{ sheet: 'Cardápio', data: [['Produto', 'Preço', 'Unidade'], ['Café', '12,50', 'un'], ['Chá', 8, 'un']] }])
+  assert.equal(sheets.length, 1)
+  assert.equal(sheets[0].name, 'Cardápio')
+  const mapping = suggestMapping(sheets[0].headers)
+  const result = validateImport(sheets[0].rows.map((row) => mapImportRow(row, mapping)))
+  assert.deepEqual(result.problems, [])
+  assert.deepEqual(result.payload.map(({ price }) => price), [12.5, 8])
+  assert.deepEqual(result.payload.map(({ position }) => position), [0, 1])
+})
+
+test('retains explicit multi-sheet selection and rejects invalid XLSX tables', () => {
+  const sheets = normalizeXlsxSheets([{ sheet: 'A', data: [['Produto', 'Preço'], ['Café', 12]] }, { sheet: 'B', data: [['Produto', 'Preço'], ['Chá', 8]] }])
+  assert.deepEqual(sheets.map(({ name }) => name), ['A', 'B'])
+  assert.throws(() => normalizeXlsxSheets([]), /sem planilhas/)
+  assert.throws(() => normalizeXlsxSheets([{ sheet: 'Vazia', data: [['Produto', 'Preço']] }]), /ao menos um item/)
+  assert.throws(() => normalizeXlsxSheets([{ sheet: 'Sem cabeçalho', data: [['Produto', ''], ['Café', 12]] }]), /cabeçalhos/)
+  assert.throws(() => normalizeXlsxSheets([{ sheet: 'Extra', data: [['Produto', 'Preço'], ['Café', 12, 'extra']] }]), /colunas extras/)
+  const oversized = [['Produto', 'Preço'], ...Array.from({ length: 201 }, (_, index) => [`Produto ${index}`, index])]
+  assert.throws(() => normalizeXlsxSheets([{ sheet: 'Longa', data: oversized }]), /200 itens/)
 })
