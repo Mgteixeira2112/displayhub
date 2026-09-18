@@ -1,0 +1,86 @@
+name: Visual candidates - Editor Universal (review only)
+
+on:
+  push:
+    branches: [test/universal-tables-visual-candidates]
+
+permissions:
+  contents: read
+
+jobs:
+  capture-candidates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch de evidências
+        uses: actions/checkout@v4
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Dependências com ambiente fictício
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Preparar captura temporária, sem modificar referências versionadas
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const inventory = 'visual-standard/screen-inventory.cjs'
+          const baseline = 'visual-standard/visual-baseline.cjs'
+          const manifest = 'visual-standard/baselines/manifest.json'
+          let content = fs.readFileSync(inventory, 'utf8')
+          const marker = "  ['smart-scenes', 'Smart Scenes'],"
+          if (!content.includes(marker) || content.includes("['universal-tables', 'Editor Universal']")) throw Error('Inventário inesperado')
+          content = content.replace(marker, marker + "\n  ['universal-tables', 'Editor Universal'],")
+          fs.writeFileSync(inventory, content)
+          content = fs.readFileSync(baseline, 'utf8')
+          if (!content.includes('screenshots.length !== 45')) throw Error('Regra visual inesperada')
+          fs.writeFileSync(baseline, content.replace('screenshots.length !== 45', 'screenshots.length !== 48'))
+          const approved = JSON.parse(fs.readFileSync(manifest, 'utf8'))
+          if (approved.status !== 'approved' || approved.screenshots.length !== 45) throw Error('Referências aprovadas inesperadas')
+          fs.writeFileSync(manifest, JSON.stringify({ version: 1, status: 'pending', screenshots: [], approval: null }) + '\n')
+          NODE
+      - name: Capturar 48 imagens sem comparação ou conexão de produção
+        run: npx playwright test --config visual-standard/playwright.config.cjs --retries=0
+      - name: Conferir inventário e gerar pacote candidato com hashes
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const crypto = require('node:crypto')
+          const { screenshots } = require('./visual-standard/screen-inventory.cjs')
+          if (screenshots.length !== 48 || new Set(screenshots).size !== 48) throw Error('Inventário deve conter 48 imagens únicas')
+          const root = 'visual-standard/artifacts/test-results'
+          const hits = []
+          function visit(dir) { for (const entry of fs.readdirSync(dir, { withFileTypes: true })) { const p = path.join(dir, entry.name); if (entry.isDirectory()) visit(p); else if (p.endsWith('.png')) hits.push(p) } }
+          visit(root)
+          const found = new Map()
+          for (const file of hits) { const name = path.basename(file); if (found.has(name)) throw Error('Captura duplicada: ' + name); found.set(name, file) }
+          if (found.size !== 48 || screenshots.some(name => !found.has(name))) throw Error('Conjunto incompleto: ' + found.size + '/48')
+          const directory = 'visual-standard/artifacts/candidates/images'
+          fs.mkdirSync(directory, { recursive: true })
+          const sha = data => crypto.createHash('sha256').update(data).digest('hex')
+          const report = { state: 'awaiting_specific_human_approval', approved: false, source_pr: 327, source_commit: process.env.GITHUB_SHA, total: 48, changed: [], unchanged: [], added: [], screenshots: {} }
+          for (const name of screenshots) {
+            const data = fs.readFileSync(found.get(name))
+            if (!data.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))) throw Error('Arquivo não é PNG: ' + name)
+            fs.writeFileSync(path.join(directory, name), data)
+            report.screenshots[name] = sha(data)
+            const old = path.join('visual-standard/baselines/images', name)
+            if (!fs.existsSync(old)) report.added.push(name)
+            else if (sha(fs.readFileSync(old)) !== sha(data)) report.changed.push(name)
+            else report.unchanged.push(name)
+          }
+          fs.writeFileSync('visual-standard/artifacts/candidates/review.json', JSON.stringify(report, null, 2) + '\n')
+          console.log(`48 candidatas: ${report.changed.length} alteradas, ${report.added.length} novas, ${report.unchanged.length} idênticas`)
+          NODE
+      - name: Guardar relatório e 48 PNGs para aprovação específica
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editor-universal-48-candidates-unapproved
+          path: visual-standard/artifacts/candidates/
+          retention-days: 7
+          if-no-files-found: warn
