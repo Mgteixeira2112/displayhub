@@ -14,42 +14,36 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
-      - name: Fetch only approved CI 892 screenshots and verify hashes
+      - name: Download approved screenshots and verify exact hashes
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh run download 35337804540 --repo Mgteixeira2112/displayhub --name visual-public-and-internal-fixtures --dir /tmp/pr330-evidence
           python3 - <<'PY'
-          import hashlib,json,pathlib,shutil
+          import hashlib,json,pathlib
           root=pathlib.Path('visual-standard/baselines')
           evidence=pathlib.Path('/tmp/pr330-evidence/test-results')
           approved={'tablet-interno-universal-tables.png':'5097fb7005403c29162bbfdd34e3c045beb70405d16e27de7f1ad42f2f1df359','mobile-interno-universal-tables.png':'c69bbf24f8d035a48fad0f7f726cf9330c9bc90a95be5c7f7f71692b1fc98be7'}
           files={}
-          for name, expected in approved.items():
+          for name,expected in approved.items():
               matches=[p for p in evidence.rglob(name.replace('.png','-actual.png')) if 'retry' not in str(p)]
-              if len(matches)!=1: raise SystemExit(f'Expected exactly one non-retry actual for {name}, got {matches}')
+              if len(matches)!=1: raise SystemExit(f'Expected one approved actual for {name}: {matches}')
               data=matches[0].read_bytes()
-              actual=hashlib.sha256(data).hexdigest()
-              if actual != expected: raise SystemExit(f'UNAPPROVED SCREENSHOT: {name} {actual} != {expected}')
+              if hashlib.sha256(data).hexdigest()!=expected: raise SystemExit(f'Unapproved image: {name}')
               files[name]=data
-          manifest_path=root/'manifest.json'
-          manifest=json.loads(manifest_path.read_text())
-          review_path=root/'approved-review-20260918.json'
-          review=json.loads(review_path.read_text())
+          manifest_path=root/'manifest.json'; review_path=root/'approved-review-20260918.json'
+          manifest=json.loads(manifest_path.read_text()); review=json.loads(review_path.read_text())
           if manifest['status']!='approved' or manifest['approval']['pr']!=327 or review['review_state']!='approved_user_20260917_pr327': raise SystemExit('Unexpected prior approvals')
           if set(approved)-set(manifest['screenshots']) or set(approved)-set(review['screenshots']): raise SystemExit('Missing names in inventory')
-          original=root/'approved-review-pr327-archive.json'
-          if original.exists(): raise SystemExit('Prior archive already exists; stop for manual review')
-          original.write_text(json.dumps(review,indent=2,ensure_ascii=False)+'\n')
+          archive=root/'approved-review-pr327-archive.json'
+          if archive.exists(): raise SystemExit('Archive already exists')
+          archive.write_text(json.dumps(review,indent=2,ensure_ascii=False)+'\n')
           for name,data in files.items():
-              (root/'images'/name).write_bytes(data)
-              review['screenshots'][name]=approved[name]
-          review['amendment_pr330']={'approved_only':list(approved),'approval_record':'visual-standard/approval-record-330.md','source_run':35337804540,'source_artifact':10542744389,'prior_review_archive':'visual-standard/baselines/approved-review-pr327-archive.json','merge_authorized':False}
-          manifest['amendment_pr330']=review['amendment_pr330']
-          review_path.write_text(json.dumps(review,indent=2,ensure_ascii=False)+'\n')
-          manifest_path.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n')
+              (root/'images'/name).write_bytes(data); review['screenshots'][name]=approved[name]
+          amendment={'approved_only':list(approved),'approval_record':'visual-standard/approval-record-330.md','source_run':35337804540,'source_artifact':10542744389,'prior_review_archive':'visual-standard/baselines/approved-review-pr327-archive.json','merge_authorized':False}
+          review['amendment_pr330']=amendment; manifest['amendment_pr330']=amendment
+          review_path.write_text(json.dumps(review,indent=2,ensure_ascii=False)+'\n'); manifest_path.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n')
           PY
-          node visual-standard/visual-baseline.cjs
           node visual-standard/check-candidate-review.cjs
           git status --short
       - name: Commit only approved references to PR branch without merge
