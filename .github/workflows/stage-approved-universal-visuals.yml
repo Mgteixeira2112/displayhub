@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   stage-approved-visuals:
-    if: github.event.head_commit.message == 'ci: apply approved visuals for PR 327'
+    if: >-
+      github.event.head_commit.message == 'ci: fix syntax and run pinned approved-baseline staging'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +25,7 @@ jobs:
           github-token: ${{ github.token }}
           repository: Mgteixeira2112/displayhub
           path: /tmp/displayhub-reviewed-visuals
-      - name: Check approval, artifact hashes and commit 48 exact images on PR branch
+      - name: Check approval, hashes and commit exact images only on PR branch
         shell: bash
         run: |
           set -euo pipefail
@@ -55,7 +56,6 @@ jobs:
             if (report.added.includes(name)) assert(!fs.existsSync(existing), `Unexpected preexisting new PNG: ${name}`);
             fs.writeFileSync(existing, data);
           }
-          // Exact set comparison is performed before any changes to approved PNGs.
           assert(report.added.every(name => name.endsWith('-interno-universal-tables.png')), 'Unexpected additional baseline');
           fs.writeFileSync('visual-standard/baselines/approved-review-20260918.json', JSON.stringify({
             version: 1, review_state: 'approved_user_20260917_pr327', source_commit: report.source_commit,
@@ -98,6 +98,7 @@ jobs:
           text = text.replace('Após a PR #326 ser autorizada e integrada, o conjunto inicial será `approved`', 'Conjunto aprovado especificamente na PR #327: `approved`');
           text = text.replace('A aprovação específica do usuário está registrada em https://github.com/Mgteixeira2112/displayhub/pull/326#issuecomment-5722598687.', 'A aprovação visual específica está documentada em `visual-standard/approval-record-327.md`; a aprovação histórica das 45 referências anteriores permanece registrada na PR #326.');
           fs.writeFileSync(readmePath, text);
+          delete require.cache[require.resolve('./visual-standard/screen-inventory.cjs')];
           const loaded = require('./visual-standard/screen-inventory.cjs');
           assert(loaded.screenshots.length === 48 && loaded.screenshots.every(n => expected.has(n)), 'Committed screenshot names differ from approved candidates');
           console.log('48 approved images SHA-256 verified, exact inventory and CI gates adjusted. No production access.');
