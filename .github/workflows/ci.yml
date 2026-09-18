@@ -85,13 +85,14 @@ jobs:
       - name: Instalar Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Inspecionar login público e navegação interna com dados fictícios
+      - name: Inspecionar telas vazias e preenchidas com perfis e dados fictícios
         run: npx playwright test --config visual-standard/playwright.config.cjs
 
-      - name: Exigir imagens de 14 páginas internas e duas telas públicas em três tamanhos
+      - name: Exigir 48 comparações aprovadas e 27 evidências preenchidas
         run: |
           test "$(find visual-standard/artifacts/test-results -name '*-interno-*.png' | wc -l)" -ge 42
-          test "$(find visual-standard/artifacts/test-results -name '*.png' | wc -l)" -ge 48
+          test "$(find visual-standard/artifacts/test-results -name 'filled-*.png' | wc -l)" -eq 27
+          test "$(find visual-standard/artifacts/test-results -name '*.png' | wc -l)" -ge 75
           test -f visual-standard/artifacts/report/index.html
           git diff --exit-code -- visual-standard/baselines
 
