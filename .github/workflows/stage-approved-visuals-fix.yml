@@ -11,7 +11,7 @@ permissions:
 jobs:
   stage:
     if: >-
-      github.event.head_commit.message == 'ci: retry approved visuals with Playwright dependency'
+      github.event.head_commit.message == 'ci: stage approved PNGs without modifying workflow files'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Install dependencies for existing approved-baseline checks
+      - name: Install dependencies for baseline checks
         run: |
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.55.0
@@ -32,7 +32,7 @@ jobs:
           repository: Mgteixeira2112/displayhub
           github-token: ${{ github.token }}
           path: /tmp/displayhub-reviewed-visuals
-      - name: Execute existing SHA-pinned approval and staging code
+      - name: Verify approved SHA-256 values and commit only baseline files to PR branch
         shell: bash
         run: |
           node <<'NODE'
@@ -40,14 +40,20 @@ jobs:
           const original = fs.readFileSync('.github/workflows/stage-approved-universal-visuals.yml', 'utf8')
           const chunks = original.split('        run: |\n')
           if (chunks.length !== 2) throw Error('Expected one existing guarded staging script')
-          const lines = chunks[1].split('\n')
           const body = []
-          for (const line of lines) {
+          for (const line of chunks[1].split('\n')) {
             if (line && !line.startsWith('          ')) break
             body.push(line.startsWith('          ') ? line.slice(10) : '')
           }
-          const script = body.join('\n')
-          if (!script.includes('48 approved images SHA-256 verified') || !script.includes('git push origin HEAD:refs/heads/feat/universal-tables-module-shell')) throw Error('Unexpected original staging script')
+          let script = body.join('\n')
+          if (!script.includes('48 approved images SHA-256 verified') || !script.includes('git push origin HEAD:refs/heads/feat/universal-tables-module-shell')) throw Error('Unexpected staging script')
+          const editCI = "fs.writeFileSync('.github/workflows/ci.yml', text);"
+          const rmWorkflow = 'git rm .github/workflows/stage-approved-universal-visuals.yml'
+          const addWorkflow = 'git add visual-standard .github/workflows/ci.yml'
+          if (![editCI, rmWorkflow, addWorkflow].every(s => script.includes(s))) throw Error('Unexpected workflow mutation commands')
+          script = script.replace(editCI, '// CI workflow is updated separately by authorized GitHub connector')
+          script = script.replace(rmWorkflow, ': # Do not change GitHub workflows from Actions token')
+          script = script.replace(addWorkflow, 'git add visual-standard')
           fs.writeFileSync('/tmp/displayhub-approved-visuals.sh', script)
           NODE
           bash /tmp/displayhub-approved-visuals.sh
