@@ -170,7 +170,8 @@ for (const [role, label, canManage] of [
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('displayhub:navigate', { detail: 'library' })))
     await expect(page.locator('.view-library .content-gallery-media .content-card')).toHaveCount(1)
     await expect(page.locator('.view-library .content-gallery-media')).toContainText('Vídeo Demonstrativo Fictício')
-    await expect(page.locator('.view-library .content-create-toolbar')).toHaveCount(canManage ? 1 : 0)
+    // A biblioteca tem outra barra para conteúdo comercial; verificar apenas a barra de mídia.
+    await expect(page.locator('.view-library .content-controls-media .content-create-toolbar')).toHaveCount(canManage ? 1 : 0)
     await expect(page.locator('.view-library .content-gallery-media .danger-button')).toHaveCount(canManage ? 1 : 0)
     await screenshot(page, testInfo, role, 'library')
 
