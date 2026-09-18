@@ -1,25 +1,24 @@
-# Referências visuais — aprovação obrigatória
+# Referências visuais do DisplayHub — estado atual `approved`
 
-O estado efetivo é definido exclusivamente por `manifest.json`. Após a PR #326 ser autorizada e integrada, o conjunto inicial será `approved`: 45 capturas sintéticas (13 áreas internas e duas telas públicas em desktop, tablet e celular). A aprovação específica do usuário está registrada em https://github.com/Mgteixeira2112/displayhub/pull/326#issuecomment-5722598687. A existência da aprovação **não** autoriza merge sem consentimento para a PR.
+O estado efetivo deve ser lido em [`manifest.json`](manifest.json). A PR [#326](https://github.com/Mgteixeira2112/displayhub/pull/326) foi integrada com autorização específica: contém 45 PNGs originais (13 áreas internas + 2 telas públicas × desktop/tablet/mobile), inventário e hashes SHA-256 conferidos no CI. A aprovação expressa do conjunto está registrada no [comentário de aceite](https://github.com/Mgteixeira2112/displayhub/pull/326#issuecomment-5722598687). O CI da `main` e a publicação Pages dessa PR terminaram com sucesso. Essa aprovação diz respeito às imagens sintéticas, não a todos os fluxos operacionais reais.
 
-## Estados e segurança
+## Estados e comportamento implementado
 
-- `pending`: sem imagens aprovadas, não compara pixels.
-- `candidate`: exatamente 45 PNGs versionados e auditados, ainda não compara pixels.
-- `approved`: exige 45 PNGs, aprovação humana documentada e comparação Playwright de todas as imagens. Imagem ausente ou diferença além dos limites bloqueia o CI.
-- `updateSnapshots: 'none'`: jamais aceitar diferenças ou substituir PNGs automaticamente. O script de preparação também recusa alterar referências já aprovadas.
+- `pending`: sem imagens aprovadas, sem comparação de pixels.
+- `candidate`: inventário com exatamente 45 PNGs versionados e auditados, mas ainda sem comparação de pixels.
+- `approved`: exige 45 PNGs, referência de aprovação humana no manifesto e executa comparação Playwright de **todas as 45 capturas**. Imagem ausente, hash diferente, dimensão diferente ou diferença acima do limite bloqueia o CI.
+- `updateSnapshots: 'none'` no Playwright: nunca substituir ou aprovar diferenças automaticamente. `stage-baseline-candidates.cjs` recusa modificar referências no estado `approved`.
 
-## Como atualizar uma referência no futuro
+A execução real usa `toMatchSnapshot` com `threshold: 0.2` e `maxDiffPixelRatio: 0.005` (máximo de 0,5% de pixels distintos, conforme semântica do Playwright), screenshots de página completa, animações desativadas, caret oculto e Chromium/viewports fixos. Falhas devem ser investigadas pelo relatório e pelas imagens `expected/actual/diff`; tolerâncias não devem ser aumentadas para mascarar regressão.
 
-1. Inspecionar o estado real do aplicativo e executar os testes com respostas/login fictícios. Nunca usar contas, dados reais ou produção para capturas do padrão.
-2. Em branch separada, gerar novas candidatas e comparar imagens originais, `actual` e `diff` onde necessário; não aceitar imagens apenas para obter CI verde.
-3. Solicitar aprovação humana do **novo conjunto específico** e registrar a referência da aprovação na PR.
-4. Versionar somente os PNGs expressamente aprovados, conferir inventário e hashes, executar CI com comparação ativa e corrigir falhas legítimas sem afrouxar limiares para mascarar divergências.
-5. Obter autorização específica para merge; validar CI de `main` e GitHub Pages depois da integração.
+## Atualização intencional das referências
 
-## Escopo e critérios
+1. Inspecionar o aplicativo e identificar quais telas mudarão. Usar somente ambiente, login e respostas sintéticas; bloquear serviços externos e escrita real.
+2. Criar branch/PR específica; preservar o conjunto atual. Gerar candidatas **separadamente** e comparar `expected`, `actual` e `diff`. **Não executar o script de staging sobre o manifesto `approved`: ele bloqueia essa operação intencionalmente.** Preparação de novas candidatas requer um fluxo separado que preserve integralmente as imagens originais até aprovação.
+3. Apresentar as imagens propostas ao proprietário, identificar exatamente o conjunto e registrar o aceite explícito na PR. CI verde ou aprovação anterior não substituem esse consentimento.
+4. Após a aprovação, versionar apenas o conjunto aceito e atualizar manifesto/inventário/hash sem aceitar novas diferenças automaticamente; executar novamente CI com comparação real ativa. Resolver divergências sem afrouxar limiares.
+5. Solicitar **nova autorização específica para merge da PR**; confirmar CI `main` e publicação do mesmo SHA; pedir homologação das telas reais após deploy.
 
-- Imagens de página inteira, animações desativadas, cursor de texto oculto, Chromium e viewports padronizados.
-- `toMatchSnapshot`: `threshold: 0.2` e `maxDiffPixelRatio: 0.005` (0,5%). Diferenças e dimensões incompatíveis devem gerar falha e evidências.
-- O teste de 45 imagens cobre estados vazios com respostas HTTP fictícias; não homologa dados preenchidos, permissões específicas, QR, vídeos, player, Supabase real ou comportamento operacional.
-- Capturas temporárias ficam em `artifacts/` (não versionar). Adaptar o kit à arquitetura de cada novo projeto, sem copiar cegamente layout ou autenticação.
+## Abrangência e portabilidade
+
+As 45 capturas cobrem **estados vazios com respostas HTTP fictícias**. Não comprovam dados preenchidos, diferenças por papel/RBAC, QR, vídeos, players, Supabase real ou operação funcional completa. Artefatos temporários ficam em `visual-standard/artifacts/` e não devem ser versionados. Nos demais projetos não copiar estas imagens nem o manifesto: criar inventário, baselines e aceite próprios conforme [`../ADOPTION_RUNBOOK.md`](../ADOPTION_RUNBOOK.md).
