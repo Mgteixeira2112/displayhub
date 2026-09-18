@@ -50,3 +50,25 @@ test('validates item lengths, promotions, duplicates and unit preservation', () 
   assert.match(validateImport([{ ...valid, promo_price: '99,90' }]).problems.join(' '), /preço/)
   assert.match(validateImport([{ ...valid, price: '' }]).problems.join(' '), /preço/)
 })
+
+test('preserves all 30 items in order during CSV mapping and validation', () => {
+  const lines = Array.from({ length: 30 }, (_, index) => `Produto ${index + 1};Categoria;un;${index + 1},90`)
+  const parsed = parseCommercialCsv(['Produto;Categoria;Unidade;Preço', ...lines].join('\n'))
+  assert.equal(parsed.rows.length, 30)
+  const mapped = parsed.rows.map((row) => mapImportRow(row, suggestMapping(parsed.headers)))
+  const result = validateImport(mapped)
+  assert.deepEqual(result.problems, [])
+  assert.equal(result.payload.length, 30)
+  assert.deepEqual(result.payload.map((item) => item.position), Array.from({ length: 30 }, (_, index) => index))
+  assert.equal(result.payload[0].title, 'Produto 1')
+  assert.equal(result.payload[29].title, 'Produto 30')
+  assert.equal(result.payload[29].price, 30.9)
+  assert.equal(result.payload[29].description, 'Unidade: un')
+})
+
+test('accepts 200 data rows but rejects 201', () => {
+  const lines = Array.from({ length: 201 }, (_, index) => `Produto ${index + 1};${index + 1},90`)
+  const header = 'Produto;Preço\n'
+  assert.equal(parseCommercialCsv(header + lines.slice(0, 200).join('\n')).rows.length, 200)
+  assert.throws(() => parseCommercialCsv(header + lines.join('\n')), /200 linhas/)
+})
