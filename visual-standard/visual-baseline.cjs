@@ -17,15 +17,15 @@ function validateManifest() {
       manifest.screenshots.some((name) => !inventory.has(name))) {
     throw new Error('Manifesto visual contém imagens ausentes do inventário ou repetidas')
   }
-  if (screenshots.length !== 45 || inventory.size !== 45) {
-    throw new Error('Inventário visual inesperado: exigidas 45 telas distintas')
+  if (screenshots.length !== 48 || inventory.size !== 48) {
+    throw new Error('Inventário visual inesperado: exigidas 48 telas distintas')
   }
   if (manifest.status === 'pending') {
     if (listed.size || manifest.approval !== null) throw new Error('Manifesto pendente não pode aprovar imagens')
     return
   }
   if (listed.size !== inventory.size || screenshots.some((name) => !listed.has(name))) {
-    throw new Error('Baseline candidata/aprovada deve conter exatamente as 45 imagens inventariadas')
+    throw new Error('Baseline candidata/aprovada deve conter exatamente as 48 imagens inventariadas')
   }
   if (manifest.status === 'candidate' && manifest.approval !== null) {
     throw new Error('Candidatas não podem ser declaradas aprovadas')
@@ -65,7 +65,7 @@ async function captureAndCompare(page, testInfo, id) {
 }
 
 if (require.main === module) {
-  console.log(`Baseline visual: ${manifest.status}; ${manifest.status === 'approved' ? '45 comparações obrigatórias' : 'comparação PENDENTE de aprovação humana'}`)
+  console.log(`Baseline visual: ${manifest.status}; ${manifest.status === 'approved' ? '48 comparações obrigatórias' : 'comparação PENDENTE de aprovação humana'}`)
 }
 
 module.exports = { captureAndCompare, validateManifest }

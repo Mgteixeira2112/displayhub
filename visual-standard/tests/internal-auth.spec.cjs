@@ -66,6 +66,12 @@ test('navegação interna real com banco e login completamente fictícios', asyn
   await expect(page.locator('.software-main.view-overview')).toBeVisible()
   await page.evaluate(() => document.fonts.ready)
 
+  // Smoke test do novo módulo independente. Não modifica as 48 referências aprovadas.
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('displayhub:navigate', { detail: 'universal-tables' })))
+  await expect(page.locator('.software-main.view-universal-tables .content-controls-commercial')).toBeVisible()
+  await expect(page.locator('.software-main.view-universal-tables .content-gallery-commercial')).toBeVisible()
+  await expect(page.locator('.software-main.view-universal-tables .content-create-toolbar-commercial')).toBeVisible()
+
   for (const [view, heading] of views) {
     // O evento é o mecanismo de navegação já usado pelo app, sem acionar ações de gravação.
     await page.evaluate((target) => window.dispatchEvent(new CustomEvent('displayhub:navigate', { detail: target })), view)
