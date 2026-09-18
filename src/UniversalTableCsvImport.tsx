@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { FIELDS, mapImportRow, parseCommercialCsv, suggestMapping, validateImport } from './lib/commercialCsv'
 import type { ColumnMapping, ImportField, ImportRow } from './lib/commercialCsv'
+import type { WorkbookSheet } from './lib/commercialXlsx'
 import './universal-import.css'
 
 type Collection = { id: string; title: string; kind: 'menu' | 'price_table' }
@@ -14,6 +15,8 @@ export default function UniversalTableCsvImport({ companyId, role, onImported }:
   const [collections, setCollections] = useState<Collection[]>([])
   const [targetId, setTargetId] = useState('')
   const [fileName, setFileName] = useState('')
+  const [workbookSheets, setWorkbookSheets] = useState<WorkbookSheet[]>([])
+  const [selectedSheet, setSelectedSheet] = useState('')
   const [headers, setHeaders] = useState<string[]>([])
   const [rawRows, setRawRows] = useState<string[][]>([])
   const [mapping, setMapping] = useState<ColumnMapping>(emptyMapping)
@@ -49,11 +52,23 @@ export default function UniversalTableCsvImport({ companyId, role, onImported }:
   const ready = targetId && mapping.title >= 0 && mapping.price >= 0 && validation.problems.length === 0 && (!ignored.length || ackIgnored) && !saved
 
   async function selectFile(file: File | undefined) {
-    setFileName(''); setHeaders([]); setRawRows([]); setEdits({}); setMapping(emptyMapping()); setAckIgnored(false); setSaved(false); setMessage('')
+    setFileName(''); setHeaders([]); setRawRows([]); setEdits({}); setMapping(emptyMapping()); setAckIgnored(false); setSaved(false); setWorkbookSheets([]); setSelectedSheet(''); setMessage('')
     if (!file) return
-    if (!/\.csv$/i.test(file.name)) { setMessage('Nesta etapa, selecione um CSV. O Excel XLSX será incluído em uma PR separada.'); return }
+    if (!/\.(csv|xlsx)$/i.test(file.name)) { setMessage('Selecione um arquivo CSV ou XLSX.'); return }
     if (file.size > 2 * 1024 * 1024) { setMessage('O arquivo pode ter no máximo 2 MB.'); return }
     try {
+      if (/\.xlsx$/i.test(file.name)) {
+        const { readCommercialXlsx } = await import('./lib/commercialXlsx')
+        const sheets = await readCommercialXlsx(file)
+        if (!sheets.length) throw new Error('O arquivo XLSX não contém uma aba com itens.')
+        setWorkbookSheets(sheets)
+        setFileName(file.name)
+        if (sheets.length > 1) { setMessage('Selecione a aba do Excel que deseja importar. Nada foi gravado.'); return }
+        const sheet = sheets[0]
+        setSelectedSheet(sheet.name); setHeaders(sheet.headers); setRawRows(sheet.rows); setMapping(suggestMapping(sheet.headers))
+        setMessage(`Aba ${sheet.name} lida localmente: ${sheet.rows.length} linhas. Revise antes de gravar.`)
+        return
+      }
       const bytes = await file.arrayBuffer()
       let text: string
       try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes) }
@@ -67,6 +82,13 @@ export default function UniversalTableCsvImport({ companyId, role, onImported }:
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Não foi possível ler o arquivo.')
     }
+  }
+
+  function chooseSheet(name: string) {
+    const sheet = workbookSheets.find((candidate) => candidate.name === name)
+    setSelectedSheet(name); setHeaders(sheet?.headers || []); setRawRows(sheet?.rows || [])
+    setMapping(sheet ? suggestMapping(sheet.headers) : emptyMapping()); setEdits({}); setAckIgnored(false); setSaved(false)
+    setMessage(sheet ? `Aba ${sheet.name}: ${sheet.rows.length} linhas. Revise antes de gravar.` : '')
   }
 
   function remap(field: ImportField, index: number) {
@@ -111,17 +133,23 @@ export default function UniversalTableCsvImport({ companyId, role, onImported }:
 
   if (!['admin', 'manager'].includes(role)) return null
   return (
-    <section className="workspace-section content-controls-section content-import-section" aria-label="Importação de tabela CSV">
+    <section className="workspace-section content-controls-section content-import-section" aria-label="Importação de tabela CSV ou XLSX">
       <div className="section-heading">
         <div><p className="eyebrow">Planilhas</p><h2>Importar tabela</h2></div>
-        <button className="secondary-button compact" type="button" aria-expanded={open} onClick={() => { setOpen((current) => !current); setMessage('') }}>{open ? 'Fechar' : 'Importar CSV'}</button>
+        <button className="secondary-button compact" type="button" aria-expanded={open} onClick={() => { setOpen((current) => !current); setMessage('') }}>{open ? 'Fechar' : 'Importar planilha'}</button>
       </div>
       {open && <div className="content-create-workspace content-import-workspace">
         <p>Crie antes uma estrutura vazia em “+ Cardápio / Tabela”. O arquivo é lido neste navegador; nada será salvo até você confirmar.</p>
         <div className="content-form content-import-controls">
-          <label>Arquivo CSV (até 2 MB e 200 itens)
-            <input type="file" accept=".csv,text/csv" disabled={busy} onChange={(event) => void selectFile(event.currentTarget.files?.[0])} />
+          <label>Arquivo CSV ou XLSX (até 2 MB e 200 itens)
+            <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={busy} onChange={(event) => void selectFile(event.currentTarget.files?.[0])} />
           </label>
+          {workbookSheets.length > 1 && <label>Aba do Excel
+            <select value={selectedSheet} disabled={busy} onChange={(event) => chooseSheet(event.target.value)}>
+              <option value="">Selecione uma aba</option>
+              {workbookSheets.map((sheet) => <option key={sheet.name} value={sheet.name}>{sheet.name}</option>)}
+            </select>
+          </label>}
           <label>Destino: estrutura vazia sem vínculo com playlist
             <select value={targetId} disabled={busy} onChange={(event) => { setTargetId(event.target.value); setSaved(false) }}>
               <option value="">Selecione uma estrutura</option>

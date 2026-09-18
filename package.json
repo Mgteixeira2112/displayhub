@@ -14,7 +14,8 @@
     "konva": "10.5.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-konva": "19.2.7"
+    "react-konva": "19.2.7",
+    "read-excel-file": "9.3.10"
   },
   "devDependencies": {
     "@eslint/js": "9.35.0",
