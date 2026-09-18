@@ -59,8 +59,8 @@ test('CSV: prévia, validação, permissão e inserção simulada sem acesso a p
   await expect(page.locator('.software-company-summary strong')).toHaveText('Empresa de Teste')
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('displayhub:navigate', { detail: 'universal-tables' })))
   const panel = page.locator('.content-import-section')
-  await expect(panel.getByRole('button', { name: 'Importar CSV' })).toBeVisible()
-  await panel.getByRole('button', { name: 'Importar CSV' }).click()
+  await expect(panel.getByRole('button', { name: 'Importar planilha' })).toBeVisible()
+  await panel.getByRole('button', { name: 'Importar planilha' }).click()
   await expect(panel.getByText('Crie antes uma estrutura vazia', { exact: false })).toBeVisible()
   await panel.locator('input[type="file"]').setInputFiles({
     name: 'produtos.csv', mimeType: 'text/csv',
