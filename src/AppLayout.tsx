@@ -2,9 +2,10 @@ import { useEffect, useState, type ReactNode } from 'react'
 import DisplayGroupsManager from './DisplayGroupsManager'
 import WindowsDevicesManager from './WindowsDevicesManager'
 import SmartScenesManager from './SmartScenesManager'
+import UniversalTablesManager from './UniversalTablesManager'
 
-type View = 'overview' | 'displays' | 'devices' | 'groups' | 'library' | 'posters' | 'smart-scenes' | 'campaigns' | 'playlists' | 'schedule' | 'technical-templates' | 'history' | 'settings'
-type IconName = 'home' | 'create' | 'campaigns' | 'gallery' | 'screens' | 'content' | 'advanced' | 'wall' | 'playlists' | 'schedule' | 'history' | 'settings' | 'sparkles'
+type View = 'overview' | 'displays' | 'devices' | 'groups' | 'library' | 'posters' | 'smart-scenes' | 'universal-tables' | 'campaigns' | 'playlists' | 'schedule' | 'technical-templates' | 'history' | 'settings'
+type IconName = 'home' | 'create' | 'campaigns' | 'gallery' | 'screens' | 'content' | 'advanced' | 'wall' | 'playlists' | 'schedule' | 'history' | 'settings' | 'sparkles' | 'table'
 
 type Props = {
   companyName: string
@@ -23,6 +24,7 @@ const labels: Record<View, string> = {
   library: 'Conteúdo',
   posters: 'Criar',
   'smart-scenes': 'Smart Scenes',
+  'universal-tables': 'Editor Universal',
   campaigns: 'Campanhas',
   playlists: 'Playlists avançadas',
   schedule: 'Programação avançada',
@@ -39,6 +41,7 @@ const descriptions: Record<View, string> = {
   library: 'Organize imagens, vídeos e outros conteúdos da operação',
   posters: 'Crie ofertas e peças promocionais a partir dos modelos disponíveis',
   'smart-scenes': 'Crie experiências visuais adaptativas para uma ou várias telas',
+  'universal-tables': 'Organize tabelas, cardápios e conteúdo comercial para exibição',
   campaigns: 'Organize sequências de conteúdo e campanhas em exibição',
   playlists: 'Controle técnico das sequências de conteúdo do player',
   schedule: 'Defina regras avançadas de onde e quando o conteúdo será exibido',
@@ -48,7 +51,7 @@ const descriptions: Record<View, string> = {
 }
 
 const advancedViews: View[] = ['devices', 'groups', 'playlists', 'schedule', 'technical-templates', 'history']
-const allViews = new Set<View>(['overview', 'displays', 'devices', 'groups', 'library', 'posters', 'smart-scenes', 'campaigns', 'playlists', 'schedule', 'technical-templates', 'history', 'settings'])
+const allViews = new Set<View>(['overview', 'displays', 'devices', 'groups', 'library', 'posters', 'smart-scenes', 'universal-tables', 'campaigns', 'playlists', 'schedule', 'technical-templates', 'history', 'settings'])
 
 function hasPairingCode() {
   return /^[A-Z0-9]{6}$/.test((new URLSearchParams(window.location.search).get('pairing') || '').toUpperCase())
@@ -67,8 +70,9 @@ function NavIcon({ name }: { name: IconName }) {
     playlists: <><path d="M5 6h11M5 12h11M5 18h8"/><path d="m18 15 4 3-4 3z"/></>,
     schedule: <><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M8 14h3M14 14h2M8 18h3"/></>,
     history: <><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5"/><path d="M4 4v4.5h4.5M12 8v5l3 2"/></>,
-    settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21h-4v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H3v-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V3h4v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v4H21a1.7 1.7 0 0 0-1.6 1Z"/></>,
+    settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21h-4v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V3h4v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9A1.7 1.7 0 0 0 21 10h.1v4H21a1.7 1.7 0 0 0-1.6 1Z"/></>,
     sparkles: <><path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2Z"/><path d="m18 14 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8Z"/><path d="m5 13 .6 1.6 1.6.6-1.6.6L5 17.5l-.6-1.7-1.7-.6 1.7-.6Z"/></>,
+    table: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M10 10v10"/></>,
   }
 
   return <svg className="software-nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
@@ -136,6 +140,7 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           {nav('overview', 'Início', 'home')}
           {nav('posters', 'Criar', 'create')}
           {nav('smart-scenes', 'Smart Scenes', 'sparkles')}
+          {nav('universal-tables', 'Editor Universal', 'table')}
           {nav('campaigns', 'Campanhas', 'campaigns')}
           {nav('displays', 'Telas', 'screens')}
           {nav('library', 'Conteúdo', 'content')}
@@ -183,11 +188,11 @@ export default function AppLayout({ companyName, userName, roleLabel, busy, onSi
           </div>
           <div className="software-topbar-actions">
             <span className="software-company-pill">{companyName}</span>
-            {view !== 'groups' && view !== 'devices' && view !== 'smart-scenes' && <button className="software-topbar-create" type="button" onClick={() => { setView('posters'); setMobileMenuOpen(false) }}>+ Criar</button>}
+            {view !== 'groups' && view !== 'devices' && view !== 'smart-scenes' && view !== 'universal-tables' && <button className="software-topbar-create" type="button" onClick={() => { setView('posters'); setMobileMenuOpen(false) }}>+ Criar</button>}
           </div>
         </header>
         <main key={view} className="software-content">
-          {view === 'groups' ? <DisplayGroupsManager /> : view === 'devices' ? <WindowsDevicesManager /> : view === 'smart-scenes' ? <SmartScenesManager /> : children}
+          {view === 'groups' ? <DisplayGroupsManager /> : view === 'devices' ? <WindowsDevicesManager /> : view === 'smart-scenes' ? <SmartScenesManager /> : view === 'universal-tables' ? <UniversalTablesManager /> : children}
         </main>
       </div>
     </div>
