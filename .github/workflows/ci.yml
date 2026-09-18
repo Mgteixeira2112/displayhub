@@ -79,7 +79,7 @@ jobs:
       - name: Validar manifesto e estado de aprovação das referências
         run: node visual-standard/visual-baseline.cjs
 
-      - name: Auditar integridade SHA-256 das 45 imagens de referência
+      - name: Auditar integridade SHA-256 das 48 imagens de referência
         run: node visual-standard/check-candidate-review.cjs
 
       - name: Instalar Chromium
@@ -88,10 +88,10 @@ jobs:
       - name: Inspecionar login público e navegação interna com dados fictícios
         run: npx playwright test --config visual-standard/playwright.config.cjs
 
-      - name: Exigir imagens de 13 páginas internas e duas telas públicas em três tamanhos
+      - name: Exigir imagens de 14 páginas internas e duas telas públicas em três tamanhos
         run: |
-          test "$(find visual-standard/artifacts/test-results -name '*-interno-*.png' | wc -l)" -ge 39
-          test "$(find visual-standard/artifacts/test-results -name '*.png' | wc -l)" -ge 45
+          test "$(find visual-standard/artifacts/test-results -name '*-interno-*.png' | wc -l)" -ge 42
+          test "$(find visual-standard/artifacts/test-results -name '*.png' | wc -l)" -ge 48
           test -f visual-standard/artifacts/report/index.html
           git diff --exit-code -- visual-standard/baselines
 
