@@ -29,7 +29,7 @@
     "tablet-interno-library.png": "bc2466c021946b0b73e03dc290de9180fd7c916cccbe614c011462bd78b75153",
     "tablet-interno-posters.png": "da93c5c1e30824f0d095f60020064e2d90d00331bbf88276c4c6f8a2711205a3",
     "tablet-interno-smart-scenes.png": "4a9a5914b48f923aa0a79d360271d98280c5d368a1a63367986ce4b77f21d7ae",
-    "tablet-interno-universal-tables.png": "5097fb7005403c29162bbfdd34e3c045beb70405d16e27de7f1ad42f2f1df359",
+    "tablet-interno-universal-tables.png": "2947fec70d4bb46b6289f40ff0523335913174369e705e8d2bd75b47a34dcb69",
     "tablet-interno-campaigns.png": "81a78530e927d05fdd3dd63656e9ff4593d4b3dfec098dcae93276b06a26135c",
     "tablet-interno-devices.png": "904730550ecb449b4f67b2d9f3cd6b19041c0054b064a46a6699273f0a6cac57",
     "tablet-interno-groups.png": "7e104a51adb1845b37b773e054fbb000b5fa0c65c6393b92b0a0e89143596a7b",
@@ -45,7 +45,7 @@
     "mobile-interno-library.png": "1a61f21f00952cf712042b9a049ca353aa7967ab95584278b53a4d66497b4b40",
     "mobile-interno-posters.png": "a447508e74fffd13e044d0bd8a412cfac4ad7d7a0653e163a26f40721fedec20",
     "mobile-interno-smart-scenes.png": "c9315ff5f1ab9e3d7477c354d14a67c8b283df785acba724d7aaf35091ba2c2c",
-    "mobile-interno-universal-tables.png": "c69bbf24f8d035a48fad0f7f726cf9330c9bc90a95be5c7f7f71692b1fc98be7",
+    "mobile-interno-universal-tables.png": "af33581c2d6bb693171b88173a49d3eee0b6ca7e6061928e28835c6959ae7112",
     "mobile-interno-campaigns.png": "c9fd0f4e16b545fd7ffed10fa9f64565d1b846a85b768c4aa2fbe1830fa185eb",
     "mobile-interno-devices.png": "c8044dea801db8813a2c60a1b296acaf7a6310fbf0314e751beeaf751740684e",
     "mobile-interno-groups.png": "ab828ec666460d3cc0ad88a1fc0b1655b2338cdeec31fc7cd4daff9204d5d4de",
@@ -54,16 +54,5 @@
     "mobile-interno-technical-templates.png": "baa5edcbda024b2aabcd482f667e754ec54627a8c2e6709830b9127b6bf04fb6",
     "mobile-interno-history.png": "d0246c4e494efed03cc1c7258e6c9b08ffdeca4eeb5e8f0057f9132563a62b2e",
     "mobile-interno-settings.png": "ef183212dee57bb32cd1b5debcee1151df2e2954ddf21f94e2ea3025b9f4075b"
-  },
-  "amendment_pr330": {
-    "approved_only": [
-      "tablet-interno-universal-tables.png",
-      "mobile-interno-universal-tables.png"
-    ],
-    "approval_record": "visual-standard/approval-record-330.md",
-    "source_run": 35337804540,
-    "source_artifact": 10542744389,
-    "prior_review_archive": "visual-standard/baselines/approved-review-pr327-archive.json",
-    "merge_authorized": false
   }
 }
