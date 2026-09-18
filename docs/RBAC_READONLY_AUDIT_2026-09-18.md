@@ -20,4 +20,8 @@ A migration `20260918030000_restrict_anon_admin_rpc_execute.sql` remove exclusiv
 3. Solicitar autorização explícita para executar a migration no Supabase real, verificar as cinco permissões com `has_function_privilege`, testar geração de QR, associação de playlists, prévia/aceite do pareamento Windows e fila de comandos usando sessão real admin/manager e tentativa negada a anônimo.
 4. Somente após confirmação da CI, auditoria do banco e autorização separada de merge, integrar a PR; conferir CI `main`, deploy Pages e teste real do usuário.
 
+## Rollback de emergência — somente mediante autorização
+
+Caso alguma integração inesperada dependa de `anon`, interromper a implantação e investigar primeiro; não reabrir as permissões automaticamente. Após autorização expressa para rollback, restaurar as permissões anteriores com `GRANT EXECUTE ON FUNCTION` para `anon` nas cinco assinaturas exatas acima e verificar as concessões com `has_function_privilege`. Registrar o motivo e preparar uma migration de rollback separada; esta reversão reabre a exposição que motivou a correção.
+
 Pendências fora desta PR: testar de fato perfis `admin`, `manager`, `operator` e isolamento entre duas empresas em ambiente separado; analisar individualmente as demais RPCs de dispositivo com `SECURITY DEFINER`; avaliar proteção de senhas vazadas na configuração de Auth. Não descrever a auditoria de metadados como homologação de produção.
