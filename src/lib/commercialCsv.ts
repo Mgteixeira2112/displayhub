@@ -18,7 +18,7 @@ const aliases: Record<ImportField, string[]> = {
   description: ['descricao', 'detalhes', 'observacao', 'ingredientes'],
   unit: ['unidade', 'peso', 'medida', 'un', 'unid'],
   price: ['preco', 'valor', 'precovenda', 'precounitario', 'precorkg', 'precokg', 'precor'],
-  promo_price: ['promocional', 'precopromocional', 'precooferta', 'oferta', 'valoroferta'],
+  promo_price: ['promocao', 'promocional', 'precopromocional', 'precooferta', 'oferta', 'valoroferta'],
 }
 
 export function normalizeLabel(value: string) {
@@ -77,8 +77,12 @@ export function parseCommercialCsv(input: string) {
   const sep = /^sep=([;,\t])\r?\n/i.exec(text)
   const body = sep ? text.slice(sep[0].length) : text
   const candidates = sep ? [sep[1]] : [';', ',', '\t']
-  const ranked = candidates.map((delimiter) => ({ delimiter, rows: splitCsv(body, delimiter) }))
-    .sort((a, b) => (b.rows[0]?.length || 0) - (a.rows[0]?.length || 0))
+  let firstError: Error | null = null
+  const ranked = candidates.flatMap((delimiter) => {
+    try { return [{ delimiter, rows: splitCsv(body, delimiter) }] }
+    catch (error) { firstError ||= error instanceof Error ? error : new Error('Arquivo CSV inválido.'); return [] }
+  }).sort((a, b) => (b.rows[0]?.length || 0) - (a.rows[0]?.length || 0))
+  if (!ranked.length) throw firstError || new Error('Arquivo CSV inválido.')
   const rows = ranked[0].rows
   if (rows.length < 2 || rows[0].length < 2) throw new Error('A planilha precisa ter cabeçalhos e ao menos uma linha de dados.')
   const headers = rows[0]
