@@ -1,4 +1,4 @@
-import { regionAt } from './commercialRotation.ts'
+import { regionAt } from './commercialRotation'
 
 const LANDSCAPE_DEFAULT = 6
 const PORTRAIT_DEFAULT = 5
