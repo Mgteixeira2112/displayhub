@@ -1,0 +1,4 @@
+.menu-rows > .menu-row[hidden]{display:none!important}
+.menu-rows.commercial-table-page-change > .menu-row:not([hidden]){animation:commercial-table-page-enter .28s ease-out both}
+@keyframes commercial-table-page-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.menu-rows.commercial-table-page-change > .menu-row:not([hidden]){animation:none}}

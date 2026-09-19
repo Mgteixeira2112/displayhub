@@ -2,12 +2,14 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import PublicPlayer from './PublicPlayer'
+import { installCommercialTableRotation } from './lib/commercialTablePlayerRuntime'
 import './styles.css'
 import './structured.css'
 import './playlists.css'
 import './templates.css'
 import './monitoring.css'
 import './player.css'
+import './commercial-table-player-rotation.css'
 import './soft-theme.css'
 import './module-navigation.css'
 import './modern-shell.css'
@@ -259,12 +261,17 @@ document.addEventListener('keydown', (event) => {
 
 const publicToken = getPublicToken()
 const root = document.getElementById('root')!
+const stopCommercialTableRotation = publicToken ? installCommercialTableRotation(root) : null
 
 createRoot(root).render(
   <StrictMode>
     {publicToken ? <PublicPlayer token={publicToken} /> : <App />}
   </StrictMode>,
 )
+
+if (stopCommercialTableRotation) {
+  window.addEventListener('beforeunload', stopCommercialTableRotation, { once: true })
+}
 
 if (!publicToken) {
   const observer = new MutationObserver(() => {
