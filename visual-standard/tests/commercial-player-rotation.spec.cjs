@@ -2,6 +2,7 @@ const { test, expect } = require('@playwright/test')
 
 const fakeOrigin = 'https://example.supabase.co'
 const localOrigin = 'http://127.0.0.1:4173'
+const qrScriptUrl = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'
 
 function json(data, status = 200) {
   return { status, contentType: 'application/json; charset=utf-8', headers: { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' }, body: JSON.stringify(data) }
@@ -44,6 +45,9 @@ test('player mantém a composição e avança somente os lotes da tabela de 30 i
     const request = route.request()
     const url = new URL(request.url())
     if (url.origin === localOrigin) return route.continue()
+    if (request.method() === 'GET' && url.href === qrScriptUrl) {
+      return route.fulfill({ status: 200, contentType: 'application/javascript; charset=utf-8', body: '/* QR dependency is not exercised by this price-table fixture. */' })
+    }
     if (url.origin !== fakeOrigin) {
       unexpected.push(`${request.method()} ${url.href}`)
       return route.abort()
