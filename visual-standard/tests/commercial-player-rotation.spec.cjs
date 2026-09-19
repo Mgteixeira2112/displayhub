@@ -67,13 +67,13 @@ test('player mantém a composição e avança somente os lotes da tabela de 30 i
   await expect(visibleRows).toHaveCount(expectedVisible)
   await expect(visibleRows.first()).toContainText('Produto 01')
   await expect(visibleRows.last()).toContainText(`Produto ${String(expectedVisible).padStart(2, '0')}`)
-  const headerBefore = await table.locator('header').innerText()
+  const headerBefore = await table.locator('header').textContent()
   await page.screenshot({ path: testInfo.outputPath(`commercial-table-30-${testInfo.project.name}-page-1.png`), fullPage: true })
 
   await page.waitForTimeout(pageDurationMs + 220)
   await expect(visibleRows).toHaveCount(expectedVisible)
   await expect(visibleRows.first()).toContainText(`Produto ${String(expectedVisible + 1).padStart(2, '0')}`)
-  await expect(table.locator('header')).toHaveText(headerBefore)
+  expect(await table.locator('header').textContent()).toBe(headerBefore)
   await page.screenshot({ path: testInfo.outputPath(`commercial-table-30-${testInfo.project.name}-page-2.png`), fullPage: true })
 
   const metrics = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }))
